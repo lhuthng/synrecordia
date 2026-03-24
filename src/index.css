@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  /* Main Backgrounds */
+  --color-dark: #060a0c;
+  --color-ui: #0b1215;
+
+  /* The Note Types */
+  --color-note-full: #2dd4bf;
+  --color-note-half: #134e4a;
+
+  /* Interface Elements */
+  --color-playhead: #ffffff;
+  --color-lane-guide: #1e293b;
+
+  /* Typography */
+  --color-main: #e2e8f0;
+  --color-dim: #64748b;
+}
