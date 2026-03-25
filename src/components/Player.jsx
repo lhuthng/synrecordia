@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 
-export default function Player({ song, fluteDynamic, pianoVersion }) {
+export default function Player({
+  song,
+  fluteDynamic,
+  pianoVersion,
+  onBeatChange,
+  onDurationChange,
+  onIsPlayingChange,
+  onBpmChange,
+  controlRef,
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [recorderReady, setRecorderReady] = useState(false);
   const [pianoReady, setPianoReady] = useState(false);
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
   const [currentBeat, setCurrentBeat] = useState(0);
-  const [durationBeats, setDurationBeats] = useState(0);
   const activeFluteDynamic = fluteDynamic ?? "mezzo-forte";
   const activePianoVersion = pianoVersion ?? "v8";
   const recorderSynthRef = useRef(null);
@@ -21,7 +29,7 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
   const pianoReverbRef = useRef(null);
   const pianoSynthRef = useRef(null);
   const bpmRef = useRef(120);
-  const lastUiUpdateRef = useRef(0);
+
   const rafIdRef = useRef(null);
   const lastTimestampRef = useRef(0);
   const cursorBeatsRef = useRef(0);
@@ -40,6 +48,24 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
     if (!match) return null;
     const [, letter, sharp, octave] = match;
     return `${letter}${sharp === "s" || sharp === "#" ? "#" : ""}${octave}`;
+  };
+
+  const noteNameToMidi = (name) => {
+    const match = name.match(/^([A-G])(#?)(-?\d+)$/);
+    if (!match) return 0;
+    const [, letter, sharp, octaveStr] = match;
+    const octave = Number(octaveStr);
+    const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[letter] ?? 0;
+    return (octave + 1) * 12 + base + (sharp ? 1 : 0);
+  };
+
+  const getHighestNoteName = (notes) => {
+    if (Array.isArray(notes)) {
+      return notes.reduce((best, current) => {
+        return noteNameToMidi(current) > noteNameToMidi(best) ? current : best;
+      }, notes[0]);
+    }
+    return notes;
   };
 
   const computeSongEndBeat = (songData) => {
@@ -71,10 +97,58 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
     return low;
   };
 
+  const pausePlayback = () => {
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    setIsPlaying(false);
+  };
+
+  const stopPlayback = () => {
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    cursorBeatsRef.current = 0;
+    setCurrentBeat(0);
+    onBeatChange?.(0);
+    setIsPlaying(false);
+  };
+
+  const playNote = async (noteName, durationBeats) => {
+    await Tone.start();
+    const sampler = recorderSamplerRef.current;
+    if (!sampler?.loaded) return;
+    const secondsPerBeat = 60 / (bpmRef.current || 120);
+    const durationSeconds = Math.max(durationBeats * secondsPerBeat, 0.1);
+    sampler.triggerAttackRelease(noteName, durationSeconds, Tone.now());
+  };
+
+  if (controlRef) {
+    controlRef.current = {
+      pause: pausePlayback,
+      seek: (beat) => {
+        const clamped = Math.max(0, Math.min(durationBeats, beat));
+        cursorBeatsRef.current = clamped;
+        setCurrentBeat(clamped);
+        onBeatChange?.(clamped);
+      },
+      playNote,
+      togglePlayPause: () => {
+        if (isPlaying) {
+          pausePlayback();
+        } else {
+          startPlayback();
+        }
+      },
+    };
+  }
+
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
-        stopPlayback();
+        pausePlayback();
       } else {
         lastTimestampRef.current = performance.now();
       }
@@ -189,7 +263,7 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
         recorderSamplerGainRef.current.connect(recorderReverbRef.current);
         recorderReverbRef.current.connect(recorderVibratoRef.current);
       } catch (error) {
-        // ignore sample loading errors
+        console.error("Failed to load flute samples:", error);
       }
     };
 
@@ -248,7 +322,7 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
         pianoSamplerGainRef.current.connect(pianoReverbRef.current);
         pianoReverbRef.current.toDestination();
       } catch (error) {
-        // ignore sample loading errors
+        console.error("Failed to load piano samples:", error);
       }
     };
 
@@ -259,26 +333,20 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
     };
   }, [activePianoVersion]);
 
-  const stopPlayback = () => {
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    setCurrentBeat(cursorBeatsRef.current);
-    setIsPlaying(false);
-  };
+  const durationBeats = computeSongEndBeat(song);
 
   useEffect(() => {
-    stopPlayback();
-    const nextBpm = song?.bpm ?? 120;
-    setBpm(nextBpm);
-    bpmRef.current = nextBpm;
-    const endBeat = computeSongEndBeat(song);
-    endBeatRef.current = endBeat;
-    setDurationBeats(endBeat);
-    cursorBeatsRef.current = 0;
-    setCurrentBeat(0);
-  }, [song?.id]);
+    onDurationChange?.(durationBeats);
+  }, [durationBeats, onDurationChange]);
+
+  useEffect(() => {
+    bpmRef.current = bpm;
+    onBpmChange?.(bpm);
+  }, [bpm, onBpmChange]);
+
+  useEffect(() => {
+    onIsPlayingChange?.(isPlaying);
+  }, [isPlaying, onIsPlayingChange]);
 
   const startPlayback = async () => {
     if (!song) return;
@@ -309,7 +377,7 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
         .map((action) => ({
           time: (action.time ?? 0) + delayBeats,
           duration: action.duration ?? 0,
-          notes: action.pitches ?? action.pitch,
+          notes: getHighestNoteName(action.pitches ?? action.pitch),
           velocity: Math.min(Math.max((action.velocity ?? 80) / 100, 0), 1),
         }))
         .filter((action) => action.notes)
@@ -329,7 +397,6 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
     const clampedStartBeat = Math.min(startBeat, maxEndBeat);
     cursorBeatsRef.current = clampedStartBeat;
     lastTimestampRef.current = performance.now();
-    lastUiUpdateRef.current = lastTimestampRef.current;
     setCurrentBeat(clampedStartBeat);
     setIsPlaying(true);
 
@@ -342,10 +409,8 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
 
       const currentBeat = cursorBeatsRef.current;
 
-      if (now - lastUiUpdateRef.current >= 50) {
-        lastUiUpdateRef.current = now;
-        setCurrentBeat(currentBeat);
-      }
+      setCurrentBeat(currentBeat);
+      onBeatChange?.(currentBeat);
 
       trackStatesRef.current.forEach((state) => {
         while (
@@ -369,7 +434,7 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
       });
 
       if (currentBeat >= endBeatRef.current + 0.1) {
-        stopPlayback();
+        pausePlayback();
         return;
       }
 
@@ -379,9 +444,12 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
     rafIdRef.current = requestAnimationFrame(tick);
   };
 
-  const handlePlay = () => {
-    stopPlayback();
-    startPlayback();
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      pausePlayback();
+    } else {
+      startPlayback();
+    }
   };
 
   const handleStop = () => {
@@ -392,16 +460,6 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
     const next = Math.max(30, Math.min(240, Number(value) || 0));
     setBpm(next);
     bpmRef.current = next;
-  };
-
-  const handleScrubStart = () => {
-    stopPlayback();
-  };
-
-  const handleScrubChange = (value) => {
-    const next = Math.max(0, Math.min(durationBeats, Number(value) || 0));
-    cursorBeatsRef.current = next;
-    setCurrentBeat(next);
   };
 
   return (
@@ -416,25 +474,7 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
         Piano samples ({activePianoVersion}):{" "}
         {pianoReady ? "loaded" : "loading"}
       </div>
-      <div className="mt-3 flex flex-col gap-2">
-        <label htmlFor="timeline" className="text-sm">
-          Timeline
-        </label>
-        <input
-          id="timeline"
-          type="range"
-          min="0"
-          max={durationBeats}
-          step="0.01"
-          value={currentBeat}
-          onMouseDown={handleScrubStart}
-          onTouchStart={handleScrubStart}
-          onChange={(event) => handleScrubChange(event.target.value)}
-        />
-        <div className="text-xs">
-          {currentBeat.toFixed(2)} / {durationBeats.toFixed(2)} beats
-        </div>
-      </div>
+
       <div className="mt-2 flex items-center gap-2">
         <label htmlFor="bpm" className="text-sm">
           BPM
@@ -457,14 +497,10 @@ export default function Player({ song, fluteDynamic, pianoVersion }) {
         />
       </div>
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handlePlay}
-          disabled={!song || isPlaying}
-        >
-          Play
+        <button type="button" onClick={handlePlayPause} disabled={!song}>
+          {isPlaying ? "Pause" : "Play"}
         </button>
-        <button type="button" onClick={handleStop} disabled={!isPlaying}>
+        <button type="button" onClick={handleStop} disabled={!song}>
           Stop
         </button>
       </div>
