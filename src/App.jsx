@@ -13,6 +13,7 @@ function App() {
   const [durationBeats, setDurationBeats] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBpm, setCurrentBpm] = useState(120);
+  const [playBarPosition, setPlayBarPosition] = useState(0.95);
   const playerControlRef = useRef(null);
 
   const handleSelectSong = (song) => {
@@ -65,6 +66,19 @@ function App() {
           onChange={(event) => setNoteWidth(Number(event.target.value))}
         />
       </div>
+      <div className="text-main">
+        <label htmlFor="play-bar-position">Play bar position</label>
+        <input
+          id="play-bar-position"
+          type="range"
+          min="50"
+          max="99"
+          value={Math.round(playBarPosition * 100)}
+          onChange={(event) =>
+            setPlayBarPosition(Number(event.target.value) / 100)
+          }
+        />
+      </div>
       <Visualizer
         song={selectedSong}
         currentBeat={currentBeat}
@@ -72,10 +86,12 @@ function App() {
         isPlaying={isPlaying}
         bpm={currentBpm}
         noteWidth={noteWidth}
+        playBarPosition={playBarPosition}
         onScrubStart={handleScrubStart}
         onScrub={handleScrub}
         onNoteClick={handleNoteClick}
         onPlayPause={handlePlayPause}
+        onPlayBarPositionChange={setPlayBarPosition}
       />
       <Player
         key={selectedSong?.id ?? "no-song"}

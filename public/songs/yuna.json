@@ -382,7 +382,7 @@
         {
           "type": "note",
           "time": 43.5,
-          "duration": 0.5,
+          "duration": 2,
           "pitch": "D5",
           "velocity": 50
         },

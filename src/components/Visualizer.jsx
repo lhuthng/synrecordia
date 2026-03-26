@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as PIXI from "pixi.js";
+import { ColorMatrixFilter } from "pixi.js";
 import { GlowFilter } from "pixi-filters";
 import fingeringChart from "../assets/references/fingering-chart.json";
 
@@ -73,6 +74,37 @@ const cssColorToPixiHex = (value, fallback) => {
   return fallback;
 };
 
+const brightenColor = (hex, factor) => {
+  const r = Math.min(255, Math.round(((hex >> 16) & 0xff) * factor));
+  const g = Math.min(255, Math.round(((hex >> 8) & 0xff) * factor));
+  const b = Math.min(255, Math.round((hex & 0xff) * factor));
+  return (r << 16) | (g << 8) | b;
+};
+
+const lerpColor = (from, to, t) => {
+  const r = Math.round(
+    ((from >> 16) & 0xff) + (((to >> 16) & 0xff) - ((from >> 16) & 0xff)) * t,
+  );
+  const g = Math.round(
+    ((from >> 8) & 0xff) + (((to >> 8) & 0xff) - ((from >> 8) & 0xff)) * t,
+  );
+  const b = Math.round((from & 0xff) + ((to & 0xff) - (from & 0xff)) * t);
+  return (r << 16) | (g << 8) | b;
+};
+
+const MAX_PARTICLES = 400;
+const PARTICLE_RADIUS = 2.5;
+const PARTICLE_LIFETIME_MIN = 30;
+const PARTICLE_LIFETIME_MAX = 55;
+const PARTICLE_SPAWN_CHANCE = 0.35;
+
+const darken = (hex, factor = 0.7) => {
+  const r = Math.round(((hex >> 16) & 0xff) * factor);
+  const g = Math.round(((hex >> 8) & 0xff) * factor);
+  const b = Math.round((hex & 0xff) * factor);
+  return (r << 16) | (g << 8) | b;
+};
+
 const getFingeringColors = () => {
   const fallbackFull = 0x2ecc71;
   const fallbackHalf = 0x3498db;
@@ -91,7 +123,7 @@ const getFingeringColors = () => {
     fallbackHalf,
   );
 
-  return { 1: full, h: half };
+  return { 1: full, d1: darken(full, 0.8), h: half, dh: darken(half, 0.8) };
 };
 
 const NUM_HOLES = 8;
@@ -123,21 +155,27 @@ const drawFingering = (container, fingering, size, xPadding, colors) => {
     const state = fingering[i];
     if (!state || state === "0") continue;
     const color = colors[state];
+    const darkColor = colors["d" + state];
     if (!color) continue;
 
     const segment = new PIXI.Graphics();
-    segment.roundRect(xPadding, y, rectWidth - xPadding, rectHeight, 4);
+    segment.roundRect(xPadding, y, rectWidth - xPadding, rectHeight - 2, 4);
     segment.fill({ color });
-    segment.filters = [
+
+    const shadow = new PIXI.Graphics();
+    shadow.roundRect(xPadding, y, rectWidth - xPadding, rectHeight, 4);
+    shadow.fill({ color: darkColor });
+    shadow.filters = [
       new GlowFilter({
         distance: 8,
         outerStrength: 1.05,
         innerStrength: 0.15,
-        color,
+        color: darkColor,
         quality: 0.2,
         knockout: false,
       }),
     ];
+    container.addChild(shadow);
     container.addChild(segment);
   }
 
@@ -157,14 +195,17 @@ export default function Visualizer({
   baroque = true,
   noteWidth = 70,
   height = DEFAULT_HEIGHT,
+  playBarPosition = 0.95,
   onScrubStart,
   onScrub,
   onNoteClick,
   onPlayPause,
+  onPlayBarPositionChange,
 }) {
   const wrapperRef = useRef(null);
   const [canvasWidth, setCanvasWidth] = useState(DEFAULT_WIDTH);
   const width = canvasWidth;
+  const canvasWidthRef = useRef(canvasWidth);
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const noteSpritesRef = useRef([]);
@@ -175,14 +216,23 @@ export default function Visualizer({
   const lastFrameTimeRef = useRef(0);
   const pixelsPerBeatRef = useRef(noteWidth);
   const barXRef = useRef(0);
+  const playBarPositionRef = useRef(playBarPosition);
+  const particleLayerRef = useRef(null);
+  const particlesRef = useRef([]);
+  const particleTextureRef = useRef(null);
+  const onNoteClickRef = useRef(onNoteClick);
   const guideLayerRef = useRef(null);
   const holesLayerRef = useRef(null);
   const notesLayerRef = useRef(null);
   const playBarLayerRef = useRef(null);
   const buildGuidesRef = useRef(null);
+  const buildPlayBarRef = useRef(null);
   const buildSpritesRef = useRef(null);
   const mouseDownRef = useRef(false);
   const isDraggingRef = useRef(false);
+  const playBarHoveredRef = useRef(false);
+  const isPlayBarDraggingRef = useRef(false);
+  const dragStartPlayBarPositionRef = useRef(0);
 
   useEffect(() => {
     if (!wrapperRef.current) return;
@@ -208,6 +258,12 @@ export default function Visualizer({
   const dragStartBeatRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isHoveringNote, setIsHoveringNote] = useState(false);
+  const [isHoveringPlayBar, setIsHoveringPlayBar] = useState(false);
+  const [isPlayBarDragging, setIsPlayBarDragging] = useState(false);
+
+  useEffect(() => {
+    onNoteClickRef.current = onNoteClick;
+  }, [onNoteClick]);
 
   useEffect(() => {
     currentBeatRef.current = currentBeat;
@@ -256,6 +312,16 @@ export default function Visualizer({
   }, [noteWidth]);
 
   useEffect(() => {
+    canvasWidthRef.current = canvasWidth;
+  }, [canvasWidth]);
+
+  useEffect(() => {
+    playBarPositionRef.current = playBarPosition;
+    barXRef.current = Math.round(canvasWidth * playBarPosition);
+    buildPlayBarRef.current?.();
+  }, [playBarPosition, canvasWidth]);
+
+  useEffect(() => {
     if (!containerRef.current) return;
 
     let cancelled = false;
@@ -283,7 +349,7 @@ export default function Visualizer({
         containerRef.current.appendChild(canvasEl);
       }
 
-      const barX = width - 12;
+      const barX = Math.round(width * playBarPositionRef.current);
       barXRef.current = barX;
       const beatsPerBar = getBeatsPerBar(song?.timeSignature);
       const guideLayer = new PIXI.Container();
@@ -294,10 +360,19 @@ export default function Visualizer({
       notesLayerRef.current = notesLayer;
       const playBarLayer = new PIXI.Container();
       playBarLayerRef.current = playBarLayer;
+      const particleLayer = new PIXI.Container();
+      particleLayerRef.current = particleLayer;
+
+      const ptGfx = new PIXI.Graphics();
+      ptGfx.circle(0, 0, PARTICLE_RADIUS);
+      ptGfx.fill({ color: 0xffffff });
+      particleTextureRef.current = app.renderer.generateTexture(ptGfx);
+      ptGfx.destroy();
 
       app.stage.addChild(guideLayer);
       app.stage.addChild(holesLayer);
       app.stage.addChild(notesLayer);
+      app.stage.addChild(particleLayer);
       app.stage.addChild(playBarLayer);
 
       const holePositions = getHolePositions(HOLE_SIZE.y);
@@ -364,27 +439,37 @@ export default function Visualizer({
           barLine.beatTime = barBeat;
           barLabel.beatTime = barBeat;
         }
+      };
 
-        if (playBarLayerRef.current) {
-          playBarLayerRef.current.removeChildren();
-
-          const playBar = new PIXI.Graphics();
-          playBar.setStrokeStyle({ width: 2, color: 0xffffff, alpha: 0.9 });
-          playBar.moveTo(barX, 0);
-          playBar.lineTo(barX, height);
-          playBar.stroke();
-          playBar.filters = [
-            new GlowFilter({
-              distance: 14,
-              outerStrength: 2.2,
-              innerStrength: 0.4,
-              color: 0xffffff,
-              quality: 0.2,
-              knockout: false,
-            }),
-          ];
-          playBarLayerRef.current.addChild(playBar);
-        }
+      const buildPlayBar = () => {
+        if (!playBarLayerRef.current) return;
+        playBarLayerRef.current.removeChildren();
+        const pb = new PIXI.Graphics();
+        pb.setStrokeStyle({ width: 2, color: 0xffffff, alpha: 0.9 });
+        pb.moveTo(barXRef.current, 0);
+        pb.lineTo(barXRef.current, height);
+        pb.stroke();
+        pb.filters = [
+          new GlowFilter({
+            distance: 14,
+            outerStrength: 2.2,
+            innerStrength: 0.4,
+            color: 0xffffff,
+            quality: 0.2,
+            knockout: false,
+          }),
+        ];
+        pb.eventMode = "static";
+        pb.hitArea = new PIXI.Rectangle(barXRef.current - 5, 0, 10, height);
+        pb.on("pointerover", () => {
+          playBarHoveredRef.current = true;
+          setIsHoveringPlayBar(true);
+        });
+        pb.on("pointerout", () => {
+          playBarHoveredRef.current = false;
+          setIsHoveringPlayBar(false);
+        });
+        playBarLayerRef.current.addChild(pb);
       };
 
       const buildSprites = () => {
@@ -408,7 +493,25 @@ export default function Visualizer({
             2,
             fingeringColors,
           );
+
+          const holePositions = getHolePositions(HOLE_SIZE.y);
+          const containerY = (height - dims.height) / 2;
+          const activeHoles = [];
+          for (let i = 0; i < NUM_HOLES; i += 1) {
+            const state = event.fingering[i];
+            if (!state || state === "0") continue;
+            const color = fingeringColors[state];
+            if (!color) continue;
+            activeHoles.push({
+              y: containerY + holePositions[i] + HOLE_SIZE.y / 2,
+              color: brightenColor(color, 1.3),
+            });
+          }
+
           const container = new PIXI.Container();
+          const brightnessFilter = new ColorMatrixFilter();
+          graphics.filters = [brightnessFilter];
+          const brightnessState = { current: 1.0, target: 1.0 };
 
           const scaledGraphicsWidth = dims.width;
 
@@ -447,10 +550,13 @@ export default function Visualizer({
           });
           container.on("pointerup", () => {
             if (hasDraggedRef.current || isPlayingRef.current) return;
-            onNoteClick?.({ note: event.note, duration: event.duration });
+            onNoteClickRef.current?.({
+              note: event.note,
+              duration: event.duration,
+            });
           });
 
-          container.y = (height - dims.height) / 2;
+          container.y = containerY;
           notesLayer.addChild(container);
           noteSpritesRef.current.push({
             container,
@@ -459,17 +565,22 @@ export default function Visualizer({
             duration: durationForWidth,
             baseWidth: durationForWidth,
             graphics,
+            brightnessFilter,
+            brightnessState,
             label,
             hoverBg,
             hoverState,
+            activeHoles,
             glowPadding: NOTE_GLOW_PADDING,
           });
         });
       };
 
       buildGuidesRef.current = buildGuides;
+      buildPlayBarRef.current = buildPlayBar;
       buildSpritesRef.current = buildSprites;
       buildGuides();
+      buildPlayBar();
       buildSprites();
 
       ticker = app.ticker ?? PIXI.Ticker.shared;
@@ -501,7 +612,76 @@ export default function Visualizer({
             sprite.hoverBg.alpha +=
               (sprite.hoverState.targetAlpha - sprite.hoverBg.alpha) * 0.2;
           }
+          if (sprite.brightnessFilter && sprite.brightnessState) {
+            const isActive =
+              beat >= sprite.time && beat < sprite.time + sprite.duration;
+            sprite.brightnessState.target = isActive ? 1.3 : 1.0;
+            sprite.brightnessState.current +=
+              (sprite.brightnessState.target - sprite.brightnessState.current) *
+              0.25;
+            sprite.brightnessFilter.brightness(
+              sprite.brightnessState.current,
+              false,
+            );
+          }
+
+          if (
+            sprite.activeHoles?.length &&
+            particleLayerRef.current &&
+            particleTextureRef.current
+          ) {
+            const isActive =
+              beat >= sprite.time && beat < sprite.time + sprite.duration;
+            if (
+              isActive &&
+              isPlayingRef.current &&
+              particlesRef.current.length < MAX_PARTICLES
+            ) {
+              sprite.activeHoles.forEach(({ y, color }) => {
+                if (Math.random() > PARTICLE_SPAWN_CHANCE) return;
+                if (particlesRef.current.length >= MAX_PARTICLES) return;
+                const spr = new PIXI.Sprite(particleTextureRef.current);
+                spr.anchor.set(0.5);
+                spr.tint = 0xffffff;
+                const spawnX = barXRef.current + (Math.random() - 0.5) * 10;
+                const spawnY = y + (Math.random() - 0.5) * 5;
+                spr.x = spawnX;
+                spr.y = spawnY;
+                particleLayerRef.current.addChild(spr);
+                particlesRef.current.push({
+                  spr,
+                  x: spawnX,
+                  y: spawnY,
+                  vx: -(Math.random() * 3 + 1),
+                  vy: (Math.random() - 0.5) * 2,
+                  age: 0,
+                  lifetime:
+                    PARTICLE_LIFETIME_MIN +
+                    Math.random() *
+                      (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN),
+                  targetColor: color,
+                });
+              });
+            }
+          }
         });
+
+        for (let i = particlesRef.current.length - 1; i >= 0; i -= 1) {
+          const p = particlesRef.current[i];
+          p.age += 1;
+          const t = Math.min(1, p.age / p.lifetime);
+          p.spr.tint = lerpColor(p.targetColor, 0xffffff, t);
+          p.spr.alpha = 1 - t;
+          p.x += p.vx;
+          p.y += p.vy;
+
+          p.spr.x = p.x;
+          p.spr.y = p.y;
+          if (p.age >= p.lifetime) {
+            p.spr.destroy();
+            particlesRef.current.splice(i, 1);
+          }
+        }
       };
       ticker.add(tick);
     };
@@ -516,6 +696,8 @@ export default function Visualizer({
       appRef.current?.destroy(true, { children: true });
       appRef.current = null;
       noteSpritesRef.current = [];
+      particlesRef.current = [];
+      particleTextureRef.current = null;
     };
   }, [noteEvents, width, height, durationBeats, song?.timeSignature]);
 
@@ -524,20 +706,57 @@ export default function Visualizer({
     appRef.current.renderer.resize(width, height);
   }, [width, height]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handleWheel = (e) => {
+      e.preventDefault();
+      onScrubStart?.();
+      const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+      const deltaBeat = delta / (pixelsPerBeatRef.current || 1);
+      const newBeat = Math.max(0, currentBeatRef.current + deltaBeat);
+      currentBeatRef.current = newBeat;
+      onScrub?.(newBeat);
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [onScrubStart, onScrub]);
+
   const handleDragStart = useCallback((e) => {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     dragStartXRef.current = clientX;
-    dragStartBeatRef.current = currentBeatRef.current;
-    mouseDownRef.current = true;
-    hasDraggedRef.current = false;
-    isDraggingRef.current = false;
+    if (playBarHoveredRef.current) {
+      isPlayBarDraggingRef.current = true;
+      dragStartPlayBarPositionRef.current = playBarPositionRef.current;
+      setIsPlayBarDragging(true);
+    } else {
+      dragStartBeatRef.current = currentBeatRef.current;
+      mouseDownRef.current = true;
+      hasDraggedRef.current = false;
+      isDraggingRef.current = false;
+      isPlayBarDraggingRef.current = false;
+    }
   }, []);
 
   const handleDragMove = useCallback(
     (e) => {
-      if (!mouseDownRef.current) return;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const deltaX = clientX - dragStartXRef.current;
+
+      if (isPlayBarDraggingRef.current) {
+        const newPosition = Math.max(
+          0.5,
+          Math.min(
+            0.99,
+            dragStartPlayBarPositionRef.current +
+              deltaX / (canvasWidthRef.current || 1),
+          ),
+        );
+        onPlayBarPositionChange?.(newPosition);
+        return;
+      }
+
+      if (!mouseDownRef.current) return;
       if (!isDraggingRef.current) {
         if (Math.abs(deltaX) <= 4) return;
         isDraggingRef.current = true;
@@ -549,20 +768,25 @@ export default function Visualizer({
       const newBeat = Math.max(0, dragStartBeatRef.current + deltaBeat);
       onScrub?.(newBeat);
     },
-    [onScrub, onScrubStart],
+    [onScrub, onScrubStart, onPlayBarPositionChange],
   );
 
   const handleDragEnd = useCallback(() => {
     mouseDownRef.current = false;
     isDraggingRef.current = false;
+    isPlayBarDraggingRef.current = false;
     setIsDragging(false);
+    setIsPlayBarDragging(false);
   }, []);
 
-  const cursor = isDragging
-    ? "grabbing"
-    : isHoveringNote && !isPlaying
-      ? "pointer"
-      : "grab";
+  const cursor =
+    isPlayBarDragging || isHoveringPlayBar
+      ? "ew-resize"
+      : isDragging
+        ? "grabbing"
+        : isHoveringNote && !isPlaying
+          ? "pointer"
+          : "grab";
 
   return (
     <div ref={wrapperRef} style={{ width: "100%", height }}>
