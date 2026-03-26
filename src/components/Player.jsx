@@ -1,6 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 
+const computeSongEndBeat = (songData) => {
+  if (!songData || !Array.isArray(songData.tracks)) {
+    return 0;
+  }
+
+  return songData.tracks.reduce((maxEnd, track) => {
+    const actions = Array.isArray(track.actions) ? track.actions : [];
+    return actions.reduce((trackMax, action) => {
+      if (action.type !== "note") return trackMax;
+      const end = (action.time ?? 0) + (action.duration ?? 0);
+      return Math.max(trackMax, end);
+    }, maxEnd);
+  }, 0);
+};
+
 export default function Player({
   song,
   fluteDynamic,
@@ -15,7 +30,8 @@ export default function Player({
   const [recorderReady, setRecorderReady] = useState(false);
   const [pianoReady, setPianoReady] = useState(false);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
-  const [currentBeat, setCurrentBeat] = useState(0);
+
+  const durationBeats = computeSongEndBeat(song);
   const activeFluteDynamic = fluteDynamic ?? "mezzo-forte";
   const activePianoVersion = pianoVersion ?? "v8";
   const recorderSynthRef = useRef(null);
@@ -68,21 +84,6 @@ export default function Player({
     return notes;
   };
 
-  const computeSongEndBeat = (songData) => {
-    if (!songData || !Array.isArray(songData.tracks)) {
-      return 0;
-    }
-
-    return songData.tracks.reduce((maxEnd, track) => {
-      const actions = Array.isArray(track.actions) ? track.actions : [];
-      return actions.reduce((trackMax, action) => {
-        if (action.type !== "note") return trackMax;
-        const end = (action.time ?? 0) + (action.duration ?? 0);
-        return Math.max(trackMax, end);
-      }, maxEnd);
-    }, 0);
-  };
-
   const findStartIndex = (actions, startBeat) => {
     let low = 0;
     let high = actions.length;
@@ -111,7 +112,6 @@ export default function Player({
       rafIdRef.current = null;
     }
     cursorBeatsRef.current = 0;
-    setCurrentBeat(0);
     onBeatChange?.(0);
     setIsPlaying(false);
   };
@@ -124,26 +124,6 @@ export default function Player({
     const durationSeconds = Math.max(durationBeats * secondsPerBeat, 0.1);
     sampler.triggerAttackRelease(noteName, durationSeconds, Tone.now());
   };
-
-  if (controlRef) {
-    controlRef.current = {
-      pause: pausePlayback,
-      seek: (beat) => {
-        const clamped = Math.max(0, Math.min(durationBeats, beat));
-        cursorBeatsRef.current = clamped;
-        setCurrentBeat(clamped);
-        onBeatChange?.(clamped);
-      },
-      playNote,
-      togglePlayPause: () => {
-        if (isPlaying) {
-          pausePlayback();
-        } else {
-          startPlayback();
-        }
-      },
-    };
-  }
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -333,8 +313,6 @@ export default function Player({
     };
   }, [activePianoVersion]);
 
-  const durationBeats = computeSongEndBeat(song);
-
   useEffect(() => {
     onDurationChange?.(durationBeats);
   }, [durationBeats, onDurationChange]);
@@ -397,7 +375,6 @@ export default function Player({
     const clampedStartBeat = Math.min(startBeat, maxEndBeat);
     cursorBeatsRef.current = clampedStartBeat;
     lastTimestampRef.current = performance.now();
-    setCurrentBeat(clampedStartBeat);
     setIsPlaying(true);
 
     const tick = (now) => {
@@ -409,7 +386,6 @@ export default function Player({
 
       const currentBeat = cursorBeatsRef.current;
 
-      setCurrentBeat(currentBeat);
       onBeatChange?.(currentBeat);
 
       trackStatesRef.current.forEach((state) => {
@@ -443,6 +419,26 @@ export default function Player({
 
     rafIdRef.current = requestAnimationFrame(tick);
   };
+
+  useEffect(() => {
+    if (!controlRef) return;
+    controlRef.current = {
+      pause: pausePlayback,
+      seek: (beat) => {
+        const clamped = Math.max(0, Math.min(durationBeats, beat));
+        cursorBeatsRef.current = clamped;
+        onBeatChange?.(clamped);
+      },
+      playNote,
+      togglePlayPause: () => {
+        if (isPlaying) {
+          pausePlayback();
+        } else {
+          startPlayback();
+        }
+      },
+    };
+  });
 
   const handlePlayPause = () => {
     if (isPlaying) {
