@@ -3,36 +3,18 @@ import { useEffect, useState } from "react";
 export default function Directory({ onSelect }) {
   const [songs, setSongs] = useState([]);
   const [status, setStatus] = useState("loading");
+  const [loadingId, setLoadingId] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadSongs() {
+    async function loadIndex() {
       try {
-        const indexResponse = await fetch("/songs/index.json");
-        if (!indexResponse.ok) {
-          throw new Error("Failed to load song index");
-        }
-
-        const indexData = await indexResponse.json();
-        const songFiles = Array.isArray(indexData)
-          ? indexData
-          : Array.isArray(indexData.files)
-            ? indexData.files
-            : [];
-
-        const songRequests = songFiles.map(async (file) => {
-          const response = await fetch(`/songs/${file}`);
-          if (!response.ok) {
-            throw new Error(`Failed to load song file: ${file}`);
-          }
-          return response.json();
-        });
-
-        const loadedSongs = await Promise.all(songRequests);
-
+        const response = await fetch("/songs/index.json");
+        if (!response.ok) throw new Error("Failed to load song index");
+        const data = await response.json();
         if (isMounted) {
-          setSongs(loadedSongs);
+          setSongs(Array.isArray(data) ? data : []);
           setStatus("ready");
         }
       } catch (error) {
@@ -43,20 +25,28 @@ export default function Directory({ onSelect }) {
       }
     }
 
-    loadSongs();
-
+    loadIndex();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  if (status === "loading") {
-    return <div>Loading songs...</div>;
-  }
+  const handleSelect = async (meta) => {
+    setLoadingId(meta.id);
+    try {
+      const response = await fetch(`/songs/${meta.file}`);
+      if (!response.ok) throw new Error(`Failed to load song: ${meta.file}`);
+      const song = await response.json();
+      onSelect?.(song);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
-  if (status === "error") {
-    return <div>Failed to load songs.</div>;
-  }
+  if (status === "loading") return <div>Loading songs...</div>;
+  if (status === "error") return <div>Failed to load songs.</div>;
 
   return (
     <div className="text-main">
@@ -64,8 +54,13 @@ export default function Directory({ onSelect }) {
       <ul>
         {songs.map((song) => (
           <li key={song.id}>
-            <button type="button" onClick={() => onSelect?.(song)}>
+            <button
+              type="button"
+              onClick={() => handleSelect(song)}
+              disabled={loadingId !== null}
+            >
               {song.title} — {song.bpm} BPM
+              {loadingId === song.id ? " (loading...)" : ""}
             </button>
           </li>
         ))}

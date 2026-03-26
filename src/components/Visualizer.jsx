@@ -6,6 +6,7 @@ import fingeringChart from "../assets/references/fingering-chart.json";
 
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 400;
+export const FADE_MS = 500;
 
 const noteNameToMidi = (name) => {
   const match = name.match(/^([A-G])(#?)(-?\d+)$/);
@@ -92,10 +93,11 @@ const lerpColor = (from, to, t) => {
   return (r << 16) | (g << 8) | b;
 };
 
+const ZONE_COLOR = 0x444444;
 const MAX_PARTICLES = 400;
 const PARTICLE_RADIUS = 2.5;
-const PARTICLE_LIFETIME_MIN = 30;
-const PARTICLE_LIFETIME_MAX = 55;
+const PARTICLE_LIFETIME_MIN = 0.5;
+const PARTICLE_LIFETIME_MAX = 0.9;
 const PARTICLE_SPAWN_CHANCE = 0.35;
 
 const darken = (hex, factor = 0.7) => {
@@ -213,6 +215,7 @@ export default function Visualizer({
   const displayBeatRef = useRef(currentBeat);
   const bpmRef = useRef(bpm);
   const isPlayingRef = useRef(isPlaying);
+  const durationBeatsRef = useRef(durationBeats);
   const lastFrameTimeRef = useRef(0);
   const pixelsPerBeatRef = useRef(noteWidth);
   const barXRef = useRef(0);
@@ -260,6 +263,19 @@ export default function Visualizer({
   const [isHoveringNote, setIsHoveringNote] = useState(false);
   const [isHoveringPlayBar, setIsHoveringPlayBar] = useState(false);
   const [isPlayBarDragging, setIsPlayBarDragging] = useState(false);
+  const [songState, setSongState] = useState({
+    displaySong: song,
+    isReady: false,
+  });
+  const { displaySong, isReady } = songState;
+
+  useEffect(() => {
+    const t = setTimeout(
+      () => setSongState({ displaySong: song, isReady: false }),
+      FADE_MS,
+    );
+    return () => clearTimeout(t);
+  }, [song]);
 
   useEffect(() => {
     onNoteClickRef.current = onNoteClick;
@@ -272,6 +288,16 @@ export default function Visualizer({
   }, [currentBeat]);
 
   useEffect(() => {
+    const beatsPerBar = getBeatsPerBar(song?.timeSignature);
+    const lastBarBeat =
+      beatsPerBar > 0
+        ? Math.ceil(durationBeats / beatsPerBar) * beatsPerBar
+        : durationBeats;
+    durationBeatsRef.current = lastBarBeat;
+    buildGuidesRef.current?.();
+  }, [durationBeats, song?.timeSignature]);
+
+  useEffect(() => {
     bpmRef.current = bpm;
   }, [bpm]);
 
@@ -280,10 +306,10 @@ export default function Visualizer({
   }, [isPlaying]);
 
   const noteEvents = useMemo(() => {
-    if (!song || !Array.isArray(song.tracks)) return [];
+    if (!displaySong || !Array.isArray(displaySong.tracks)) return [];
     const recorderTrack =
-      song.tracks.find((track) => track.instrument === "recorder") ??
-      song.tracks[0];
+      displaySong.tracks.find((track) => track.instrument === "recorder") ??
+      displaySong.tracks[0];
 
     if (!recorderTrack || !Array.isArray(recorderTrack.actions)) return [];
 
@@ -304,10 +330,11 @@ export default function Visualizer({
         };
       })
       .filter(Boolean);
-  }, [song, fingeringSystem, baroque]);
+  }, [displaySong, fingeringSystem, baroque]);
 
   useEffect(() => {
     pixelsPerBeatRef.current = noteWidth;
+    buildGuidesRef.current?.();
     buildSpritesRef.current?.();
   }, [noteWidth]);
 
@@ -363,15 +390,26 @@ export default function Visualizer({
       const particleLayer = new PIXI.Container();
       particleLayerRef.current = particleLayer;
 
+      const BIG = 1_000_000;
+
       const ptGfx = new PIXI.Graphics();
       ptGfx.circle(0, 0, PARTICLE_RADIUS);
       ptGfx.fill({ color: 0xffffff });
       particleTextureRef.current = app.renderer.generateTexture(ptGfx);
       ptGfx.destroy();
 
-      app.stage.addChild(guideLayer);
+      const scrollLayer = new PIXI.Container();
+      const zonesLayer = new PIXI.Container();
+      const leftZone = new PIXI.Graphics();
+      const rightZone = new PIXI.Graphics();
+      zonesLayer.addChild(leftZone);
+      zonesLayer.addChild(rightZone);
+      scrollLayer.addChild(zonesLayer);
+      scrollLayer.addChild(guideLayer);
+      scrollLayer.addChild(notesLayer);
+
       app.stage.addChild(holesLayer);
-      app.stage.addChild(notesLayer);
+      app.stage.addChild(scrollLayer);
       app.stage.addChild(particleLayer);
       app.stage.addChild(playBarLayer);
 
@@ -391,16 +429,26 @@ export default function Visualizer({
       const buildGuides = () => {
         guideLayer.removeChildren();
 
-        const pixelsPerBeat = pixelsPerBeatRef.current || 1;
-        const startBar = Math.floor(
-          Math.max(0, currentBeatRef.current - width / pixelsPerBeat) /
-            beatsPerBar,
+        const lastBar = Math.ceil(
+          (durationBeatsRef.current ?? 0) / beatsPerBar,
         );
-        const endBar = Math.ceil(
-          (Math.max(durationBeats, currentBeatRef.current) +
-            width / pixelsPerBeat) /
-            beatsPerBar,
-        );
+        const startBar = 0;
+        const endBar = lastBar;
+
+        const pxPerBeat = pixelsPerBeatRef.current || 1;
+        const duration = durationBeatsRef.current ?? 0;
+
+        leftZone.clear();
+        rightZone.clear();
+        if (duration > 0) {
+          leftZone.rect(-BIG, 0, BIG, height);
+          leftZone.fill({ color: ZONE_COLOR, alpha: 0.35 });
+          leftZone.x = -duration * pxPerBeat;
+
+          rightZone.rect(0, 0, BIG, height);
+          rightZone.fill({ color: ZONE_COLOR, alpha: 0.35 });
+          rightZone.x = 0;
+        }
 
         for (let barIndex = startBar; barIndex <= endBar; barIndex += 1) {
           const barBeat = barIndex * beatsPerBar;
@@ -409,6 +457,7 @@ export default function Visualizer({
           barLine.moveTo(0, 0);
           barLine.lineTo(0, height);
           barLine.stroke();
+          barLine.x = -barBeat * pxPerBeat;
           guideLayer.addChild(barLine);
 
           const barLabel = new PIXI.Text({
@@ -421,8 +470,8 @@ export default function Visualizer({
             },
           });
           barLabel.anchor.set(1, 0);
-          barLabel.offsetX = -10;
           barLabel.y = 6;
+          barLabel.x = -barBeat * pxPerBeat;
           guideLayer.addChild(barLabel);
 
           for (let beatIndex = 1; beatIndex < beatsPerBar; beatIndex += 1) {
@@ -432,18 +481,45 @@ export default function Visualizer({
             beatLine.moveTo(0, 0);
             beatLine.lineTo(0, height);
             beatLine.stroke();
+            beatLine.x = -beatBeat * pxPerBeat;
             guideLayer.addChild(beatLine);
-            beatLine.beatTime = beatBeat;
           }
-
-          barLine.beatTime = barBeat;
-          barLabel.beatTime = barBeat;
         }
       };
 
       const buildPlayBar = () => {
         if (!playBarLayerRef.current) return;
-        playBarLayerRef.current.removeChildren();
+        const removed = playBarLayerRef.current.removeChildren();
+        for (const child of removed) {
+          child.destroy({ texture: true, children: true });
+        }
+
+        const styles = getComputedStyle(document.documentElement);
+        const darkStr =
+          styles.getPropertyValue("--color-dark").trim() || "#060a0c";
+        const darkHex = cssColorToPixiHex(darkStr, 0x060a0c);
+        const r = (darkHex >> 16) & 0xff;
+        const g = (darkHex >> 8) & 0xff;
+        const b = darkHex & 0xff;
+
+        const gradWidth = Math.max(1, width - barXRef.current);
+        const gradCanvas = document.createElement("canvas");
+        gradCanvas.width = gradWidth;
+        gradCanvas.height = 1;
+        const ctx = gradCanvas.getContext("2d");
+        const grad = ctx.createLinearGradient(0, 0, gradWidth, 0);
+        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.8)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, gradWidth, 1);
+        const gradTexture = PIXI.Texture.from(gradCanvas);
+        const gradSprite = new PIXI.Sprite(gradTexture);
+        gradSprite.x = barXRef.current;
+        gradSprite.y = 0;
+        gradSprite.width = gradWidth;
+        gradSprite.height = height;
+        playBarLayerRef.current.addChild(gradSprite);
+
         const pb = new PIXI.Graphics();
         pb.setStrokeStyle({ width: 2, color: 0xffffff, alpha: 0.9 });
         pb.moveTo(barXRef.current, 0);
@@ -556,6 +632,8 @@ export default function Visualizer({
             });
           });
 
+          container.x =
+            -scaledGraphicsWidth - event.time * (pixelsPerBeatRef.current || 1);
           container.y = containerY;
           notesLayer.addChild(container);
           noteSpritesRef.current.push({
@@ -574,6 +652,9 @@ export default function Visualizer({
             glowPadding: NOTE_GLOW_PADDING,
           });
         });
+        requestAnimationFrame(() => {
+          if (!cancelled) setSongState((prev) => ({ ...prev, isReady: true }));
+        });
       };
 
       buildGuidesRef.current = buildGuides;
@@ -584,30 +665,33 @@ export default function Visualizer({
       buildSprites();
 
       ticker = app.ticker ?? PIXI.Ticker.shared;
-      tick = () => {
-        const beat = currentBeatRef.current ?? 0;
+      tick = (ticker) => {
+        const now = performance.now();
+        const elapsed = (now - lastFrameTimeRef.current) / 1000;
+        const beat = isPlayingRef.current
+          ? (currentBeatRef.current ?? 0) +
+            elapsed * ((bpmRef.current ?? 120) / 60)
+          : (currentBeatRef.current ?? 0);
+
+        const pxPerBeat = pixelsPerBeatRef.current || 1;
+        const bx = barXRef.current || barX;
+        const scrollX = bx + beat * pxPerBeat;
+        scrollLayer.x = scrollX;
 
         guideLayer.children.forEach((child) => {
-          if (typeof child.beatTime !== "number") return;
-          const x =
-            (barXRef.current || barX) +
-            (beat - child.beatTime) * (pixelsPerBeatRef.current || 1);
-          const rightEdge = x + child.width;
-          child.x = x;
-          child.visible = rightEdge > 0 && x < width;
+          const screenX = scrollX + child.x;
+          child.visible = screenX > -2 && screenX < width;
         });
 
         noteSpritesRef.current.forEach((sprite) => {
-          const x =
-            (barXRef.current || barX) -
-            sprite.width +
-            (beat - sprite.time) * (pixelsPerBeatRef.current || 1);
+          const screenX = scrollX + sprite.container.x;
           const glowPadding = Number(sprite.glowPadding ?? 0);
-          const leftEdgeWithGlow = x - glowPadding;
-          const rightEdgeWithGlow = x + sprite.width + glowPadding;
-          sprite.container.x = x;
-          sprite.container.visible =
-            rightEdgeWithGlow > 0 && leftEdgeWithGlow < width;
+          const leftEdgeWithGlow = screenX - glowPadding;
+          const rightEdgeWithGlow = screenX + sprite.width + glowPadding;
+          const isVisible = rightEdgeWithGlow > 0 && leftEdgeWithGlow < width;
+          sprite.container.visible = isVisible;
+          if (!isVisible) return;
+
           if (sprite.hoverBg && sprite.hoverState) {
             sprite.hoverBg.alpha +=
               (sprite.hoverState.targetAlpha - sprite.hoverBg.alpha) * 0.2;
@@ -668,12 +752,13 @@ export default function Visualizer({
 
         for (let i = particlesRef.current.length - 1; i >= 0; i -= 1) {
           const p = particlesRef.current[i];
-          p.age += 1;
+          const dtSeconds = (ticker?.deltaMS ?? 16.67) / 1000;
+          p.age += dtSeconds;
           const t = Math.min(1, p.age / p.lifetime);
           p.spr.tint = lerpColor(p.targetColor, 0xffffff, t);
           p.spr.alpha = 1 - t;
-          p.x += p.vx;
-          p.y += p.vy;
+          p.x += p.vx * dtSeconds * 60;
+          p.y += p.vy * dtSeconds * 60;
 
           p.spr.x = p.x;
           p.spr.y = p.y;
@@ -699,7 +784,7 @@ export default function Visualizer({
       particlesRef.current = [];
       particleTextureRef.current = null;
     };
-  }, [noteEvents, width, height, durationBeats, song?.timeSignature]);
+  }, [noteEvents, width, height, displaySong?.timeSignature]);
 
   useEffect(() => {
     if (!appRef.current) return;
@@ -714,7 +799,13 @@ export default function Visualizer({
       onScrubStart?.();
       const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
       const deltaBeat = delta / (pixelsPerBeatRef.current || 1);
-      const newBeat = Math.max(0, currentBeatRef.current + deltaBeat);
+      const newBeat = Math.max(
+        0,
+        Math.min(
+          durationBeatsRef.current || Infinity,
+          currentBeatRef.current + deltaBeat,
+        ),
+      );
       currentBeatRef.current = newBeat;
       onScrub?.(newBeat);
     };
@@ -765,7 +856,13 @@ export default function Visualizer({
         onScrubStart?.();
       }
       const deltaBeat = deltaX / (pixelsPerBeatRef.current || 1);
-      const newBeat = Math.max(0, dragStartBeatRef.current + deltaBeat);
+      const newBeat = Math.max(
+        0,
+        Math.min(
+          durationBeatsRef.current || Infinity,
+          dragStartBeatRef.current + deltaBeat,
+        ),
+      );
       onScrub?.(newBeat);
     },
     [onScrub, onScrubStart, onPlayBarPositionChange],
@@ -788,11 +885,37 @@ export default function Visualizer({
           ? "pointer"
           : "grab";
 
+  if (!song) {
+    return (
+      <div
+        className="text-main"
+        ref={wrapperRef}
+        style={{
+          width: "100%",
+          height,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <span style={{ fontSize: 14, fontFamily: "monospace" }}>
+          Pick a song to get started
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <div ref={wrapperRef} style={{ width: "100%", height }}>
+    <div className="bg-dark" ref={wrapperRef} style={{ width: "100%", height }}>
       <div
         ref={containerRef}
-        style={{ width, height, cursor }}
+        style={{
+          width,
+          height,
+          cursor,
+          opacity: isReady && song?.id === displaySong?.id ? 1 : 0,
+          transition: `opacity ${FADE_MS}ms ease`,
+        }}
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.code === "Space") {

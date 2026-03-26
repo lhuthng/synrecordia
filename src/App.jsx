@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Directory from "./components/Directory";
 import InstrumentControls from "./components/InstrumentControls";
 import Player from "./components/Player";
-import Visualizer from "./components/Visualizer";
+import Visualizer, { FADE_MS } from "./components/Visualizer";
 
 function App() {
   const [selectedSong, setSelectedSong] = useState(null);
@@ -16,11 +16,17 @@ function App() {
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
   const playerControlRef = useRef(null);
 
+  const resetTimeoutRef = useRef(null);
+
   const handleSelectSong = (song) => {
     setSelectedSong(song);
-    setCurrentBeat(0);
-    setDurationBeats(0);
+    clearTimeout(resetTimeoutRef.current);
+    resetTimeoutRef.current = setTimeout(() => {
+      setCurrentBeat(0);
+    }, FADE_MS);
   };
+
+  useEffect(() => () => clearTimeout(resetTimeoutRef.current), []);
 
   const handleScrubStart = () => {
     playerControlRef.current?.pause();
