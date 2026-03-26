@@ -145,11 +145,16 @@ const getHolePositions = (rectHeight) => {
   return positions;
 };
 
+const HOLE_PLAY_SCALE = 1.18;
+const HOLE_SCALE_ALPHA = 0.18;
+
 const drawFingering = (container, fingering, size, xPadding, colors) => {
   const rectWidth = size.x * 1.2;
   const rectHeight = size.y;
   const positions = getHolePositions(rectHeight);
   const totalHeight = positions[NUM_HOLES - 1] + rectHeight;
+
+  container.holeSprites = [];
 
   for (let i = 0; i < NUM_HOLES; i += 1) {
     const y = positions[i];
@@ -160,12 +165,22 @@ const drawFingering = (container, fingering, size, xPadding, colors) => {
     const darkColor = colors["d" + state];
     if (!color) continue;
 
+    const holeContainer = new PIXI.Container();
+    holeContainer.x = xPadding;
+    holeContainer.y = y + rectHeight / 2;
+
     const segment = new PIXI.Graphics();
-    segment.roundRect(xPadding, y, rectWidth - xPadding, rectHeight - 2, 4);
+    segment.roundRect(
+      0,
+      -rectHeight / 2,
+      rectWidth - xPadding,
+      rectHeight - 2,
+      4,
+    );
     segment.fill({ color });
 
     const shadow = new PIXI.Graphics();
-    shadow.roundRect(xPadding, y, rectWidth - xPadding, rectHeight, 4);
+    shadow.roundRect(0, -rectHeight / 2, rectWidth - xPadding, rectHeight, 4);
     shadow.fill({ color: darkColor });
     shadow.filters = [
       new GlowFilter({
@@ -177,8 +192,15 @@ const drawFingering = (container, fingering, size, xPadding, colors) => {
         knockout: false,
       }),
     ];
-    container.addChild(shadow);
-    container.addChild(segment);
+
+    holeContainer.addChild(shadow);
+    holeContainer.addChild(segment);
+
+    holeContainer.scale.y = 1;
+
+    // add to parent container and record for animation
+    container.addChild(holeContainer);
+    container.holeSprites.push(holeContainer);
   }
 
   return {
@@ -580,7 +602,7 @@ export default function Visualizer({
             if (!color) continue;
             activeHoles.push({
               y: containerY + holePositions[i] + HOLE_SIZE.y / 2,
-              color: brightenColor(color, 1.3),
+              color: brightenColor(color, 1.2),
             });
           }
 
@@ -649,6 +671,8 @@ export default function Visualizer({
             hoverBg,
             hoverState,
             activeHoles,
+            // holeSprites references come from `drawFingering` (attached to graphics)
+            holeSprites: graphics.holeSprites || [],
             glowPadding: NOTE_GLOW_PADDING,
           });
         });
@@ -676,15 +700,26 @@ export default function Visualizer({
         const pxPerBeat = pixelsPerBeatRef.current || 1;
         const bx = barXRef.current || barX;
         const scrollX = bx + beat * pxPerBeat;
-        scrollLayer.x = scrollX;
+
+        const desiredX = scrollX;
+        const currentX = typeof scrollLayer.x === "number" ? scrollLayer.x : 0;
+        const diff = desiredX - currentX;
+        const ABS_SNAP_THRESHOLD = 120;
+        if (Math.abs(diff) > ABS_SNAP_THRESHOLD) {
+          scrollLayer.x = desiredX;
+        } else {
+          const SMOOTH_ALPHA = 0.18;
+          scrollLayer.x = currentX + diff * SMOOTH_ALPHA;
+        }
+        const actualScrollX = scrollLayer.x;
 
         guideLayer.children.forEach((child) => {
-          const screenX = scrollX + child.x;
+          const screenX = actualScrollX + child.x;
           child.visible = screenX > -2 && screenX < width;
         });
 
         noteSpritesRef.current.forEach((sprite) => {
-          const screenX = scrollX + sprite.container.x;
+          const screenX = actualScrollX + sprite.container.x;
           const glowPadding = Number(sprite.glowPadding ?? 0);
           const leftEdgeWithGlow = screenX - glowPadding;
           const rightEdgeWithGlow = screenX + sprite.width + glowPadding;
@@ -692,13 +727,14 @@ export default function Visualizer({
           sprite.container.visible = isVisible;
           if (!isVisible) return;
 
+          const isActive =
+            beat >= sprite.time && beat < sprite.time + sprite.duration;
+
           if (sprite.hoverBg && sprite.hoverState) {
             sprite.hoverBg.alpha +=
               (sprite.hoverState.targetAlpha - sprite.hoverBg.alpha) * 0.2;
           }
           if (sprite.brightnessFilter && sprite.brightnessState) {
-            const isActive =
-              beat >= sprite.time && beat < sprite.time + sprite.duration;
             sprite.brightnessState.target = isActive ? 1.3 : 1.0;
             sprite.brightnessState.current +=
               (sprite.brightnessState.target - sprite.brightnessState.current) *
@@ -709,13 +745,21 @@ export default function Visualizer({
             );
           }
 
+          const isActiveForHoles =
+            beat >= sprite.time && beat < sprite.time + sprite.duration;
+          if (sprite.holeSprites?.length) {
+            sprite.holeSprites.forEach((hole) => {
+              const target = isActiveForHoles ? HOLE_PLAY_SCALE : 1.0;
+              // lerp the scale.y toward the target
+              hole.scale.y += (target - hole.scale.y) * HOLE_SCALE_ALPHA;
+            });
+          }
+
           if (
             sprite.activeHoles?.length &&
             particleLayerRef.current &&
             particleTextureRef.current
           ) {
-            const isActive =
-              beat >= sprite.time && beat < sprite.time + sprite.duration;
             if (
               isActive &&
               isPlayingRef.current &&
@@ -923,13 +967,11 @@ export default function Visualizer({
             onPlayPause?.();
           }
         }}
-        onMouseDown={handleDragStart}
-        onMouseMove={handleDragMove}
-        onMouseUp={handleDragEnd}
-        onMouseLeave={handleDragEnd}
-        onTouchStart={handleDragStart}
-        onTouchMove={handleDragMove}
-        onTouchEnd={handleDragEnd}
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+        onPointerLeave={handleDragEnd}
       />
     </div>
   );

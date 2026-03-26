@@ -47,7 +47,8 @@ export default function Player({
   const bpmRef = useRef(120);
 
   const rafIdRef = useRef(null);
-  const lastTimestampRef = useRef(0);
+  const startToneTimeRef = useRef(0);
+  const startBeatRef = useRef(0);
   const cursorBeatsRef = useRef(0);
   const trackStatesRef = useRef([]);
   const endBeatRef = useRef(0);
@@ -129,8 +130,6 @@ export default function Player({
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         pausePlayback();
-      } else {
-        lastTimestampRef.current = performance.now();
       }
     };
 
@@ -374,17 +373,16 @@ export default function Player({
     endBeatRef.current = maxEndBeat;
     const clampedStartBeat = Math.min(startBeat, maxEndBeat);
     cursorBeatsRef.current = clampedStartBeat;
-    lastTimestampRef.current = performance.now();
+    startToneTimeRef.current = Tone.now();
+    startBeatRef.current = clampedStartBeat;
     setIsPlaying(true);
 
-    const tick = (now) => {
-      const rawDeltaSeconds = (now - lastTimestampRef.current) / 1000;
-      const deltaSeconds = Math.min(rawDeltaSeconds, 0.1);
-      lastTimestampRef.current = now;
+    const tick = () => {
       const secondsPerBeat = getSecondsPerBeat();
-      cursorBeatsRef.current += deltaSeconds / secondsPerBeat;
-
-      const currentBeat = cursorBeatsRef.current;
+      const currentBeat =
+        startBeatRef.current +
+        (Tone.now() - startToneTimeRef.current) / secondsPerBeat;
+      cursorBeatsRef.current = currentBeat;
 
       onBeatChange?.(currentBeat);
 
