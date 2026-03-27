@@ -10,5 +10,11 @@
     "title": "Yuna",
     "bpm": 120,
     "file": "yuna.json"
+  },
+  {
+    "id": "krusty-krab",
+    "title": "Krusty Krab",
+    "bpm": 120,
+    "file": "krusty-krab.json"
   }
 ]

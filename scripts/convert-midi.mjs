@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import fs from "fs";
 import path from "path";
 
@@ -15,7 +16,7 @@ const outputPath = path.resolve(outputArg);
 const baseName = path.basename(outputArg, path.extname(outputArg));
 const title = baseName
   .replace(/[-_]+/g, " ")
-  .replace(/\b\w/g, (char) => char.toUpperCase());
+  .replace(/\b\w/g, (c) => c.toUpperCase());
 
 const buffer = fs.readFileSync(inputPath);
 
@@ -69,9 +70,7 @@ function parseMidi(buf) {
   let offset = 0;
 
   const headerChunk = readString(buf, offset, 4);
-  if (headerChunk !== "MThd") {
-    throw new Error("Invalid MIDI header");
-  }
+  if (headerChunk !== "MThd") throw new Error("Invalid MIDI header");
   offset += 4;
 
   const headerLength = readUint32(buf, offset);
@@ -95,13 +94,12 @@ function parseMidi(buf) {
   const ppq = division;
   const tracks = [];
   let firstTempo = null;
-  let timeSignature = null;
+  const timeSignatures = [];
 
   for (let t = 0; t < numTracks; t++) {
     const chunkType = readString(buf, offset, 4);
-    if (chunkType !== "MTrk") {
+    if (chunkType !== "MTrk")
       throw new Error(`Invalid track header at ${offset}`);
-    }
     offset += 4;
 
     const trackLength = readUint32(buf, offset);
@@ -128,9 +126,8 @@ function parseMidi(buf) {
         offset += 1;
         runningStatus = statusByte;
       } else {
-        if (runningStatus === null) {
+        if (runningStatus === null)
           throw new Error("Running status encountered without previous status");
-        }
         statusByte = runningStatus;
       }
 
@@ -147,10 +144,21 @@ function parseMidi(buf) {
         } else if (metaType === 0x51 && length === 3 && firstTempo === null) {
           const tempo = (data[0] << 16) | (data[1] << 8) | data[2];
           firstTempo = tempo;
-        } else if (metaType === 0x58 && length >= 2 && timeSignature === null) {
+        } else if (metaType === 0x58 && length >= 2) {
+          // time signature meta event: [nn, dd, cc, bb]
           const numerator = data[0];
-          const denominator = 2 ** data[1];
-          timeSignature = `${numerator}/${denominator}`;
+          const dd = data[1];
+          const denominator = 2 ** dd;
+          const clocks = data[2] ?? 24;
+          const thirtySeconds = data[3] ?? 8;
+          timeSignatures.push({
+            ticks: absTicks,
+            numerator,
+            dd,
+            denominator,
+            clocks,
+            thirtySeconds,
+          });
         }
         continue;
       }
@@ -170,14 +178,11 @@ function parseMidi(buf) {
       const data1 = buf[offset++];
       let data2;
 
-      if (!isOneDataByte) {
-        data2 = buf[offset++];
-      }
+      if (!isOneDataByte) data2 = buf[offset++];
 
       if (eventType === 0x90) {
         const noteNumber = data1;
         const velocity = data2 ?? 0;
-
         if (velocity === 0) {
           const key = `${channel}-${noteNumber}`;
           const stack = noteOnMap.get(key);
@@ -212,15 +217,11 @@ function parseMidi(buf) {
       }
     }
 
-    tracks.push({
-      name: trackName,
-      notes,
-    });
+    tracks.push({ name: trackName, notes });
   }
 
   const bpm = firstTempo ? Math.round(60000000 / firstTempo) : 120;
-
-  return { format, ppq, tracks, bpm, timeSignature };
+  return { format, ppq, tracks, bpm, timeSignatures };
 }
 
 function quantizeBeats(value, grid = 1 / 12) {
@@ -276,13 +277,7 @@ function buildActions(notes, ppq) {
         group.reduce((sum, note) => sum + note.velocity, 0) / group.length,
       );
 
-      return {
-        type: "note",
-        time,
-        duration,
-        pitches,
-        velocity,
-      };
+      return { type: "note", time, duration, pitches, velocity };
     })
     .sort((a, b) => a.time - b.time);
 
@@ -294,15 +289,7 @@ function pitchNameToMidi(name) {
   if (!match) return 0;
   const [, letter, sharp, octaveStr] = match;
   const octave = parseInt(octaveStr, 10);
-  const base = {
-    C: 0,
-    D: 2,
-    E: 4,
-    F: 5,
-    G: 7,
-    A: 9,
-    B: 11,
-  }[letter];
+  const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[letter];
   const accidental = sharp ? 1 : 0;
   return (octave + 1) * 12 + base + accidental;
 }
@@ -311,30 +298,21 @@ function splitTracks(parsed) {
   const candidateTracks = parsed.tracks.filter(
     (track) => track.notes.length > 0,
   );
-
-  if (candidateTracks.length === 0) {
-    return { right: [], left: [] };
-  }
+  if (candidateTracks.length === 0) return { right: [], left: [] };
 
   if (candidateTracks.length === 1) {
     const right = [];
     const left = [];
-
     candidateTracks[0].notes.forEach((note) => {
-      if (note.noteNumber >= 60) {
-        right.push(note);
-      } else {
-        left.push(note);
-      }
+      if (note.noteNumber >= 60) right.push(note);
+      else left.push(note);
     });
-
     return { right, left };
   }
 
   const withMeta = candidateTracks.map((track) => {
     const avg =
-      track.notes.reduce((sum, note) => sum + note.noteNumber, 0) /
-      track.notes.length;
+      track.notes.reduce((s, n) => s + n.noteNumber, 0) / track.notes.length;
     return { ...track, avgPitch: avg };
   });
 
@@ -351,30 +329,60 @@ function splitTracks(parsed) {
   return { right: sorted[0].notes, left: sorted[1].notes };
 }
 
+// --- main conversion flow ---
 const parsed = parseMidi(buffer);
 const split = splitTracks(parsed);
 
+// build actions (no padding — keep action times unchanged)
 const recorderActions = buildActions(split.right, parsed.ppq);
 const pianoActions = buildActions(split.left, parsed.ppq);
+
+// compute song end tick (max of notes end)
+const allNoteEndTicks = parsed.tracks.flatMap((trk) =>
+  trk.notes.map((n) => (n.startTicks || 0) + (n.durationTicks || 0)),
+);
+const songEndTick =
+  allNoteEndTicks.length > 0 ? Math.max(...allNoteEndTicks) : 0;
+const songEndBeats = songEndTick / parsed.ppq;
+
+// construct timeSignatures output as array of { timeSignature, length } in beats
+let outTimeSignatures = [];
+if (parsed.timeSignatures && parsed.timeSignatures.length > 0) {
+  const sigs = parsed.timeSignatures
+    .map((s) => ({ ...s, beat: s.ticks / parsed.ppq }))
+    .sort((a, b) => a.ticks - b.ticks);
+
+  for (let i = 0; i < sigs.length; i++) {
+    const s = sigs[i];
+    const nextTick = i + 1 < sigs.length ? sigs[i + 1].ticks : songEndTick;
+    const lengthTicks = Math.max(0, nextTick - s.ticks);
+    const lengthBeats = lengthTicks / parsed.ppq;
+    // round up length to the next integer beat
+    outTimeSignatures.push({
+      timeSignature: `${s.numerator}/${s.denominator}`,
+      length: Math.ceil(lengthBeats),
+    });
+  }
+} else {
+  // default to single 4/4 covering entire song (round up length to next integer beat)
+  outTimeSignatures.push({
+    timeSignature: "4/4",
+    length: Math.ceil(songEndBeats),
+  });
+}
 
 const song = {
   id: baseName,
   title,
   bpm: parsed.bpm,
-  timeSignature: parsed.timeSignature ?? "4/4",
+  // timeSignatures array: each entry has { timeSignature, length } (length in beats)
+  timeSignatures: outTimeSignatures,
   tracks: [
-    {
-      id: "recorder",
-      instrument: "recorder",
-      actions: recorderActions,
-    },
-    {
-      id: "piano",
-      instrument: "piano",
-      actions: pianoActions,
-    },
+    { id: "recorder", instrument: "recorder", actions: recorderActions },
+    { id: "piano", instrument: "piano", actions: pianoActions },
   ],
 };
 
+fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, JSON.stringify(song, null, 2));
 console.log(`Wrote ${outputPath}`);

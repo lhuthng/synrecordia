@@ -15,6 +15,7 @@ function App() {
   const [currentBpm, setCurrentBpm] = useState(120);
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
   const [repeat, setRepeat] = useState(false);
+  const [fingeringSystem, setFingeringSystem] = useState("recorder");
 
   const playerControlRef = useRef(null);
 
@@ -61,6 +62,18 @@ function App() {
         onFluteChange={setFluteDynamic}
         onPianoChange={setPianoVersion}
       />
+      {/* Add fingering system select here */}
+      <div className="text-main">
+        <label htmlFor="fingering-system">Fingering System</label>
+        <select
+          id="fingering-system"
+          value={fingeringSystem}
+          onChange={(e) => setFingeringSystem(e.target.value)}
+        >
+          <option value="recorder">Recorder</option>
+          <option value="simple">Simple</option>
+        </select>
+      </div>
       <div className="text-main">
         <label htmlFor="note-width">Note width</label>
         <input
@@ -105,6 +118,7 @@ function App() {
         onNoteClick={handleNoteClick}
         onPlayPause={handlePlayPause}
         onPlayBarPositionChange={setPlayBarPosition}
+        fingeringSystem={fingeringSystem}
       />
       <Player
         key={selectedSong?.id ?? "no-song"}
@@ -118,6 +132,7 @@ function App() {
         controlRef={playerControlRef}
         repeat={repeat}
         setRepeat={setRepeat}
+        fingeringSystem={fingeringSystem}
       />
     </div>
   );

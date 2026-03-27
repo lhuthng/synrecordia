@@ -2,7 +2,12 @@
   "id": "song-of-storm",
   "title": "Song Of Storm",
   "bpm": 180,
-  "timeSignature": "3/4",
+  "timeSignatures": [
+    {
+      "timeSignature": "3/4",
+      "length": 69
+    }
+  ],
   "tracks": [
     {
       "id": "recorder",

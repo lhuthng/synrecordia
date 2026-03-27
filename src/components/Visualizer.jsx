@@ -699,6 +699,7 @@ export default function Visualizer({
       tick = (ticker) => {
         const now = performance.now();
         const elapsed = (now - lastFrameTimeRef.current) / 1000;
+
         const beat = isPlayingRef.current
           ? (currentBeatRef.current ?? 0) +
             elapsed * ((bpmRef.current ?? 120) / 60)

@@ -2,7 +2,12 @@
   "id": "yuna",
   "title": "Yuna",
   "bpm": 120,
-  "timeSignature": "4/4",
+  "timeSignatures": [
+    {
+      "timeSignature": "4/4",
+      "length": 196
+    }
+  ],
   "tracks": [
     {
       "id": "recorder",

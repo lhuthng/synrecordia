@@ -415,25 +415,20 @@ export default function Player({
       });
 
       // loop / end handling
-      const loopThreshold = 0.02; // triggers loop very close to end for seamless repeat
+      const loopThreshold = 0.02;
       if (currentBeat >= endBeatRef.current - loopThreshold) {
         if (repeatRef.current) {
-          // Compute overshoot beyond the end (could be slightly positive if we passed exact end)
           const overshoot = Math.max(0, currentBeat - endBeatRef.current);
 
-          // Restart timing so the next tick starts from the overshoot (keeps seamless timing)
           startToneTimeRef.current = Tone.now();
           startBeatRef.current = overshoot;
 
-          // Reset each state's index based on the new startBeat
           trackStatesRef.current.forEach((state) => {
-            state.index = findStartIndex(state.actions, startBeatRef.current);
+            state.index = 0;
           });
 
           cursorBeatsRef.current = startBeatRef.current;
           onBeatChange?.(cursorBeatsRef.current);
-
-          // Continue without pausing
         } else {
           pausePlayback();
           return;
@@ -482,8 +477,22 @@ export default function Player({
 
   const handleBpmChange = (value) => {
     const next = Math.max(30, Math.min(240, Number(value) || 0));
+
+    if (isPlaying) {
+      const now = Tone.now();
+      const secondsPerBeat = 60 / (bpmRef.current || 120);
+      const beatsSinceLastChange =
+        (now - startToneTimeRef.current) / secondsPerBeat;
+
+      startBeatRef.current = startBeatRef.current + beatsSinceLastChange;
+      startToneTimeRef.current = now;
+    }
+
     setBpm(next);
     bpmRef.current = next;
+
+    Tone.getTransport().bpm.value = next;
+    onBpmChange?.(next);
   };
 
   return (
