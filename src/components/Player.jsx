@@ -25,6 +25,8 @@ export default function Player({
   onIsPlayingChange,
   onBpmChange,
   controlRef,
+  repeat,
+  setRepeat,
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [recorderReady, setRecorderReady] = useState(false);
@@ -52,6 +54,11 @@ export default function Player({
   const cursorBeatsRef = useRef(0);
   const trackStatesRef = useRef([]);
   const endBeatRef = useRef(0);
+  const repeatRef = useRef(repeat);
+
+  useEffect(() => {
+    repeatRef.current = repeat;
+  }, [repeat]);
 
   const parseFluteSampleNote = (filename) => {
     const match = filename.match(/^flute_([A-G])(s?)(\d+)_/);
@@ -407,9 +414,30 @@ export default function Player({
         }
       });
 
-      if (currentBeat >= endBeatRef.current + 0.1) {
-        pausePlayback();
-        return;
+      // loop / end handling
+      const loopThreshold = 0.02; // triggers loop very close to end for seamless repeat
+      if (currentBeat >= endBeatRef.current - loopThreshold) {
+        if (repeatRef.current) {
+          // Compute overshoot beyond the end (could be slightly positive if we passed exact end)
+          const overshoot = Math.max(0, currentBeat - endBeatRef.current);
+
+          // Restart timing so the next tick starts from the overshoot (keeps seamless timing)
+          startToneTimeRef.current = Tone.now();
+          startBeatRef.current = overshoot;
+
+          // Reset each state's index based on the new startBeat
+          trackStatesRef.current.forEach((state) => {
+            state.index = findStartIndex(state.actions, startBeatRef.current);
+          });
+
+          cursorBeatsRef.current = startBeatRef.current;
+          onBeatChange?.(cursorBeatsRef.current);
+
+          // Continue without pausing
+        } else {
+          pausePlayback();
+          return;
+        }
       }
 
       rafIdRef.current = requestAnimationFrame(tick);
@@ -435,6 +463,8 @@ export default function Player({
           startPlayback();
         }
       },
+      // expose repeat control so external components can toggle if desired
+      setRepeat,
     };
   });
 
@@ -490,13 +520,23 @@ export default function Player({
           className="w-16"
         />
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <button type="button" onClick={handlePlayPause} disabled={!song}>
           {isPlaying ? "Pause" : "Play"}
         </button>
         <button type="button" onClick={handleStop} disabled={!song}>
           Stop
         </button>
+
+        <label className="flex items-center gap-1 text-sm ml-4">
+          <input
+            type="checkbox"
+            checked={repeat}
+            onChange={(e) => setRepeat(e.target.checked)}
+            aria-label="Repeat song"
+          />
+          Repeat
+        </label>
       </div>
     </div>
   );

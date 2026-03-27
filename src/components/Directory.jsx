@@ -4,6 +4,7 @@ export default function Directory({ onSelect }) {
   const [songs, setSongs] = useState([]);
   const [status, setStatus] = useState("loading");
   const [loadingId, setLoadingId] = useState(null);
+  const [songCache, setSongCache] = useState({});
 
   useEffect(() => {
     let isMounted = true;
@@ -32,11 +33,19 @@ export default function Directory({ onSelect }) {
   }, []);
 
   const handleSelect = async (meta) => {
+    // If we've already fetched this song, use the cached version immediately
+    if (songCache[meta.id]) {
+      onSelect?.(songCache[meta.id]);
+      return;
+    }
+
     setLoadingId(meta.id);
     try {
       const response = await fetch(`/songs/${meta.file}`);
       if (!response.ok) throw new Error(`Failed to load song: ${meta.file}`);
       const song = await response.json();
+      // Cache the fetched song so future selections are instant
+      setSongCache((prev) => ({ ...prev, [meta.id]: song }));
       onSelect?.(song);
     } catch (error) {
       console.error(error);

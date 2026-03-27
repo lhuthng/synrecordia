@@ -98,7 +98,7 @@ const MAX_PARTICLES = 400;
 const PARTICLE_RADIUS = 2.5;
 const PARTICLE_LIFETIME_MIN = 0.5;
 const PARTICLE_LIFETIME_MAX = 0.9;
-const PARTICLE_SPAWN_CHANCE = 0.35;
+const PARTICLE_SPAWN_CHANCE = 0;
 
 const darken = (hex, factor = 0.7) => {
   const r = Math.round(((hex >> 16) & 0xff) * factor);
@@ -292,12 +292,14 @@ export default function Visualizer({
   const { displaySong, isReady } = songState;
 
   useEffect(() => {
+    if (song?.id && displaySong?.id === song.id) return;
+
     const t = setTimeout(
       () => setSongState({ displaySong: song, isReady: false }),
       FADE_MS,
     );
     return () => clearTimeout(t);
-  }, [song]);
+  }, [song, displaySong?.id]);
 
   useEffect(() => {
     onNoteClickRef.current = onNoteClick;
@@ -448,15 +450,7 @@ export default function Visualizer({
         holesLayer.addChild(holeLine);
       }
 
-      const buildGuides = () => {
-        guideLayer.removeChildren();
-
-        const lastBar = Math.ceil(
-          (durationBeatsRef.current ?? 0) / beatsPerBar,
-        );
-        const startBar = 0;
-        const endBar = lastBar;
-
+      const buildZones = () => {
         const pxPerBeat = pixelsPerBeatRef.current || 1;
         const duration = durationBeatsRef.current ?? 0;
 
@@ -471,6 +465,18 @@ export default function Visualizer({
           rightZone.fill({ color: ZONE_COLOR, alpha: 0.35 });
           rightZone.x = 0;
         }
+      };
+
+      const buildGuides = () => {
+        guideLayer.removeChildren();
+
+        const lastBar = Math.ceil(
+          (durationBeatsRef.current ?? 0) / beatsPerBar,
+        );
+        const startBar = 0;
+        const endBar = lastBar;
+
+        const pxPerBeat = pixelsPerBeatRef.current || 1;
 
         for (let barIndex = startBar; barIndex <= endBar; barIndex += 1) {
           const barBeat = barIndex * beatsPerBar;
@@ -531,7 +537,7 @@ export default function Visualizer({
         const ctx = gradCanvas.getContext("2d");
         const grad = ctx.createLinearGradient(0, 0, gradWidth, 0);
         grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
-        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.8)`);
+        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 1)`);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, gradWidth, 1);
         const gradTexture = PIXI.Texture.from(gradCanvas);
@@ -685,6 +691,7 @@ export default function Visualizer({
       buildPlayBarRef.current = buildPlayBar;
       buildSpritesRef.current = buildSprites;
       buildGuides();
+      buildZones();
       buildPlayBar();
       buildSprites();
 
@@ -735,7 +742,7 @@ export default function Visualizer({
               (sprite.hoverState.targetAlpha - sprite.hoverBg.alpha) * 0.2;
           }
           if (sprite.brightnessFilter && sprite.brightnessState) {
-            sprite.brightnessState.target = isActive ? 1.3 : 1.0;
+            sprite.brightnessState.target = isActive ? 1.2 : 1.0;
             sprite.brightnessState.current +=
               (sprite.brightnessState.target - sprite.brightnessState.current) *
               0.25;
@@ -750,7 +757,6 @@ export default function Visualizer({
           if (sprite.holeSprites?.length) {
             sprite.holeSprites.forEach((hole) => {
               const target = isActiveForHoles ? HOLE_PLAY_SCALE : 1.0;
-              // lerp the scale.y toward the target
               hole.scale.y += (target - hole.scale.y) * HOLE_SCALE_ALPHA;
             });
           }
@@ -952,6 +958,7 @@ export default function Visualizer({
   return (
     <div className="bg-dark" ref={wrapperRef} style={{ width: "100%", height }}>
       <div
+        className="focus:outline-none"
         ref={containerRef}
         style={{
           width,

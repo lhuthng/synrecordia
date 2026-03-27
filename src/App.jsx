@@ -14,13 +14,20 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBpm, setCurrentBpm] = useState(120);
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
+  const [repeat, setRepeat] = useState(false);
+
   const playerControlRef = useRef(null);
 
   const resetTimeoutRef = useRef(null);
 
   const handleSelectSong = (song) => {
     setSelectedSong(song);
+
     clearTimeout(resetTimeoutRef.current);
+    if (selectedSong?.id === song?.id) {
+      return;
+    }
+
     resetTimeoutRef.current = setTimeout(() => {
       setCurrentBeat(0);
     }, FADE_MS);
@@ -109,6 +116,8 @@ function App() {
         onIsPlayingChange={setIsPlaying}
         onBpmChange={setCurrentBpm}
         controlRef={playerControlRef}
+        repeat={repeat}
+        setRepeat={setRepeat}
       />
     </div>
   );

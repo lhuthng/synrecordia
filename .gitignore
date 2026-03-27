@@ -26,4 +26,3 @@ dist-ssr
 # Assets for prerendering
 src/assets/midis/
 src/assets/samples/
-public/samples/
