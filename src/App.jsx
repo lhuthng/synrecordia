@@ -1,139 +1,36 @@
-import { useRef, useState, useEffect } from "react";
-import Directory from "./components/Directory";
+import { useState } from "react";
 import InstrumentControls from "./components/InstrumentControls";
 import Player from "./components/Player";
-import Visualizer, { FADE_MS } from "./components/Visualizer";
+import Header from "./components/Header";
 
 function App() {
-  const [selectedSong, setSelectedSong] = useState(null);
   const [fluteDynamic, setFluteDynamic] = useState("mezzo-forte");
   const [pianoVersion, setPianoVersion] = useState("v8");
-  const [noteWidth, setNoteWidth] = useState(70);
-  const [currentBeat, setCurrentBeat] = useState(0);
-  const [durationBeats, setDurationBeats] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentBpm, setCurrentBpm] = useState(120);
-  const [playBarPosition, setPlayBarPosition] = useState(0.95);
-  const [repeat, setRepeat] = useState(false);
-  const [fingeringSystem, setFingeringSystem] = useState("recorder");
-
-  const playerControlRef = useRef(null);
-
-  const resetTimeoutRef = useRef(null);
-
-  const handleSelectSong = (song) => {
-    setSelectedSong(song);
-
-    clearTimeout(resetTimeoutRef.current);
-    if (selectedSong?.id === song?.id) {
-      return;
-    }
-
-    resetTimeoutRef.current = setTimeout(() => {
-      setCurrentBeat(0);
-    }, FADE_MS);
-  };
-
-  useEffect(() => () => clearTimeout(resetTimeoutRef.current), []);
-
-  const handleScrubStart = () => {
-    playerControlRef.current?.pause();
-  };
-
-  const handleScrub = (beat) => {
-    setCurrentBeat(beat);
-    playerControlRef.current?.seek(beat);
-  };
-
-  const handleNoteClick = ({ note, duration }) => {
-    playerControlRef.current?.playNote(note, duration);
-  };
-
-  const handlePlayPause = () => {
-    playerControlRef.current?.togglePlayPause();
-  };
 
   return (
-    <div>
-      <Directory onSelect={handleSelectSong} />
-      <InstrumentControls
-        fluteDynamic={fluteDynamic}
-        pianoVersion={pianoVersion}
-        onFluteChange={setFluteDynamic}
-        onPianoChange={setPianoVersion}
-      />
-      {/* Add fingering system select here */}
-      <div className="text-main">
-        <label htmlFor="fingering-system">Fingering System</label>
-        <select
-          id="fingering-system"
-          value={fingeringSystem}
-          onChange={(e) => setFingeringSystem(e.target.value)}
-        >
-          <option value="recorder">Recorder</option>
-          <option value="simple">Simple</option>
-        </select>
-      </div>
-      <div className="text-main">
-        <label htmlFor="note-width">Note width</label>
-        <input
-          id="note-width"
-          type="range"
-          min="20"
-          max="200"
-          value={noteWidth}
-          onChange={(event) => setNoteWidth(Number(event.target.value))}
+    <div className="w-full min-h-screen bg-dim font-iosevka">
+      <Header />
+      <div className="w-cap min-h-screen bg-dark px-4 shadow-md">
+        <Player fluteDynamic={fluteDynamic} pianoVersion={pianoVersion} />
+        <InstrumentControls
+          fluteDynamic={fluteDynamic}
+          pianoVersion={pianoVersion}
+          onFluteChange={setFluteDynamic}
+          onPianoChange={setPianoVersion}
         />
-        <input
-          type="number"
-          min="20"
-          max="200"
-          value={noteWidth}
-          onChange={(event) => setNoteWidth(Number(event.target.value))}
-        />
+        {/* Add fingering system select here */}
+        {/* <div className="text-main">
+          <label htmlFor="fingering-system">Fingering System</label>
+          <select
+            id="fingering-system"
+            value={fingeringSystem}
+            onChange={(e) => setFingeringSystem(e.target.value)}
+          >
+            <option value="recorder">Recorder</option>
+            <option value="simple">Simple</option>
+          </select>
+        </div>*/}
       </div>
-      <div className="text-main">
-        <label htmlFor="play-bar-position">Play bar position</label>
-        <input
-          id="play-bar-position"
-          type="range"
-          min="50"
-          max="99"
-          value={Math.round(playBarPosition * 100)}
-          onChange={(event) =>
-            setPlayBarPosition(Number(event.target.value) / 100)
-          }
-        />
-      </div>
-      <Visualizer
-        song={selectedSong}
-        currentBeat={currentBeat}
-        durationBeats={durationBeats}
-        isPlaying={isPlaying}
-        bpm={currentBpm}
-        noteWidth={noteWidth}
-        playBarPosition={playBarPosition}
-        onScrubStart={handleScrubStart}
-        onScrub={handleScrub}
-        onNoteClick={handleNoteClick}
-        onPlayPause={handlePlayPause}
-        onPlayBarPositionChange={setPlayBarPosition}
-        fingeringSystem={fingeringSystem}
-      />
-      <Player
-        key={selectedSong?.id ?? "no-song"}
-        song={selectedSong}
-        fluteDynamic={fluteDynamic}
-        pianoVersion={pianoVersion}
-        onBeatChange={setCurrentBeat}
-        onDurationChange={setDurationBeats}
-        onIsPlayingChange={setIsPlaying}
-        onBpmChange={setCurrentBpm}
-        controlRef={playerControlRef}
-        repeat={repeat}
-        setRepeat={setRepeat}
-        fingeringSystem={fingeringSystem}
-      />
     </div>
   );
 }

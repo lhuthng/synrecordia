@@ -1,0 +1,44 @@
+import { Activity } from "react";
+import { cn } from "../libs/utils";
+
+export default function DuoButton({
+  children,
+  onClick,
+  disabled,
+  className,
+  background = "bg-green-500",
+  shadowBackground = "bg-green-700",
+  border = "border-green-700",
+  text = "text-white",
+}) {
+  return (
+    <div className={cn("relative min-h-fit", className)}>
+      <Activity mode={disabled ? "hidden" : "visible"}>
+        <div
+          className={cn(
+            "absolute full translate-y-0.5 rounded-2xl z-0",
+            shadowBackground,
+          )}
+        />
+      </Activity>
+
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={cn(
+          "relative z-10 block w-full px-2 text-center py-1.5 rounded-2xl border-2 font-bold uppercase text-nowrap transition-all duration-75 cursor-pointer",
+
+          background,
+          text,
+          border,
+          "hover:brightness-110",
+          "active:translate-y-0.5",
+          "disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-1",
+          `focus:outline-main`,
+        )}
+      >
+        {children}
+      </button>
+    </div>
+  );
+}

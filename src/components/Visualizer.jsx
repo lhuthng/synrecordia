@@ -98,7 +98,7 @@ const MAX_PARTICLES = 400;
 const PARTICLE_RADIUS = 2.5;
 const PARTICLE_LIFETIME_MIN = 0.5;
 const PARTICLE_LIFETIME_MAX = 0.9;
-const PARTICLE_SPAWN_CHANCE = 0;
+const PARTICLE_SPAWN_CHANCE = 0.2;
 
 const darken = (hex, factor = 0.7) => {
   const r = Math.round(((hex >> 16) & 0xff) * factor);
@@ -235,6 +235,10 @@ export default function Visualizer({
   const noteSpritesRef = useRef([]);
   const currentBeatRef = useRef(currentBeat);
   const displayBeatRef = useRef(currentBeat);
+  // targetBeatRef: holds the external target beat for the visual display.
+  // The ticker interpolates `displayBeatRef` toward this target to produce
+  // smooth scrolling without snapping when the player updates the beat.
+  const targetBeatRef = useRef(currentBeat);
   const bpmRef = useRef(bpm);
   const isPlayingRef = useRef(isPlaying);
   const durationBeatsRef = useRef(durationBeats);
@@ -307,7 +311,10 @@ export default function Visualizer({
 
   useEffect(() => {
     currentBeatRef.current = currentBeat;
-    displayBeatRef.current = currentBeat;
+    targetBeatRef.current = currentBeat;
+    if (!isPlayingRef.current) {
+      displayBeatRef.current = currentBeat;
+    }
     lastFrameTimeRef.current = performance.now();
   }, [currentBeat]);
 
@@ -699,11 +706,18 @@ export default function Visualizer({
       tick = (ticker) => {
         const now = performance.now();
         const elapsed = (now - lastFrameTimeRef.current) / 1000;
-
-        const beat = isPlayingRef.current
+        const targetBeat = isPlayingRef.current
           ? (currentBeatRef.current ?? 0) +
             elapsed * ((bpmRef.current ?? 120) / 60)
           : (currentBeatRef.current ?? 0);
+        const LERP_SPEED = 8;
+        const lerpAlpha = 1 - Math.exp(-LERP_SPEED * Math.max(0, elapsed));
+        const externalTarget = targetBeatRef.current ?? targetBeat;
+        const resolvedTarget = Math.max(targetBeat, externalTarget);
+        displayBeatRef.current +=
+          (resolvedTarget - displayBeatRef.current) * lerpAlpha;
+        const beat = displayBeatRef.current;
+        lastFrameTimeRef.current = now;
 
         const pxPerBeat = pixelsPerBeatRef.current || 1;
         const bx = barXRef.current || barX;
@@ -957,7 +971,11 @@ export default function Visualizer({
   }
 
   return (
-    <div className="bg-dark" ref={wrapperRef} style={{ width: "100%", height }}>
+    <div
+      className="bg-dark overflow-x-hidden"
+      ref={wrapperRef}
+      style={{ width: "100%", height }}
+    >
       <div
         className="focus:outline-none"
         ref={containerRef}

@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Iosevka+Charon:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -7,7 +8,9 @@
 
   /* The Note Types */
   --color-note-full: #2dd4bf;
+  --color-note-full-dark: #0d9488;
   --color-note-half: #a78bfa;
+  --color-note-half-dark: #7c3aed;
 
   /* Interface Elements */
   --color-playhead: #ffffff;
@@ -16,4 +19,14 @@
   /* Typography */
   --color-main: #e2e8f0;
   --color-dim: #64748b;
+
+  --font-iosevka: "Iosevka Charon", monospace;
+}
+
+.full {
+  @apply h-full w-full;
+}
+
+.w-cap {
+  @apply w-full lg:w-7/8 max-w-360 not-lg:px-2 mx-auto;
 }

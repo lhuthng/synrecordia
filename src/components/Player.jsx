@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
+import DuoButton from "./DuoButton";
+import DuoToggleButton from "./DuoToggleButton";
+import DuoSlideBar from "./DuoSlideBar";
+import Directory from "./Directory";
+import Visualizer, { FADE_MS } from "./Visualizer";
 
 const computeSongEndBeat = (songData) => {
   if (!songData || !Array.isArray(songData.tracks)) {
@@ -16,22 +21,18 @@ const computeSongEndBeat = (songData) => {
   }, 0);
 };
 
-export default function Player({
-  song,
-  fluteDynamic,
-  pianoVersion,
-  onBeatChange,
-  onDurationChange,
-  onIsPlayingChange,
-  onBpmChange,
-  controlRef,
-  repeat,
-  setRepeat,
-}) {
+export default function Player({ fluteDynamic, pianoVersion }) {
+  const [song, setSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [recorderReady, setRecorderReady] = useState(false);
   const [pianoReady, setPianoReady] = useState(false);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
+  const [noteWidth, setNoteWidth] = useState(70);
+  const [repeat, setRepeat] = useState(false);
+  const [currentBeat, setCurrentBeat] = useState(0);
+  const [playBarPosition, setPlayBarPosition] = useState(0.95);
+
+  const [fingeringSystem, setFingeringSystem] = useState("recorder");
 
   const durationBeats = computeSongEndBeat(song);
   const activeFluteDynamic = fluteDynamic ?? "mezzo-forte";
@@ -46,7 +47,6 @@ export default function Player({
   const pianoSamplerGainRef = useRef(null);
   const pianoReverbRef = useRef(null);
   const pianoSynthRef = useRef(null);
-  const bpmRef = useRef(120);
 
   const rafIdRef = useRef(null);
   const startToneTimeRef = useRef(0);
@@ -54,11 +54,15 @@ export default function Player({
   const cursorBeatsRef = useRef(0);
   const trackStatesRef = useRef([]);
   const endBeatRef = useRef(0);
-  const repeatRef = useRef(repeat);
-
-  useEffect(() => {
-    repeatRef.current = repeat;
-  }, [repeat]);
+  // bpmRef is a mutable ref that always holds the latest BPM value.
+  // The playback `tick` closure (driven by requestAnimationFrame) reads
+  // `bpmRef.current` so it always uses the up-to-date tempo even though
+  // the closure itself was created earlier. This avoids stale-closure
+  // problems where the tick would continue using the old `bpm` state
+  // after a tempo change, which caused the displayed/played beat to jump.
+  // We update `bpmRef.current` immediately when BPM changes so time->beat
+  // conversions remain continuous.
+  const bpmRef = useRef(bpm);
 
   const parseFluteSampleNote = (filename) => {
     const match = filename.match(/^flute_([A-G])(s?)(\d+)_/);
@@ -120,7 +124,7 @@ export default function Player({
       rafIdRef.current = null;
     }
     cursorBeatsRef.current = 0;
-    onBeatChange?.(0);
+    setCurrentBeat(0);
     setIsPlaying(false);
   };
 
@@ -128,7 +132,7 @@ export default function Player({
     await Tone.start();
     const sampler = recorderSamplerRef.current;
     if (!sampler?.loaded) return;
-    const secondsPerBeat = 60 / (bpmRef.current || 120);
+    const secondsPerBeat = 60 / (bpm || 120);
     const durationSeconds = Math.max(durationBeats * secondsPerBeat, 0.1);
     sampler.triggerAttackRelease(noteName, durationSeconds, Tone.now());
   };
@@ -319,19 +323,6 @@ export default function Player({
     };
   }, [activePianoVersion]);
 
-  useEffect(() => {
-    onDurationChange?.(durationBeats);
-  }, [durationBeats, onDurationChange]);
-
-  useEffect(() => {
-    bpmRef.current = bpm;
-    onBpmChange?.(bpm);
-  }, [bpm, onBpmChange]);
-
-  useEffect(() => {
-    onIsPlayingChange?.(isPlaying);
-  }, [isPlaying, onIsPlayingChange]);
-
   const startPlayback = async () => {
     if (!song) return;
 
@@ -346,7 +337,7 @@ export default function Player({
     }
 
     const pianoDelaySeconds = 0.08;
-    const getSecondsPerBeat = () => 60 / (bpmRef.current || 120);
+    const getSecondsPerBeat = () => 60 / bpmRef.current;
     const pianoDelayBeats = pianoDelaySeconds / getSecondsPerBeat();
 
     const startBeat = Math.max(0, cursorBeatsRef.current);
@@ -386,17 +377,17 @@ export default function Player({
 
     const tick = () => {
       const secondsPerBeat = getSecondsPerBeat();
-      const currentBeat =
+      const beat =
         startBeatRef.current +
         (Tone.now() - startToneTimeRef.current) / secondsPerBeat;
-      cursorBeatsRef.current = currentBeat;
+      cursorBeatsRef.current = beat;
 
-      onBeatChange?.(currentBeat);
+      setCurrentBeat(beat);
 
       trackStatesRef.current.forEach((state) => {
         while (
           state.index < state.actions.length &&
-          state.actions[state.index].time <= currentBeat
+          state.actions[state.index].time <= beat
         ) {
           const action = state.actions[state.index];
           const durationSeconds = action.duration * secondsPerBeat;
@@ -416,9 +407,9 @@ export default function Player({
 
       // loop / end handling
       const loopThreshold = 0.02;
-      if (currentBeat >= endBeatRef.current - loopThreshold) {
-        if (repeatRef.current) {
-          const overshoot = Math.max(0, currentBeat - endBeatRef.current);
+      if (beat >= endBeatRef.current - loopThreshold) {
+        if (repeat) {
+          const overshoot = Math.max(0, beat - endBeatRef.current);
 
           startToneTimeRef.current = Tone.now();
           startBeatRef.current = overshoot;
@@ -428,7 +419,7 @@ export default function Player({
           });
 
           cursorBeatsRef.current = startBeatRef.current;
-          onBeatChange?.(cursorBeatsRef.current);
+          setCurrentBeat(cursorBeatsRef.current);
         } else {
           pausePlayback();
           return;
@@ -441,28 +432,6 @@ export default function Player({
     rafIdRef.current = requestAnimationFrame(tick);
   };
 
-  useEffect(() => {
-    if (!controlRef) return;
-    controlRef.current = {
-      pause: pausePlayback,
-      seek: (beat) => {
-        const clamped = Math.max(0, Math.min(durationBeats, beat));
-        cursorBeatsRef.current = clamped;
-        onBeatChange?.(clamped);
-      },
-      playNote,
-      togglePlayPause: () => {
-        if (isPlaying) {
-          pausePlayback();
-        } else {
-          startPlayback();
-        }
-      },
-      // expose repeat control so external components can toggle if desired
-      setRepeat,
-    };
-  });
-
   const handlePlayPause = () => {
     if (isPlaying) {
       pausePlayback();
@@ -471,7 +440,22 @@ export default function Player({
     }
   };
 
-  const handleStop = () => {
+  const handleNoteClick = ({ note, duration }) => {
+    playNote(note, duration);
+  };
+
+  const handleScrubStart = () => {
+    pausePlayback();
+  };
+
+  const handleScrub = (beat) => {
+    setCurrentBeat(beat);
+    const clamped = Math.max(0, Math.min(durationBeats, beat));
+    cursorBeatsRef.current = clamped;
+    setCurrentBeat(clamped);
+  };
+
+  const handleRestart = () => {
     stopPlayback();
   };
 
@@ -480,10 +464,11 @@ export default function Player({
 
     if (isPlaying) {
       const now = Tone.now();
-      const secondsPerBeat = 60 / (bpmRef.current || 120);
+      const secondsPerBeatOld = 60 / bpmRef.current;
       const beatsSinceLastChange =
-        (now - startToneTimeRef.current) / secondsPerBeat;
+        (now - startToneTimeRef.current) / secondsPerBeatOld;
 
+      // Advance startBeat so the perceived current beat at `now` stays the same
       startBeatRef.current = startBeatRef.current + beatsSinceLastChange;
       startToneTimeRef.current = now;
     }
@@ -492,61 +477,146 @@ export default function Player({
     bpmRef.current = next;
 
     Tone.getTransport().bpm.value = next;
-    onBpmChange?.(next);
+  };
+
+  const handleNoteWidthChange = (value) => {
+    setNoteWidth(value);
+  };
+
+  const resetTimeoutRef = useRef(null);
+  const handleSelectSong = (newSong) => {
+    setSong(newSong);
+
+    bpmRef.current = newSong.bpm;
+    setBpm(newSong.bpm);
+
+    clearTimeout(resetTimeoutRef.current);
+    if (song?.id === newSong?.id) {
+      return;
+    }
+
+    pausePlayback();
+
+    resetTimeoutRef.current = setTimeout(() => {
+      stopPlayback();
+      setCurrentBeat(0);
+    }, FADE_MS);
   };
 
   return (
-    <div className="text-main">
-      <h2>Player</h2>
-      <div>{song ? song.title : "Select a song"}</div>
-      <div className="text-sm">
-        Recorder samples ({activeFluteDynamic}):{" "}
-        {recorderReady ? "loaded" : "loading"}
+    <div className="w-full text-main pb-8">
+      <div className="flex items-center gap-2">
+        <Directory onSelect={handleSelectSong} />
+        <span>{song ? song.title : "Select a song"}</span>
       </div>
-      <div className="text-sm">
-        Piano samples ({activePianoVersion}):{" "}
-        {pianoReady ? "loaded" : "loading"}
-      </div>
+      <div className="w-full flex justify-between">
+        <div className="max-w-100 grow text-base">
+          <div className="mt-2 flex items-center gap-2">
+            <label title="bpm">BPM</label>
+            <div className="flex-1 mx-4">
+              <DuoSlideBar
+                min={30}
+                max={240}
+                step={1}
+                value={bpm}
+                onChange={(v) => handleBpmChange(v)}
+                thumbColors={{
+                  background: "bg-note-half",
+                  border: "border-note-half-dark",
+                  text: "text-main",
+                }}
+                barColor="bg-note-full"
+              />
+            </div>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <label title="note width">Note Width</label>
+            <div className="flex-1 mx-4">
+              <DuoSlideBar
+                min={40}
+                max={200}
+                step={1}
+                value={noteWidth}
+                onChange={(v) => handleNoteWidthChange(v)}
+                thumbColors={{
+                  background: "bg-note-half",
+                  border: "border-note-half-dark",
+                  text: "text-main",
+                }}
+                barColor="bg-note-full"
+              />
+            </div>
+          </div>
+        </div>
 
-      <div className="mt-2 flex items-center gap-2">
-        <label htmlFor="bpm" className="text-sm">
-          BPM
-        </label>
-        <input
-          id="bpm"
-          type="range"
-          min="30"
-          max="240"
-          value={bpm}
-          onChange={(event) => handleBpmChange(event.target.value)}
-        />
-        <input
-          type="number"
-          min="30"
-          max="240"
-          value={bpm}
-          onChange={(event) => handleBpmChange(event.target.value)}
-          className="w-16"
-        />
-      </div>
-      <div className="flex gap-2 items-center">
-        <button type="button" onClick={handlePlayPause} disabled={!song}>
-          {isPlaying ? "Pause" : "Play"}
-        </button>
-        <button type="button" onClick={handleStop} disabled={!song}>
-          Stop
-        </button>
-
-        <label className="flex items-center gap-1 text-sm ml-4">
-          <input
-            type="checkbox"
-            checked={repeat}
-            onChange={(e) => setRepeat(e.target.checked)}
+        <div className="flex gap-2 items-center *:w-18 *:h-8">
+          <DuoToggleButton
+            value={isPlaying}
+            onToggle={() => startPlayback()}
+            offToggle={() => pausePlayback()}
+            onColors={{
+              background: "bg-note-full",
+              shadowBackground: "bg-note-full-dark",
+              border: "border-note-full-dark",
+              text: "text-main",
+            }}
+            offColors={{
+              background: "bg-note-half",
+              shadowBackground: "bg-note-half-dark",
+              border: "border-note-half-dark",
+              text: "text-main",
+            }}
+            disabled={!song}
+          >
+            {isPlaying ? "Pause" : "Play"}
+          </DuoToggleButton>
+          <DuoButton
+            text="text-main"
+            background="bg-note-half"
+            shadowBackground="bg-note-half-dark"
+            border="border-note-half-dark"
+            onClick={handleRestart}
+            disabled={!song}
+          >
+            Restart
+          </DuoButton>
+          <DuoToggleButton
+            onColors={{
+              background: "bg-note-full",
+              shadowBackground: "bg-note-full-dark",
+              border: "border-note-full-dark",
+              text: "text-main",
+            }}
+            offColors={{
+              background: "bg-note-half",
+              shadowBackground: "bg-note-half-dark",
+              border: "border-note-half-dark",
+              text: "text-main",
+            }}
+            initial={repeat}
+            onToggle={() => setRepeat(true)}
+            offToggle={() => setRepeat(false)}
             aria-label="Repeat song"
-          />
-          Repeat
-        </label>
+          >
+            Repeat
+          </DuoToggleButton>
+        </div>
       </div>
+      <Visualizer
+        song={song}
+        currentBeat={currentBeat}
+        durationBeats={durationBeats}
+        isPlaying={isPlaying}
+        bpm={bpm}
+        noteWidth={noteWidth}
+        playBarPosition={playBarPosition}
+        onScrubStart={handleScrubStart}
+        onScrub={handleScrub}
+        onNoteClick={handleNoteClick}
+        onPlayPause={handlePlayPause}
+        onPlayBarPositionChange={setPlayBarPosition}
+        fingeringSystem={fingeringSystem}
+      />
     </div>
   );
 }

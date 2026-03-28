@@ -1,79 +1,174 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import DuoButton from "./DuoButton";
+import DuoToggleButton from "./DuoToggleButton";
 
 export default function Directory({ onSelect }) {
-  const [songs, setSongs] = useState([]);
-  const [status, setStatus] = useState("loading");
+  const [open, setOpen] = useState(false);
+  const [songs, setSongs] = useState(null); // null = not yet fetched, [] = fetched empty
+  const [status, setStatus] = useState("idle"); // idle | loading | ready | error
   const [loadingId, setLoadingId] = useState(null);
   const [songCache, setSongCache] = useState({});
+  const buttonRef = useRef(null);
+  const panelRef = useRef(null);
 
+  // Fetch index on first open (lazy)
   useEffect(() => {
-    let isMounted = true;
-
-    async function loadIndex() {
+    let mounted = true;
+    async function fetchIndex() {
+      setStatus("loading");
       try {
-        const response = await fetch("/songs/index.json");
-        if (!response.ok) throw new Error("Failed to load song index");
-        const data = await response.json();
-        if (isMounted) {
-          setSongs(Array.isArray(data) ? data : []);
-          setStatus("ready");
-        }
-      } catch (error) {
-        if (isMounted) {
-          setStatus("error");
-          console.error(error);
-        }
+        const res = await fetch("/songs/index.json");
+        if (!res.ok) throw new Error("Failed to load song index");
+        const data = await res.json();
+        if (!mounted) return;
+        setSongs(Array.isArray(data) ? data : []);
+        setStatus("ready");
+      } catch (err) {
+        if (!mounted) return;
+        console.error(err);
+        setSongs([]);
+        setStatus("error");
       }
     }
 
-    loadIndex();
+    if (open && songs === null) {
+      fetchIndex();
+    }
+
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, []);
+  }, [open, songs]);
+
+  // Click outside to close panel
+  useEffect(() => {
+    function onDocPointer(e) {
+      if (!open) return;
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", onDocPointer);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("pointerdown", onDocPointer);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
 
   const handleSelect = async (meta) => {
-    // If we've already fetched this song, use the cached version immediately
+    if (loadingId !== null) return;
     if (songCache[meta.id]) {
       onSelect?.(songCache[meta.id]);
+      setOpen(false);
       return;
     }
 
     setLoadingId(meta.id);
     try {
-      const response = await fetch(`/songs/${meta.file}`);
-      if (!response.ok) throw new Error(`Failed to load song: ${meta.file}`);
-      const song = await response.json();
-      // Cache the fetched song so future selections are instant
+      const res = await fetch(`/songs/${meta.file}`);
+      if (!res.ok) throw new Error(`Failed to load song ${meta.file}`);
+      const song = await res.json();
       setSongCache((prev) => ({ ...prev, [meta.id]: song }));
       onSelect?.(song);
-    } catch (error) {
-      console.error(error);
+      setOpen(false);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoadingId(null);
     }
   };
 
-  if (status === "loading") return <div>Loading songs...</div>;
-  if (status === "error") return <div>Failed to load songs.</div>;
-
   return (
-    <div className="text-main">
-      <h2>Song Directory</h2>
-      <ul>
-        {songs.map((song) => (
-          <li key={song.id}>
+    <div className="relative block">
+      <DuoToggleButton
+        className="w-10"
+        onColors={{
+          background: "bg-note-full",
+          shadowBackground: "bg-note-full-dark",
+          border: "border-note-full-dark",
+          text: "text-main",
+        }}
+        offColors={{
+          background: "bg-note-half",
+          shadowBackground: "bg-note-half-dark",
+          border: "border-note-half-dark",
+          text: "text-main",
+        }}
+        onToggle={() => setOpen(true)}
+        offToggle={() => setOpen(false)}
+        value={open}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-5 h-5 fill-main"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M1 5C1 3.34315 2.34315 2 4 2H8.43845C9.81505 2 11.015 2.93689 11.3489 4.27239L11.7808 6H13.5H20C21.6569 6 23 7.34315 23 9V19C23 20.6569 21.6569 22 20 22H4C2.34315 22 1 20.6569 1 19V10V9V5ZM3 9V10V19C3 19.5523 3.44772 20 4 20H20C20.5523 20 21 19.5523 21 19V9C21 8.44772 20.5523 8 20 8H13.5H11.7808H4C3.44772 8 3 8.44772 3 9ZM9.71922 6H4C3.64936 6 3.31278 6.06015 3 6.17071V5C3 4.44772 3.44772 4 4 4H8.43845C8.89732 4 9.2973 4.3123 9.40859 4.75746L9.71922 6Z"
+          />
+        </svg>
+      </DuoToggleButton>
+
+      {open && (
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-label="Song directory"
+          className="absolute left-0 mt-2 w-80 max-h-80 overflow-auto bg-white text-dark border border-note-half-dark rounded-lg shadow-lg p-3 z-50"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <strong>Song Directory</strong>
             <button
               type="button"
-              onClick={() => handleSelect(song)}
-              disabled={loadingId !== null}
+              onClick={() => setOpen(false)}
+              aria-label="Close"
+              className="text-sm px-2 py-1 rounded hover:bg-gray-100"
             >
-              {song.title} — {song.bpm} BPM
-              {loadingId === song.id ? " (loading...)" : ""}
+              Close
             </button>
-          </li>
-        ))}
-      </ul>
+          </div>
+
+          {status === "loading" && <div>Loading songs...</div>}
+          {status === "error" && <div>Failed to load songs.</div>}
+          {status === "ready" && Array.isArray(songs) && songs.length === 0 && (
+            <div>No songs available.</div>
+          )}
+
+          {Array.isArray(songs) && songs.length > 0 && (
+            <ul className="space-y-1">
+              {songs.map((song) => (
+                <li key={song.id} className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => handleSelect(song)}
+                    disabled={loadingId !== null}
+                    className="text-left w-full pr-2 py-1 rounded hover:bg-gray-50"
+                  >
+                    <div className="font-medium">{song.title}</div>
+                    <div className="text-xs text-gray-500">{song.bpm} BPM</div>
+                  </button>
+                  <div className="w-20 text-right text-xs">
+                    {loadingId === song.id ? "loading..." : ""}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }

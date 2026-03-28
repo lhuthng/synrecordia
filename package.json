@@ -11,11 +11,13 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "clsx": "^2.1.1",
     "motion": "^12.38.0",
     "pixi-filters": "^6.1.5",
     "pixi.js": "^8.17.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
     "tone": "^15.1.22"
   },
