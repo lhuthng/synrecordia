@@ -5,6 +5,7 @@ import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
 import Directory from "./Directory";
 import Visualizer, { FADE_MS } from "./Visualizer";
+import InstrumentController from "./instruments/InstrumentController";
 
 const computeSongEndBeat = (songData) => {
   if (!songData || !Array.isArray(songData.tracks)) {
@@ -24,8 +25,6 @@ const computeSongEndBeat = (songData) => {
 export default function Player({ fluteDynamic, pianoVersion }) {
   const [song, setSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [recorderReady, setRecorderReady] = useState(false);
-  const [pianoReady, setPianoReady] = useState(false);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
   const [noteWidth, setNoteWidth] = useState(70);
   const [repeat, setRepeat] = useState(false);
@@ -35,18 +34,8 @@ export default function Player({ fluteDynamic, pianoVersion }) {
   const [fingeringSystem, setFingeringSystem] = useState("recorder");
 
   const durationBeats = computeSongEndBeat(song);
-  const activeFluteDynamic = fluteDynamic ?? "mezzo-forte";
-  const activePianoVersion = pianoVersion ?? "v8";
-  const recorderSynthRef = useRef(null);
-  const recorderFilterRef = useRef(null);
-  const recorderVibratoRef = useRef(null);
-  const recorderSamplerRef = useRef(null);
-  const recorderSamplerGainRef = useRef(null);
-  const recorderReverbRef = useRef(null);
-  const pianoSamplerRef = useRef(null);
-  const pianoSamplerGainRef = useRef(null);
-  const pianoReverbRef = useRef(null);
-  const pianoSynthRef = useRef(null);
+
+  const samplersRef = useRef({});
 
   const rafIdRef = useRef(null);
   const startToneTimeRef = useRef(0);
@@ -63,20 +52,6 @@ export default function Player({ fluteDynamic, pianoVersion }) {
   // We update `bpmRef.current` immediately when BPM changes so time->beat
   // conversions remain continuous.
   const bpmRef = useRef(bpm);
-
-  const parseFluteSampleNote = (filename) => {
-    const match = filename.match(/^flute_([A-G])(s?)(\d+)_/);
-    if (!match) return null;
-    const [, letter, sharp, octave] = match;
-    return `${letter}${sharp ? "#" : ""}${octave}`;
-  };
-
-  const parsePianoSampleNote = (filename) => {
-    const match = filename.match(/^([A-G])([s#]?)(\d+)v/);
-    if (!match) return null;
-    const [, letter, sharp, octave] = match;
-    return `${letter}${sharp === "s" || sharp === "#" ? "#" : ""}${octave}`;
-  };
 
   const noteNameToMidi = (name) => {
     const match = name.match(/^([A-G])(#?)(-?\d+)$/);
@@ -130,7 +105,7 @@ export default function Player({ fluteDynamic, pianoVersion }) {
 
   const playNote = async (noteName, durationBeats) => {
     await Tone.start();
-    const sampler = recorderSamplerRef.current;
+    const sampler = samplersRef.current[0];
     if (!sampler?.loaded) return;
     const secondsPerBeat = 60 / (bpm || 120);
     const durationSeconds = Math.max(durationBeats * secondsPerBeat, 0.1);
@@ -146,182 +121,24 @@ export default function Player({ fluteDynamic, pianoVersion }) {
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    recorderFilterRef.current = new Tone.Filter({
-      type: "lowpass",
-      frequency: 1400,
-      Q: 1,
-    }).toDestination();
-
-    recorderVibratoRef.current = new Tone.Vibrato(5, 0.2);
-
-    recorderSynthRef.current = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.02, decay: 0.1, sustain: 0.7, release: 1.5 },
-    });
-
-    recorderSynthRef.current.connect(recorderVibratoRef.current);
-    recorderVibratoRef.current.connect(recorderFilterRef.current);
-
-    pianoSynthRef.current = new Tone.PolySynth(Tone.FMSynth, {
-      harmonicity: 1.5,
-      modulationIndex: 8,
-      oscillator: { type: "sine" },
-      modulation: { type: "square" },
-      envelope: { attack: 0.005, decay: 1.2, sustain: 0.1, release: 1.5 },
-      modulationEnvelope: {
-        attack: 0.01,
-        decay: 0.5,
-        sustain: 0.2,
-        release: 0.8,
-      },
-    }).toDestination();
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
       }
-      recorderVibratoRef.current?.dispose();
-      recorderFilterRef.current?.dispose();
-      recorderSamplerGainRef.current?.dispose();
-      recorderReverbRef.current?.dispose();
-      recorderSamplerRef.current?.dispose();
-      pianoSamplerGainRef.current?.dispose();
-      pianoReverbRef.current?.dispose();
-      pianoSamplerRef.current?.dispose();
-      recorderSynthRef.current?.dispose();
-      pianoSynthRef.current?.dispose();
-      recorderVibratoRef.current = null;
-      recorderFilterRef.current = null;
-      recorderSamplerGainRef.current = null;
-      recorderReverbRef.current = null;
-      recorderSamplerRef.current = null;
-      pianoSamplerGainRef.current = null;
-      pianoReverbRef.current = null;
-      pianoSamplerRef.current = null;
-      recorderSynthRef.current = null;
-      pianoSynthRef.current = null;
     };
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
+  const registerSampler = (slot, sampler) => {
+    if (samplersRef.current[slot] != undefined) return;
+    samplersRef.current[slot] = sampler;
+  };
 
-    const loadFluteSampler = async () => {
-      setRecorderReady(false);
-      recorderSamplerRef.current?.dispose();
-      recorderSamplerGainRef.current?.dispose();
-      recorderReverbRef.current?.dispose();
-      recorderSamplerRef.current = null;
-      recorderSamplerGainRef.current = null;
-      recorderReverbRef.current = null;
-
-      try {
-        const response = await fetch(
-          `/samples/flute/${activeFluteDynamic}/index.json`,
-        );
-        if (!response.ok) return;
-
-        const files = await response.json();
-        const urls = {};
-
-        files.forEach((file) => {
-          const note = parseFluteSampleNote(file);
-          if (note) {
-            urls[note] = file;
-          }
-        });
-
-        if (Object.keys(urls).length === 0) return;
-
-        recorderSamplerRef.current = new Tone.Sampler({
-          urls,
-          baseUrl: `/samples/flute/${activeFluteDynamic}/`,
-          onload: () => {
-            if (isMounted) setRecorderReady(true);
-          },
-        });
-
-        recorderSamplerGainRef.current = new Tone.Gain(4);
-        recorderReverbRef.current = new Tone.Reverb({
-          decay: 5,
-          preDelay: 0.01,
-          wet: 0.15,
-        });
-        recorderSamplerRef.current.connect(recorderSamplerGainRef.current);
-        recorderSamplerGainRef.current.connect(recorderReverbRef.current);
-        recorderReverbRef.current.connect(recorderVibratoRef.current);
-      } catch (error) {
-        console.error("Failed to load flute samples:", error);
-      }
-    };
-
-    loadFluteSampler();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [activeFluteDynamic]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadPianoSampler = async () => {
-      setPianoReady(false);
-      pianoSamplerGainRef.current?.dispose();
-      pianoReverbRef.current?.dispose();
-      pianoSamplerRef.current?.dispose();
-      pianoSamplerGainRef.current = null;
-      pianoReverbRef.current = null;
-      pianoSamplerRef.current = null;
-
-      try {
-        const response = await fetch(
-          `/samples/piano/${activePianoVersion}/index.json`,
-        );
-        if (!response.ok) return;
-
-        const files = await response.json();
-        const urls = {};
-
-        files.forEach((file) => {
-          const note = parsePianoSampleNote(file);
-          if (note) {
-            urls[note] = file;
-          }
-        });
-
-        if (Object.keys(urls).length === 0) return;
-
-        pianoSamplerRef.current = new Tone.Sampler({
-          urls,
-          baseUrl: `/samples/piano/${activePianoVersion}/`,
-          onload: () => {
-            if (isMounted) setPianoReady(true);
-          },
-        });
-
-        pianoSamplerGainRef.current = new Tone.Gain(0.25);
-        pianoReverbRef.current = new Tone.Reverb({
-          decay: 5,
-          preDelay: 0.02,
-          wet: 0.15,
-        });
-        pianoSamplerRef.current.connect(pianoSamplerGainRef.current);
-        pianoSamplerGainRef.current.connect(pianoReverbRef.current);
-        pianoReverbRef.current.toDestination();
-      } catch (error) {
-        console.error("Failed to load piano samples:", error);
-      }
-    };
-
-    loadPianoSampler();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [activePianoVersion]);
+  const deregisterSampler = (slot, onCallback) => {
+    delete samplersRef.current[slot];
+    onCallback?.();
+  };
 
   const startPlayback = async () => {
     if (!song) return;
@@ -329,23 +146,15 @@ export default function Player({ fluteDynamic, pianoVersion }) {
     await Tone.start();
     await Tone.loaded();
 
-    const recorderSampler = recorderSamplerRef.current;
-    const pianoSampler = pianoSamplerRef.current;
-
-    if (!recorderSampler?.loaded || !pianoSampler?.loaded) {
-      return;
-    }
-
     const pianoDelaySeconds = 0.08;
     const getSecondsPerBeat = () => 60 / bpmRef.current;
     const pianoDelayBeats = pianoDelaySeconds / getSecondsPerBeat();
 
     const startBeat = Math.max(0, cursorBeatsRef.current);
     const tracks = Array.isArray(song.tracks) ? song.tracks : [];
-    const trackStates = tracks.map((track) => {
-      const synth =
-        track.instrument === "recorder" ? recorderSampler : pianoSampler;
-      const delayBeats = track.instrument === "recorder" ? 0 : pianoDelayBeats;
+    const trackStates = tracks.map((track, index) => {
+      const synth = samplersRef.current[index];
+      const delayBeats = track.instrument === "piano" ? pianoDelayBeats : 0;
 
       const actions = (Array.isArray(track.actions) ? track.actions : [])
         .filter((action) => action.type === "note")
@@ -617,6 +426,17 @@ export default function Player({ fluteDynamic, pianoVersion }) {
         onPlayBarPositionChange={setPlayBarPosition}
         fingeringSystem={fingeringSystem}
       />
+      <div>
+        {song?.tracks?.map((track, index) => (
+          <InstrumentController
+            key={`${index}-${track.instrument}`}
+            slot={index}
+            name={track.instrument}
+            register={registerSampler}
+            deregister={deregisterSampler}
+          />
+        ))}
+      </div>
     </div>
   );
 }

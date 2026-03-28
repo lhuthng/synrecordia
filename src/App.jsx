@@ -2,6 +2,7 @@ import { useState } from "react";
 import InstrumentControls from "./components/InstrumentControls";
 import Player from "./components/Player";
 import Header from "./components/Header";
+import InstrumentController from "./components/instruments/InstrumentController";
 
 function App() {
   const [fluteDynamic, setFluteDynamic] = useState("mezzo-forte");

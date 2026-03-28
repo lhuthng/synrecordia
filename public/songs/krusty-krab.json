@@ -1467,11 +1467,6 @@
           "velocity": 63
         }
       ]
-    },
-    {
-      "id": "piano",
-      "instrument": "piano",
-      "actions": []
     }
   ]
 }
