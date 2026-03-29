@@ -1,24 +1,12 @@
-import { useState } from "react";
-import InstrumentControls from "./components/InstrumentControls";
 import Player from "./components/Player";
 import Header from "./components/Header";
-import InstrumentController from "./components/instruments/InstrumentController";
 
 function App() {
-  const [fluteDynamic, setFluteDynamic] = useState("mezzo-forte");
-  const [pianoVersion, setPianoVersion] = useState("v8");
-
   return (
     <div className="w-full min-h-screen bg-dim font-iosevka">
       <Header />
       <div className="w-cap min-h-screen bg-dark px-4 shadow-md">
-        <Player fluteDynamic={fluteDynamic} pianoVersion={pianoVersion} />
-        <InstrumentControls
-          fluteDynamic={fluteDynamic}
-          pianoVersion={pianoVersion}
-          onFluteChange={setFluteDynamic}
-          onPianoChange={setPianoVersion}
-        />
+        <Player />
         {/* Add fingering system select here */}
         {/* <div className="text-main">
           <label htmlFor="fingering-system">Fingering System</label>

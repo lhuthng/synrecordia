@@ -5,7 +5,7 @@ import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
 import Directory from "./Directory";
 import Visualizer, { FADE_MS } from "./Visualizer";
-import InstrumentController from "./instruments/InstrumentController";
+import InstrumentManager from "./instruments/InstrumentManager";
 
 const computeSongEndBeat = (songData) => {
   if (!songData || !Array.isArray(songData.tracks)) {
@@ -22,7 +22,10 @@ const computeSongEndBeat = (songData) => {
   }, 0);
 };
 
-export default function Player({ fluteDynamic, pianoVersion }) {
+const getFingeringSystems = () => ["recorder", "simple"];
+const getFingeringStyles = () => ["german", "baroque"];
+
+export default function Player() {
   const [song, setSong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
@@ -30,13 +33,14 @@ export default function Player({ fluteDynamic, pianoVersion }) {
   const [repeat, setRepeat] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
+  const [selectedTrack, setSelectedTrack] = useState(null);
+  const [controllerNode, setControllerNode] = useState(null);
 
   const [fingeringSystem, setFingeringSystem] = useState("recorder");
 
   const durationBeats = computeSongEndBeat(song);
 
   const samplersRef = useRef({});
-
   const rafIdRef = useRef(null);
   const startToneTimeRef = useRef(0);
   const startBeatRef = useRef(0);
@@ -131,7 +135,6 @@ export default function Player({ fluteDynamic, pianoVersion }) {
   }, []);
 
   const registerSampler = (slot, sampler) => {
-    if (samplersRef.current[slot] != undefined) return;
     samplersRef.current[slot] = sampler;
   };
 
@@ -312,8 +315,16 @@ export default function Player({ fluteDynamic, pianoVersion }) {
     }, FADE_MS);
   };
 
+  const handleToggleChanged = (slot, value) => {
+    if (slot === selectedTrack) {
+      if (!value) setSelectedTrack(null);
+    } else if (value) {
+      setSelectedTrack(slot);
+    }
+  };
+
   return (
-    <div className="w-full text-main pb-8">
+    <div className="w-full text-main space-y-2">
       <div className="flex items-center gap-2">
         <Directory onSelect={handleSelectSong} />
         <span>{song ? song.title : "Select a song"}</span>
@@ -426,17 +437,27 @@ export default function Player({ fluteDynamic, pianoVersion }) {
         onPlayBarPositionChange={setPlayBarPosition}
         fingeringSystem={fingeringSystem}
       />
-      <div>
+      <div className="flex gap-2">
         {song?.tracks?.map((track, index) => (
-          <InstrumentController
+          <InstrumentManager
+            controllerNode={controllerNode}
             key={`${index}-${track.instrument}`}
             slot={index}
             name={track.instrument}
             register={registerSampler}
             deregister={deregisterSampler}
+            toggle={index === selectedTrack}
+            onToggleChanged={handleToggleChanged}
+            callbacks={{
+              pausePlayback,
+              getFingeringSystems,
+              getFingeringStyles,
+              setFingeringSystem,
+            }}
           />
         ))}
       </div>
+      <div ref={(node) => setControllerNode(node)}></div>
     </div>
   );
 }

@@ -1,30 +1,43 @@
-import PianoSampler from "../packedSamplers/piano";
-import RecorderSampler from "../packedSamplers/recorder";
-
 export default class PackedSampler {
-  constructor() {
-    if (new.target === PackedSampler) {
-      throw new Error("PackedSampler is abstract and cannot be instantiated.");
-    }
-    this.sampler = null;
+  constructor(addition) {
+    this.name = addition.name;
+    this.alternatives = addition.alternatives.versions;
+    this.version = addition.version;
+  }
+
+  async fetchSampler() {
+    const baseUrl = `/samples/${this.name}/${this.version}/`;
+    const urlsResponse = await fetch(`${baseUrl}index.json`);
+
+    if (!urlsResponse.ok) return;
+
+    return {
+      urls: await urlsResponse.json(),
+      baseUrl,
+    };
   }
 
   getSampler() {
     return this.sampler;
   }
 
+  getVersion() {
+    return this.version;
+  }
+
+  async setVersion(version) {
+    this.version = version;
+  }
+
+  getAlternatives() {
+    return this.alternatives;
+  }
+
   dispose() {
     throw new Error("Method 'dispose()' must be implemented.");
   }
-}
 
-export function createPackedSampler(name, urls, baseUrl, callback) {
-  switch (name) {
-    case "recorder":
-      return new RecorderSampler(urls, baseUrl, callback);
-    case "piano":
-      return new PianoSampler(urls, baseUrl, callback);
-    default:
-      return new RecorderSampler(urls, baseUrl, callback);
+  getPresentation() {
+    throw new Error("Method 'getPresentation()' must be implemented.");
   }
 }

@@ -127,15 +127,15 @@ export default function Directory({ onSelect }) {
           ref={panelRef}
           role="dialog"
           aria-label="Song directory"
-          className="absolute left-0 mt-2 w-80 max-h-80 overflow-auto bg-white text-dark border border-note-half-dark rounded-lg shadow-lg p-3 z-50"
+          className="absolute left-0 mt-2 w-80 max-h-80 overflow-auto border-2 border-note-half bg-dark rounded-2xl shadow-lg p-3 z-50"
         >
           <div className="flex items-center justify-between mb-2">
-            <strong>Song Directory</strong>
+            <strong className="select-none text-main">Song Directory</strong>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close"
-              className="text-sm px-2 py-1 rounded hover:bg-gray-100"
+              className="text-sm px-2 py-1 rounded-lg text-main bg-card-bg hover:bg-note-half-dark border-2 border-note-half-dark cursor-pointer"
             >
               Close
             </button>
@@ -155,10 +155,10 @@ export default function Directory({ onSelect }) {
                     type="button"
                     onClick={() => handleSelect(song)}
                     disabled={loadingId !== null}
-                    className="text-left w-full pr-2 py-1 rounded hover:bg-gray-50"
+                    className="text-left w-full px-2 py-1 rounded-xl bg-main hover:bg-note-half text-card-bg hover:text-main border-2 border-note-half-dark cursor-pointer"
                   >
                     <div className="font-medium">{song.title}</div>
-                    <div className="text-xs text-gray-500">{song.bpm} BPM</div>
+                    <div className="text-xs">{song.bpm} BPM</div>
                   </button>
                   <div className="w-20 text-right text-xs">
                     {loadingId === song.id ? "loading..." : ""}

@@ -15,9 +15,22 @@
   /* Interface Elements */
   --color-playhead: #ffffff;
   --color-lane-guide: #1e293b;
+  --color-note-sub: #1e293b;
+  --color-note-sub: #1e293b;
+  --color-accent-pink: #fb7185;
+
+  --color-ui-surface: #0f172a;
+
+  --color-card-bg: #1e293b;
+
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+
+  --color-active-border: #a78bfa;
 
   /* Typography */
   --color-main: #e2e8f0;
+  --color-sub: #f8fafc;
   --color-dim: #64748b;
 
   --font-iosevka: "Iosevka Charon", monospace;

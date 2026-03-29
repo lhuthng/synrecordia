@@ -1,30 +1,47 @@
 import { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
-import { createPackedSampler } from "../../libs/packedSampler";
+import { createPackedSampler } from "../../libs/packedSampler/factory";
+import { useCallback } from "react";
 
-export default function InstrumentController({
+export default function InstrumentManager({
   slot,
   name,
+  toggle,
+  callbacks,
+  onToggleChanged,
   register,
   deregister,
   onReady,
+  controllerNode,
 }) {
   const [ready, setReady] = useState(false);
+  const [samplerInstance, setSamplerInstance] = useState(null);
 
   const packedSamplerRef = useRef(null);
   const registeredSamplerRef = useRef(null);
+
+  const [Presentation, setPresentation] = useState(null);
+
+  const handleSamplerChanged = () => {
+    const sampler = packedSamplerRef.current.getSampler();
+    register?.(slot, sampler);
+  };
 
   useEffect(() => {
     let isCancelled = false;
 
     const cleanupCurrentInstance = () => {
+      setPresentation(null);
+
       if (registeredSamplerRef.current && typeof deregister === "function") {
-        deregister(registeredSamplerRef.current, () => {
+        deregister(slot, () => {
           packedSamplerRef.current?.dispose();
+          registeredSamplerRef.current?.dispose();
         });
       } else {
         // Direct cleanup if no deregister callback
         packedSamplerRef.current?.dispose();
+        registeredSamplerRef.current?.dispose();
       }
 
       packedSamplerRef.current = null;
@@ -53,7 +70,7 @@ export default function InstrumentController({
         const urls = await urlsResponse.json();
         if (Object.keys(urls).length === 0) return;
 
-        packedSamplerRef.current = createPackedSampler(
+        const packedSampler = createPackedSampler(
           name,
           urls,
           baseUrl,
@@ -63,11 +80,20 @@ export default function InstrumentController({
               onReady?.();
             }
           },
+          {
+            name,
+            alternatives: data,
+            version,
+          },
         );
+
+        packedSamplerRef.current = packedSampler;
 
         const sampler = packedSamplerRef.current.getSampler();
         register?.(slot, sampler);
         registeredSamplerRef.current = sampler;
+        setPresentation(() => packedSamplerRef.current.getPresentation());
+        setSamplerInstance(packedSampler);
       } catch (e) {
         console.error("Failed to load sampler:", e);
       }
@@ -83,8 +109,20 @@ export default function InstrumentController({
   }, [slot, name]);
 
   return (
-    <div>
-      {name}-{slot}
-    </div>
+    <>
+      {Presentation ? (
+        <Presentation
+          packedSampler={samplerInstance}
+          label={slot}
+          toggle={toggle}
+          onToggleChanged={(value) => onToggleChanged(slot, value)}
+          callbacks={callbacks}
+          onSamplerChanged={handleSamplerChanged}
+          controllerNode={controllerNode}
+        />
+      ) : (
+        <div></div>
+      )}
+    </>
   );
 }

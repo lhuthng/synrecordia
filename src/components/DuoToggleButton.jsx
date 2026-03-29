@@ -8,6 +8,7 @@ export default function DuoToggleButton({
   offToggle,
   disabled,
   className,
+  padding = "px-2 py-1.5",
   onColors = {
     background: "bg-green-500",
     shadowBackground: "bg-green-700",
@@ -68,7 +69,8 @@ export default function DuoToggleButton({
         disabled={disabled}
         aria-pressed={isOn}
         className={cn(
-          "relative z-10 block w-full px-2 text-center py-1.5 rounded-2xl border-2 font-bold uppercase text-nowrap transition-all duration-75 cursor-pointer",
+          "relative z-10 block w-full text-center rounded-2xl border-2 font-bold uppercase text-nowrap transition-all duration-75 cursor-pointer overflow-hidden",
+          padding,
           background,
           text,
           border,
