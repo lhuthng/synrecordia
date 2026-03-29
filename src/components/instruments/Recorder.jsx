@@ -19,11 +19,8 @@ export default function Recorder({
   const [version, setVersion] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
 
-  const [fingeringSystem, setFingeringSystem] = useState("simple");
-  const [fingeringSystems, setFingeringSystems] = useState([
-    "simple",
-    "recorder",
-  ]);
+  const [fingeringSystem, setFingeringSystem] = useState("recorder");
+  const [fingeringSystems, _] = useState(["simple", "recorder"]);
 
   useEffect(() => {
     setVolume(recorderSampler.getVolume());
@@ -79,9 +76,9 @@ export default function Recorder({
       {toggle &&
         controllerNode &&
         createPortal(
-          <div className="flex flex-col gap-2 max-w-100">
+          <div className="flex flex-col gap-2 max-w-100 [&>*>label]:w-10">
             <div className="flex items-center gap-2">
-              <label title="volume">Volume</label>
+              <label title="volume">Volume:</label>
               <div className="flex-1 mx-4">
                 <DuoSlideBar
                   min={0}
@@ -99,7 +96,7 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label title="version">Version</label>
+              <label title="variant">Variant:</label>
               <div className="flex-1 mx-4">
                 <select
                   value={version}
@@ -114,7 +111,7 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label title="version">Fingering System</label>
+              <label title="version">System:</label>
               <div className="flex-1 mx-4">
                 <select
                   value={fingeringSystem}

@@ -1,9 +1,27 @@
 [
   {
+    "id": "river-flows-in-you",
+    "title": "River Flows In You",
+    "bpm": 65,
+    "file": "river-flows-in-you.json"
+  },
+  {
+    "id": "super-mario-main-theme",
+    "title": "Super Mario Main Theme",
+    "bpm": 180,
+    "file": "super-mario-main-theme.json"
+  },
+  {
     "id": "song-of-storm",
     "title": "Song Of Storm",
     "bpm": 180,
     "file": "song-of-storm.json"
+  },
+  {
+    "id": "fallen-down",
+    "title": "Fallen Down",
+    "bpm": 120,
+    "file": "fallen-down.json"
   },
   {
     "id": "yuna",

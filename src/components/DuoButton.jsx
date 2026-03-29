@@ -6,6 +6,7 @@ export default function DuoButton({
   onClick,
   disabled,
   className,
+  padding = "px-2 py-1.5",
   background = "bg-green-500",
   shadowBackground = "bg-green-700",
   border = "border-green-700",
@@ -26,8 +27,9 @@ export default function DuoButton({
         onClick={onClick}
         disabled={disabled}
         className={cn(
-          "relative z-10 block w-full px-2 text-center py-1.5 rounded-2xl border-2 font-bold uppercase text-nowrap transition-all duration-75 cursor-pointer",
+          "relative z-10 block w-full text-center rounded-2xl border-2 font-bold uppercase text-nowrap transition-all duration-75 cursor-pointer",
 
+          padding,
           background,
           text,
           border,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Directory({ onSelect }) {
   const [open, setOpen] = useState(false);
@@ -122,53 +122,66 @@ export default function Directory({ onSelect }) {
         </svg>
       </DuoToggleButton>
 
-      {open && (
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-label="Song directory"
-          className="absolute left-0 mt-2 w-80 max-h-80 overflow-auto border-2 border-note-half bg-dark rounded-2xl shadow-lg p-3 z-50"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <strong className="select-none text-main">Song Directory</strong>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close"
-              className="text-sm px-2 py-1 rounded-lg text-main bg-card-bg hover:bg-note-half-dark border-2 border-note-half-dark cursor-pointer"
-            >
-              Close
-            </button>
-          </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-label="Song directory"
+            className="absolute left-0 mt-2 w-80 overflow-auto border-2 border-note-half bg-dark rounded-2xl shadow-lg p-3 z-50"
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            transition={{
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+            }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <strong className="select-none text-main">Song Directory</strong>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="text-sm px-2 py-1 rounded-lg text-main bg-card-bg hover:bg-note-half-dark border-2 border-note-half-dark cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
 
-          {status === "loading" && <div>Loading songs...</div>}
-          {status === "error" && <div>Failed to load songs.</div>}
-          {status === "ready" && Array.isArray(songs) && songs.length === 0 && (
-            <div>No songs available.</div>
-          )}
+            {status === "loading" && <div>Loading songs...</div>}
+            {status === "error" && <div>Failed to load songs.</div>}
+            {status === "ready" &&
+              Array.isArray(songs) &&
+              songs.length === 0 && <div>No songs available.</div>}
 
-          {Array.isArray(songs) && songs.length > 0 && (
-            <ul className="space-y-1">
-              {songs.map((song) => (
-                <li key={song.id} className="flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => handleSelect(song)}
-                    disabled={loadingId !== null}
-                    className="text-left w-full px-2 py-1 rounded-xl bg-main hover:bg-note-half text-card-bg hover:text-main border-2 border-note-half-dark cursor-pointer"
+            {Array.isArray(songs) && songs.length > 0 && (
+              <ul className="space-y-1">
+                {songs.map((song) => (
+                  <li
+                    key={song.id}
+                    className="flex items-center justify-between"
                   >
-                    <div className="font-medium">{song.title}</div>
-                    <div className="text-xs">{song.bpm} BPM</div>
-                  </button>
-                  <div className="w-20 text-right text-xs">
-                    {loadingId === song.id ? "loading..." : ""}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(song)}
+                      disabled={loadingId !== null}
+                      className="text-left w-full px-2 py-1 rounded-xl bg-main hover:bg-note-half text-card-bg hover:text-main border-2 border-note-half-dark cursor-pointer"
+                    >
+                      <div className="font-medium">{song.title}</div>
+                      <div className="text-xs">{song.bpm} BPM</div>
+                    </button>
+                    <div className="w-20 text-right text-xs">
+                      {loadingId === song.id ? "loading..." : ""}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

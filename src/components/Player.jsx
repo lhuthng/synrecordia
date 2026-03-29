@@ -332,8 +332,8 @@ export default function Player() {
       <div className="w-full flex justify-between">
         <div className="max-w-100 grow text-base">
           <div className="mt-2 flex items-center gap-2">
-            <label title="bpm">BPM</label>
-            <div className="flex-1 mx-4">
+            <label title="bpm">BPM:</label>
+            <div className="flex-1 ml-4 mr-8">
               <DuoSlideBar
                 min={30}
                 max={240}
@@ -348,9 +348,21 @@ export default function Player() {
                 barColor="bg-note-full"
               />
             </div>
+            <DuoButton
+              className="text-sm -translate-x-4"
+              text="text-main"
+              background="bg-note-half"
+              padding="px-1.5"
+              shadowBackground="bg-note-half-dark"
+              border="border-note-half-dark"
+              onClick={() => song && handleBpmChange(song.bpm)}
+              disabled={!song}
+            >
+              Reset
+            </DuoButton>
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <label title="note width">Note Width</label>
+            <label title="note width">Note Width:</label>
             <div className="flex-1 mx-4">
               <DuoSlideBar
                 min={40}
@@ -457,7 +469,15 @@ export default function Player() {
           />
         ))}
       </div>
-      <div ref={(node) => setControllerNode(node)}></div>
+      <div className="space-y-2">
+        <h2>
+          Instrument Controller:
+          {selectedTrack === null && (
+            <span> Select the instrument above to edit</span>
+          )}
+        </h2>
+        <div className="pl-2" ref={(node) => setControllerNode(node)}></div>
+      </div>
     </div>
   );
 }

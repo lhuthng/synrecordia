@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import * as Tone from "tone";
 import { createPackedSampler } from "../../libs/packedSampler/factory";
-import { useCallback } from "react";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function InstrumentManager({
   slot,
@@ -109,20 +108,31 @@ export default function InstrumentManager({
   }, [slot, name]);
 
   return (
-    <>
+    <AnimatePresence>
       {Presentation ? (
-        <Presentation
-          packedSampler={samplerInstance}
-          label={slot}
-          toggle={toggle}
-          onToggleChanged={(value) => onToggleChanged(slot, value)}
-          callbacks={callbacks}
-          onSamplerChanged={handleSamplerChanged}
-          controllerNode={controllerNode}
-        />
+        <motion.div
+          initial={{ opacity: 0, x: -5 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -5 }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          }}
+        >
+          <Presentation
+            packedSampler={samplerInstance}
+            label={slot + 1}
+            toggle={toggle}
+            onToggleChanged={(value) => onToggleChanged(slot, value)}
+            callbacks={callbacks}
+            onSamplerChanged={handleSamplerChanged}
+            controllerNode={controllerNode}
+          />
+        </motion.div>
       ) : (
-        <div></div>
+        <></>
       )}
-    </>
+    </AnimatePresence>
   );
 }

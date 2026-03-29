@@ -254,9 +254,12 @@ export default function Visualizer({
   const holesLayerRef = useRef(null);
   const notesLayerRef = useRef(null);
   const playBarLayerRef = useRef(null);
+  // PIXI scroll layer ref
+  const scrollLayerRef = useRef(null);
   const buildGuidesRef = useRef(null);
   const buildPlayBarRef = useRef(null);
   const buildSpritesRef = useRef(null);
+  const buildZonesRef = useRef(null);
   const mouseDownRef = useRef(false);
   const isDraggingRef = useRef(false);
   const playBarHoveredRef = useRef(false);
@@ -364,9 +367,19 @@ export default function Visualizer({
   }, [displaySong, fingeringSystem, baroque]);
 
   useEffect(() => {
+    // snap scroll to new pixel scale
     pixelsPerBeatRef.current = noteWidth;
     buildGuidesRef.current?.();
+    buildZonesRef.current?.();
     buildSpritesRef.current?.();
+
+    const scrollLayer = scrollLayerRef.current;
+    if (scrollLayer) {
+      const bx = barXRef.current || 0;
+      const beat = displayBeatRef.current || 0;
+      const pxPerBeat = pixelsPerBeatRef.current || 1;
+      scrollLayer.x = bx + beat * pxPerBeat;
+    }
   }, [noteWidth]);
 
   useEffect(() => {
@@ -430,6 +443,8 @@ export default function Visualizer({
       ptGfx.destroy();
 
       const scrollLayer = new PIXI.Container();
+      // store scroll layer ref
+      scrollLayerRef.current = scrollLayer;
       const zonesLayer = new PIXI.Container();
       const leftZone = new PIXI.Graphics();
       const rightZone = new PIXI.Graphics();
@@ -697,6 +712,7 @@ export default function Visualizer({
       buildGuidesRef.current = buildGuides;
       buildPlayBarRef.current = buildPlayBar;
       buildSpritesRef.current = buildSprites;
+      buildZonesRef.current = buildZones;
       buildGuides();
       buildZones();
       buildPlayBar();
@@ -842,6 +858,10 @@ export default function Visualizer({
       cancelled = true;
       if (ticker && tick) {
         ticker.remove(tick);
+      }
+      // clear scrollLayerRef
+      if (scrollLayerRef.current) {
+        scrollLayerRef.current = null;
       }
       appRef.current?.destroy(true, { children: true });
       appRef.current = null;
