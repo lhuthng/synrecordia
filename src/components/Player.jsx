@@ -27,6 +27,7 @@ const getFingeringStyles = () => ["german", "baroque"];
 
 export default function Player() {
   const [song, setSong] = useState(null);
+  const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
   const [noteWidth, setNoteWidth] = useState(70);
@@ -261,7 +262,6 @@ export default function Player() {
   };
 
   const handleScrub = (beat) => {
-    setCurrentBeat(beat);
     const clamped = Math.max(0, Math.min(durationBeats, beat));
     cursorBeatsRef.current = clamped;
     setCurrentBeat(clamped);
@@ -297,8 +297,8 @@ export default function Player() {
 
   const resetTimeoutRef = useRef(null);
   const handleSelectSong = (newSong) => {
+    setIsReady(false);
     setSong(newSong);
-
     bpmRef.current = newSong.bpm;
     setBpm(newSong.bpm);
 
@@ -312,6 +312,7 @@ export default function Player() {
     resetTimeoutRef.current = setTimeout(() => {
       stopPlayback();
       setCurrentBeat(0);
+      setIsReady(true);
     }, FADE_MS);
   };
 
@@ -324,12 +325,12 @@ export default function Player() {
   };
 
   return (
-    <div className="w-full text-main space-y-2">
+    <div className="w-full min-h-[calc(100dvh-8rem)] text-main space-y-2">
       <div className="flex items-center gap-2">
         <Directory onSelect={handleSelectSong} />
         <span>{song ? song.title : "Select a song"}</span>
       </div>
-      <div className="w-full flex justify-between">
+      <div className="w-full flex justify-between gap-2 not-md:flex-col">
         <div className="max-w-100 grow text-base">
           <div className="mt-2 flex items-center gap-2">
             <label title="bpm">BPM:</label>
@@ -356,7 +357,7 @@ export default function Player() {
               shadowBackground="bg-note-half-dark"
               border="border-note-half-dark"
               onClick={() => song && handleBpmChange(song.bpm)}
-              disabled={!song}
+              disabled={!song || !isReady}
             >
               Reset
             </DuoButton>
@@ -381,7 +382,7 @@ export default function Player() {
           </div>
         </div>
 
-        <div className="flex gap-2 items-center *:w-18 *:h-8">
+        <div className="flex gap-2 not-md:ml-auto items-center *:w-18 *:h-8">
           <DuoToggleButton
             value={isPlaying}
             onToggle={() => startPlayback()}
@@ -398,7 +399,7 @@ export default function Player() {
               border: "border-note-half-dark",
               text: "text-main",
             }}
-            disabled={!song}
+            disabled={!song || !isReady}
           >
             {isPlaying ? "Pause" : "Play"}
           </DuoToggleButton>
@@ -408,7 +409,7 @@ export default function Player() {
             shadowBackground="bg-note-half-dark"
             border="border-note-half-dark"
             onClick={handleRestart}
-            disabled={!song}
+            disabled={!song || !isReady}
           >
             Restart
           </DuoButton>
@@ -473,7 +474,7 @@ export default function Player() {
         <h2>
           Instrument Controller:
           {selectedTrack === null && (
-            <span> Select the instrument above to edit</span>
+            <span> Select an instrument above to edit</span>
           )}
         </h2>
         <div className="pl-2" ref={(node) => setControllerNode(node)}></div>

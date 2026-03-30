@@ -9,17 +9,14 @@ export default function DuoSlideBar({
   step = 1,
   disabled = false,
   className,
-  // thumb color group: { background, border, text }
   thumbColors = {
     background: "bg-note-half",
     border: "border-note-half-dark",
     text: "text-main",
   },
-  // bar fill color (applies to the left/filled portion)
   barColor = "bg-note-full",
 }) {
   const trackRef = useRef(null);
-  const thumbRef = useRef(null);
   const draggingRef = useRef(false);
   const [internalValue, setInternalValue] = useState(Number(value));
 
@@ -36,6 +33,7 @@ export default function DuoSlideBar({
   function computeValueFromClientX(clientX) {
     const rect = trackRef.current?.getBoundingClientRect();
     if (!rect) return min;
+
     const t = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
     const raw = min + t * (max - min);
     const steps = Math.round((raw - min) / step);
@@ -46,14 +44,25 @@ export default function DuoSlideBar({
     if (disabled) return;
     e.preventDefault();
     draggingRef.current = true;
-    document.addEventListener("pointermove", handlePointerMove);
+
+    // Capture pointer so we continue receiving events even when finger moves outside the button
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    e.currentTarget.setPointerCapture(e.pointerId);
+
+    document.addEventListener("pointermove", handlePointerMove, {
+      passive: false,
+    });
     document.addEventListener("pointerup", handlePointerUp, { once: true });
+
     const next = computeValueFromClientX(e.clientX);
     onChange?.(next);
   }
 
   function handlePointerMove(e) {
     if (!draggingRef.current) return;
+    e.preventDefault();
     const next = computeValueFromClientX(e.clientX);
     onChange?.(next);
   }
@@ -73,13 +82,15 @@ export default function DuoSlideBar({
     if (disabled) return;
     const key = e.key;
     let next = Number(internalValue || 0);
-    if (key === "ArrowLeft" || key === "ArrowDown") next = next - step;
-    else if (key === "ArrowRight" || key === "ArrowUp") next = next + step;
-    else if (key === "PageDown") next = next - step * 10;
-    else if (key === "PageUp") next = next + step * 10;
+
+    if (key === "ArrowLeft" || key === "ArrowDown") next -= step;
+    else if (key === "ArrowRight" || key === "ArrowUp") next += step;
+    else if (key === "PageDown") next -= step * 10;
+    else if (key === "PageUp") next += step * 10;
     else if (key === "Home") next = min;
     else if (key === "End") next = max;
     else return;
+
     e.preventDefault();
     next = Math.min(
       max,
@@ -93,7 +104,9 @@ export default function DuoSlideBar({
       <div
         ref={trackRef}
         onClick={handleTrackClick}
-        className={cn("relative h-3 rounded-full select-none", "bg-gray-200")}
+        className={cn(
+          "relative h-3 rounded-full select-none touch-none bg-gray-200 active:bg-gray-300",
+        )}
         aria-hidden
       >
         <div
@@ -102,7 +115,6 @@ export default function DuoSlideBar({
         />
 
         <button
-          ref={thumbRef}
           type="button"
           role="slider"
           aria-valuemin={min}
@@ -113,11 +125,12 @@ export default function DuoSlideBar({
           onKeyDown={handleKeyDown}
           disabled={disabled}
           className={cn(
-            "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center justify-center w-10 h-8 rounded-2xl border-b-4 font-bold text-sm cursor-pointer focus:outline-main",
+            "absolute top-1/2 -translate-y-3/5 -translate-x-1/2 flex items-center justify-center",
+            "w-10 h-7 rounded-2xl border-b-4 font-bold text-sm cursor-pointer",
+            "focus:outline-main shadow-md active:scale-110 transition-transform",
             thumbColors.background,
             thumbColors.text,
             thumbColors.border,
-            "shadow-md",
             disabled && "opacity-50 cursor-not-allowed",
           )}
           style={{ left: `${pct}%` }}

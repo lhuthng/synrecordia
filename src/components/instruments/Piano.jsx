@@ -84,6 +84,7 @@ export default function Piano({
                 <select
                   value={version}
                   onChange={(e) => handleVersionChanged(e.target.value)}
+                  className="rounded-xl px-1 focus:outline-main"
                 >
                   {alternatives.map((option) => (
                     <option key={option} value={option}>

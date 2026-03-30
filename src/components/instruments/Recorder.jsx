@@ -99,6 +99,7 @@ export default function Recorder({
               <label title="variant">Variant:</label>
               <div className="flex-1 mx-4">
                 <select
+                  className="rounded-xl px-1 focus:outline-main"
                   value={version}
                   onChange={(e) => handleVersionChanged(e.target.value)}
                 >
@@ -114,6 +115,7 @@ export default function Recorder({
               <label title="version">System:</label>
               <div className="flex-1 mx-4">
                 <select
+                  className="rounded-xl px-1 focus:outline-main"
                   value={fingeringSystem}
                   onChange={(e) => handleFingeringSystemChanged(e.target.value)}
                 >

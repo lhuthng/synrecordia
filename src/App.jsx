@@ -1,5 +1,6 @@
 import Player from "./components/Player";
 import Header from "./components/Header";
+import Details from "./components/Details";
 
 function App() {
   return (
@@ -7,6 +8,7 @@ function App() {
       <Header />
       <div className="w-cap min-h-screen bg-dark px-4 shadow-md">
         <Player />
+        <Details />
       </div>
     </div>
   );
