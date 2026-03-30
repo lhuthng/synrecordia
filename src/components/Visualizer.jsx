@@ -220,6 +220,7 @@ export default function Visualizer({
   noteWidth = 70,
   height = DEFAULT_HEIGHT,
   playBarPosition = 0.95,
+  onReady,
   onScrubStart,
   onScrub,
   onNoteClick,
@@ -301,10 +302,10 @@ export default function Visualizer({
   useEffect(() => {
     if (song?.id && displaySong?.id === song.id) return;
 
-    const t = setTimeout(
-      () => setSongState({ displaySong: song, isReady: false }),
-      FADE_MS,
-    );
+    const t = setTimeout(() => {
+      setSongState({ displaySong: song, isReady: false });
+      onReady?.();
+    }, FADE_MS);
     return () => clearTimeout(t);
   }, [song, displaySong?.id]);
 
@@ -992,9 +993,9 @@ export default function Visualizer({
 
   return (
     <div
-      className="bg-dark overflow-x-hidden"
+      className="relative w-full bg-dark overflow-x-hidden"
       ref={wrapperRef}
-      style={{ width: "100%", height }}
+      style={{ height }}
     >
       <div
         className="focus:outline-none"
@@ -1019,6 +1020,16 @@ export default function Visualizer({
         onPointerCancel={handleDragEnd}
         onPointerLeave={handleDragEnd}
       />
+      <div className="absolute p-4 bottom-0 select-none pointer-events-none">
+        <p>
+          <span className="inline-block rounded-sm w-4 h-4 bg-note-full"></span>{" "}
+          Full
+        </p>
+        <p>
+          <span className="inline-block rounded-sm w-4 h-4 bg-note-half"></span>{" "}
+          Half
+        </p>
+      </div>
     </div>
   );
 }

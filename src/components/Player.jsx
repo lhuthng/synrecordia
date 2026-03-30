@@ -27,7 +27,8 @@ const getFingeringStyles = () => ["german", "baroque"];
 
 export default function Player() {
   const [song, setSong] = useState(null);
-  const [isReady, setIsReady] = useState(false);
+  const [isVisualReady, setIsVisualReady] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
   const [noteWidth, setNoteWidth] = useState(70);
@@ -134,6 +135,9 @@ export default function Player() {
       }
     };
   }, []);
+
+  const isReady =
+    isVisualReady && isAudioReady.length > 0 && isAudioReady.every(Boolean);
 
   const registerSampler = (slot, sampler) => {
     samplersRef.current[slot] = sampler;
@@ -297,7 +301,8 @@ export default function Player() {
 
   const resetTimeoutRef = useRef(null);
   const handleSelectSong = (newSong) => {
-    setIsReady(false);
+    setIsVisualReady(false);
+    setIsAudioReady(Array(newSong.tracks.length).fill(false));
     setSong(newSong);
     bpmRef.current = newSong.bpm;
     setBpm(newSong.bpm);
@@ -312,7 +317,6 @@ export default function Player() {
     resetTimeoutRef.current = setTimeout(() => {
       stopPlayback();
       setCurrentBeat(0);
-      setIsReady(true);
     }, FADE_MS);
   };
 
@@ -322,6 +326,14 @@ export default function Player() {
     } else if (value) {
       setSelectedTrack(slot);
     }
+  };
+
+  const handleAudioReady = (slot, value) => {
+    setIsAudioReady((prev) => {
+      const next = [...prev];
+      next[slot] = value;
+      return next;
+    });
   };
 
   return (
@@ -357,7 +369,7 @@ export default function Player() {
               shadowBackground="bg-note-half-dark"
               border="border-note-half-dark"
               onClick={() => song && handleBpmChange(song.bpm)}
-              disabled={!song || !isReady}
+              disabled={!isReady}
             >
               Reset
             </DuoButton>
@@ -399,7 +411,7 @@ export default function Player() {
               border: "border-note-half-dark",
               text: "text-main",
             }}
-            disabled={!song || !isReady}
+            disabled={!isReady}
           >
             {isPlaying ? "Pause" : "Play"}
           </DuoToggleButton>
@@ -409,7 +421,7 @@ export default function Player() {
             shadowBackground="bg-note-half-dark"
             border="border-note-half-dark"
             onClick={handleRestart}
-            disabled={!song || !isReady}
+            disabled={!isReady}
           >
             Restart
           </DuoButton>
@@ -443,6 +455,7 @@ export default function Player() {
         bpm={bpm}
         noteWidth={noteWidth}
         playBarPosition={playBarPosition}
+        onReady={() => setIsVisualReady(true)}
         onScrubStart={handleScrubStart}
         onScrub={handleScrub}
         onNoteClick={handleNoteClick}
@@ -461,6 +474,10 @@ export default function Player() {
             deregister={deregisterSampler}
             toggle={index === selectedTrack}
             onToggleChanged={handleToggleChanged}
+            initialReady={isAudioReady[index]}
+            handleAudioReady={(value) => handleAudioReady(index, value)}
+            onReady={() => handleAudioReady(index, true)}
+            offReady={() => handleAudioReady(index, false)}
             callbacks={{
               pausePlayback,
               getFingeringSystems,

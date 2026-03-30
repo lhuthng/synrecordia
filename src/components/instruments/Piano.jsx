@@ -10,6 +10,7 @@ export default function Piano({
   label,
   toggle,
   callbacks,
+  offReady,
   onToggleChanged,
   controllerNode,
   onSamplerChanged,
@@ -33,6 +34,7 @@ export default function Piano({
   );
   const handleVersionChanged = useCallback(
     (value) => {
+      offReady?.();
       callbacks?.pausePlayback?.();
       setVersion(value);
       pianoSampler.setVersion(value, onSamplerChanged);

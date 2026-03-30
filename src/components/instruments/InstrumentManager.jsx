@@ -10,12 +10,13 @@ export default function InstrumentManager({
   onToggleChanged,
   register,
   deregister,
-  onReady,
+  initialReady,
+  handleAudioReady,
   controllerNode,
 }) {
-  const [ready, setReady] = useState(false);
   const [samplerInstance, setSamplerInstance] = useState(null);
 
+  const isReadyRef = useRef(false);
   const packedSamplerRef = useRef(null);
   const registeredSamplerRef = useRef(null);
 
@@ -24,11 +25,15 @@ export default function InstrumentManager({
   const handleSamplerChanged = () => {
     const sampler = packedSamplerRef.current.getSampler();
     register?.(slot, sampler);
+    handleAudioReady?.(true);
+    isReadyRef.current = true;
   };
 
   useEffect(() => {
     let isCancelled = false;
 
+    handleAudioReady?.(false);
+    isReadyRef.current = false;
     const cleanupCurrentInstance = () => {
       setPresentation(null);
 
@@ -50,8 +55,6 @@ export default function InstrumentManager({
     const loadSampler = async () => {
       // Always clean up previous instance first (fixes double register in StrictMode)
       cleanupCurrentInstance();
-
-      setReady(false);
 
       try {
         const response = await fetch(`/samples/${name}/index.json`);
@@ -75,8 +78,8 @@ export default function InstrumentManager({
           baseUrl,
           () => {
             if (!isCancelled) {
-              setReady(true);
-              onReady?.();
+              handleAudioReady?.(true);
+              isReadyRef.current = true;
             }
           },
           {
@@ -107,6 +110,15 @@ export default function InstrumentManager({
     };
   }, [slot, name]);
 
+  useEffect(() => {
+    if (
+      initialReady !== isReadyRef.current &&
+      registeredSamplerRef.current !== null
+    ) {
+      handleAudioReady?.(isReadyRef.current);
+    }
+  }, [initialReady, handleAudioReady]);
+
   return (
     <AnimatePresence>
       {Presentation ? (
@@ -124,6 +136,10 @@ export default function InstrumentManager({
             packedSampler={samplerInstance}
             label={slot + 1}
             toggle={toggle}
+            offReady={() => {
+              handleAudioReady?.(false);
+              isReadyRef.current = false;
+            }}
             onToggleChanged={(value) => onToggleChanged(slot, value)}
             callbacks={callbacks}
             onSamplerChanged={handleSamplerChanged}

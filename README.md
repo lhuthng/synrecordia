@@ -2,6 +2,10 @@
 
 [![Progress](https://img.shields.io/badge/Progress-60%25-yellow?style=flat-square)](#)
 
+<p align="center">
+  You can view the SynRecordia live <a href="https://synrecordia.netlify.app/">demo</a> online.
+</p>
+
 SynRecordia is an interactive browser-based piano/recorder visualizer and sampler built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png)Synthesia](https://synthesiagame.com/), it focuses on presenting clear note visualizations alongside sampled audio playback so you can see fingering while listening. The app runs fully in the browser using Tone.js for audio and PIXI.js for visuals.
 
 
