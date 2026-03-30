@@ -84,14 +84,14 @@ export default function Details() {
             engineering and creative tools. SynRecordia is a personal challenge
             for me to learn more about web audio and high-performance rendering.
             This project is fully open-source, and I welcome any
-            contributions—especially from those with more experience in audio
+            contributions-especially from those with more experience in audio
             engineering or canvas optimization.
           </p>
 
           <ul className="flex flex-wrap gap-4 pt-4 [&>li>a]:text-note-full [&>li>a]:underline [&>li>a]:font-medium">
             <li>
               <a
-                href="https://github.com/lhuthng/synrecordiaL"
+                href="https://github.com/lhuthng/synrecordia"
                 target="_blank"
                 rel="noreferrer"
               >
