@@ -1,3 +1,4 @@
+import Directory from "./Directory";
 import me from "../assets/me.svg";
 
 export default function Details() {
@@ -111,6 +112,81 @@ export default function Details() {
               </a>
             </li>
           </ul>
+
+          <h3 className="pt-6">FAQ</h3>
+          <div className="space-y-3">
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">1. How to open a song?</h4>
+              <div className="flex flex-wrap items-center mt-2 gap-2">
+                <p>
+                  Click the button on the top-left of the site, or open the
+                  directory here:
+                </p>
+                <Directory
+                  onSelected={() => {
+                    document.body.scrollTop = 0;
+                    document.documentElement.scrollTop = 0;
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">2. How to open my own song?</h4>
+              <p className="mt-2">
+                You can not, for now. I am working on parsing user-provided
+                songs (MIDI/audio), with MIDI parsing prioritized. Stay tuned.
+              </p>
+            </div>
+
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">3. Why is it so laggy?</h4>
+              <p className="mt-2">
+                I'm working on optimizations. For now the biggest cause is a
+                very narrow note width - try increasing the note width so fewer
+                notes are rendered on screen at once.
+              </p>
+            </div>
+
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">
+                4. How can I report a bug or request a feature?
+              </h4>
+              <p className="mt-2">
+                I welcome bug reports and feature requests. Open an issue on the
+                GitHub repo{" "}
+                <a
+                  className="underline text-note-full"
+                  href="https://github.com/lhuthng/synrecordia"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  https://github.com/lhuthng/synrecordia
+                </a>
+                , email{" "}
+                <a
+                  className="underline text-note-full"
+                  href="mailto:huuthang.l@outlook.com"
+                >
+                  huuthang.l@outlook.com
+                </a>
+                , or DM me on LinkedIn if you prefer. Please include your
+                browser/OS, steps to reproduce, and any console errors.
+              </p>
+            </div>
+
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">
+                5. Why am I missing some fingering patterns?
+              </h4>
+              <p className="mt-2">
+                Some notes have multiple fingering options. I’m working on tools
+                to pick or let you set the fingering directly (or choose an
+                algorithm that minimizes finger strain). This is a planned
+                improvement - stay tuned.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
     </div>

@@ -2,8 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DuoToggleButton from "./DuoToggleButton";
 import { motion as Motion, AnimatePresence } from "motion/react";
+import { cn } from "../libs/utils";
 
-export default function Directory() {
+export default function Directory({
+  className,
+  display = "block",
+  position = "left-0",
+  onSelected,
+}) {
   const [open, setOpen] = useState(false);
   const [songs, setSongs] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -72,7 +78,7 @@ export default function Directory() {
   };
 
   return (
-    <div className="relative block">
+    <div className={cn("relative", className, display)}>
       <DuoToggleButton
         className="w-10"
         onColors={{
@@ -111,7 +117,10 @@ export default function Directory() {
             ref={panelRef}
             role="dialog"
             aria-label="Song directory"
-            className="absolute left-0 mt-2 w-80 overflow-auto border-2 border-note-half bg-dark rounded-2xl shadow-lg p-3 z-50"
+            className={cn(
+              "absolute mt-2 w-80 overflow-auto border-2 border-note-half bg-dark rounded-2xl shadow-lg p-3 z-50",
+              position,
+            )}
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
@@ -148,7 +157,10 @@ export default function Directory() {
                   >
                     <button
                       type="button"
-                      onClick={() => handleSelect(song)}
+                      onClick={() => {
+                        handleSelect(song);
+                        onSelected?.();
+                      }}
                       className="text-left w-full px-2 py-1 rounded-xl bg-main hover:bg-note-half text-card-bg hover:text-main border-2 border-note-half-dark cursor-pointer"
                     >
                       <div className="font-medium">{song.title}</div>

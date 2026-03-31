@@ -36,6 +36,10 @@
   --font-iosevka: "Iosevka Charon", monospace;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 .full {
   @apply h-full w-full;
 }
