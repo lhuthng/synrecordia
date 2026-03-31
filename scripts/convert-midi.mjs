@@ -1,24 +1,48 @@
 #!/usr/bin/env node
+/**
+ * convert-midi.mjs
+ *
+ * Usage:
+ *   node scripts/convert-midi.mjs <input-path>
+ *
+ * Reads a MIDI file, converts to the project's song JSON format and writes:
+ *   ./public/songs/<basename>.json
+ * Then updates (or creates) ./public/songs/index.json to include the new song.
+ *
+ * Notes:
+ * - This script intentionally accepts only the input path. Outputs are written
+ *   under the project's `public/songs` directory relative to CWD.
+ * - It attempts to be robust when index.json doesn't exist or is invalid.
+ */
+
 import fs from "fs";
 import path from "path";
 
-const [, , inputArg, outputArg] = process.argv;
+const [, , inputArg] = process.argv;
 
-if (!inputArg || !outputArg) {
-  console.error(
-    "Usage: node scripts/convert-midi.mjs <input-path> <output-path>",
-  );
+if (!inputArg) {
+  console.error("Usage: node scripts/convert-midi.mjs <input-path>");
   process.exit(1);
 }
 
-const inputPath = path.resolve(inputArg);
-const outputPath = path.resolve(outputArg);
-const baseName = path.basename(outputArg, path.extname(outputArg));
+const inputPath = path.resolve(process.cwd(), inputArg);
+if (!fs.existsSync(inputPath)) {
+  console.error(`Input file not found: ${inputPath}`);
+  process.exit(2);
+}
+
+const baseName = path.basename(inputPath, path.extname(inputPath));
 const title = baseName
   .replace(/[-_]+/g, " ")
   .replace(/\b\w/g, (c) => c.toUpperCase());
 
-const buffer = fs.readFileSync(inputPath);
+let buffer;
+try {
+  buffer = fs.readFileSync(inputPath);
+} catch (err) {
+  console.error("Failed to read input file:", err.message || err);
+  process.exit(3);
+}
 
 function readString(buf, offset, length) {
   return buf.slice(offset, offset + length).toString("ascii");
@@ -85,7 +109,8 @@ function parseMidi(buf) {
   const division = readUint16(buf, offset);
   offset += 2;
 
-  offset += headerLength - 6;
+  // skip any extra header bytes
+  offset += Math.max(0, headerLength - 6);
 
   if (division & 0x8000) {
     throw new Error("SMPTE time division is not supported");
@@ -330,7 +355,14 @@ function splitTracks(parsed) {
 }
 
 // --- main conversion flow ---
-const parsed = parseMidi(buffer);
+let parsed;
+try {
+  parsed = parseMidi(buffer);
+} catch (err) {
+  console.error("Failed to parse MIDI file:", err.message || err);
+  process.exit(4);
+}
+
 const split = splitTracks(parsed);
 
 // build actions (no padding — keep action times unchanged)
@@ -383,6 +415,62 @@ const song = {
   ],
 };
 
-fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-fs.writeFileSync(outputPath, JSON.stringify(song, null, 2));
-console.log(`Wrote ${outputPath}`);
+// Write output file to public/songs/<baseName>.json under current working dir
+const publicSongsDir = path.resolve(process.cwd(), "public", "songs");
+const outputPath = path.join(publicSongsDir, `${baseName}.json`);
+
+try {
+  fs.mkdirSync(publicSongsDir, { recursive: true });
+  fs.writeFileSync(outputPath, JSON.stringify(song, null, 2));
+  console.log(`Wrote ${outputPath}`);
+} catch (err) {
+  console.error("Failed to write song JSON:", err.message || err);
+  process.exit(5);
+}
+
+// Update public/songs/index.json to include this song (create or update)
+const indexPath = path.join(publicSongsDir, "index.json");
+let index = [];
+try {
+  const raw = fs.readFileSync(indexPath, "utf8");
+  index = JSON.parse(raw);
+  if (!Array.isArray(index)) index = [];
+} catch (e) {
+  // file not found or invalid JSON — start with empty index
+  index = [];
+}
+
+// Build index entry
+const entry = {
+  id: baseName,
+  title,
+  bpm: parsed.bpm,
+  file: `${baseName}.json`,
+};
+
+// Update or append
+const existingIndex = index.findIndex((it) => it && it.id === baseName);
+if (existingIndex !== -1) {
+  index[existingIndex] = entry;
+} else {
+  index.push(entry);
+}
+
+// Sort index alphabetically by title (case-insensitive) for nicer listing
+index.sort((a, b) => {
+  const ta = (a.title || "").toLowerCase();
+  const tb = (b.title || "").toLowerCase();
+  if (ta < tb) return -1;
+  if (ta > tb) return 1;
+  return 0;
+});
+
+try {
+  fs.writeFileSync(indexPath, JSON.stringify(index, null, 2));
+  console.log(`Updated ${indexPath}`);
+} catch (err) {
+  console.error("Failed to update songs index:", err.message || err);
+  process.exit(6);
+}
+
+process.exit(0);

@@ -1,15 +1,21 @@
 [
   {
-    "id": "river-flows-in-you",
-    "title": "River Flows In You",
-    "bpm": 65,
-    "file": "river-flows-in-you.json"
-  },
-  {
     "id": "super-mario-main-theme",
     "title": "Super Mario Main Theme",
     "bpm": 180,
     "file": "super-mario-main-theme.json"
+  },
+  {
+    "id": "fallen-down-reprise",
+    "title": "Fallen Down (Reprise)",
+    "bpm": 110,
+    "file": "fallen-down-reprise.json"
+  },
+  {
+    "id": "Ode to Joy",
+    "title": "Ode To Joy",
+    "bpm": 140,
+    "file": "ode-to-joy.json"
   },
   {
     "id": "song-of-storm",
@@ -18,21 +24,9 @@
     "file": "song-of-storm.json"
   },
   {
-    "id": "fallen-down",
-    "title": "Fallen Down",
-    "bpm": 120,
-    "file": "fallen-down.json"
-  },
-  {
     "id": "yuna",
     "title": "Yuna",
     "bpm": 120,
     "file": "yuna.json"
-  },
-  {
-    "id": "krusty-krab",
-    "title": "Krusty Krab",
-    "bpm": 120,
-    "file": "krusty-krab.json"
   }
 ]

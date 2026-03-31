@@ -3,7 +3,7 @@ import * as Tone from "tone";
 import Recorder from "../../components/instruments/Recorder";
 
 const MAX_DB = 40;
-const DEFAULT_DB = 20;
+const DEFAULT_DB = 15;
 const MIN_DB = -20;
 
 export default class RecorderSampler extends PackedSampler {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPackedSampler } from "../../libs/packedSampler/factory";
-import { motion, AnimatePresence } from "motion/react";
+import { motion as Motion, AnimatePresence } from "motion/react";
 
 export default function InstrumentManager({
   slot,
@@ -122,7 +122,7 @@ export default function InstrumentManager({
   return (
     <AnimatePresence>
       {Presentation ? (
-        <motion.div
+        <Motion.div
           initial={{ opacity: 0, x: -5 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -5 }}
@@ -145,7 +145,7 @@ export default function InstrumentManager({
             onSamplerChanged={handleSamplerChanged}
             controllerNode={controllerNode}
           />
-        </motion.div>
+        </Motion.div>
       ) : (
         <></>
       )}

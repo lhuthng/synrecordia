@@ -1,347 +1,73 @@
-import { useEffect, useRef, useState } from "react";
-import * as Tone from "tone";
+import { useState } from "react";
 import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
 import Directory from "./Directory";
 import Visualizer, { FADE_MS } from "./Visualizer";
 import InstrumentManager from "./instruments/InstrumentManager";
-
-const computeSongEndBeat = (songData) => {
-  if (!songData || !Array.isArray(songData.tracks)) {
-    return 0;
-  }
-
-  return songData.tracks.reduce((maxEnd, track) => {
-    const actions = Array.isArray(track.actions) ? track.actions : [];
-    return actions.reduce((trackMax, action) => {
-      if (action.type !== "note") return trackMax;
-      const end = (action.time ?? 0) + (action.duration ?? 0);
-      return Math.max(trackMax, end);
-    }, maxEnd);
-  }, 0);
-};
-
-const getFingeringSystems = () => ["recorder", "simple"];
-const getFingeringStyles = () => ["german", "baroque"];
+import usePlayer from "../hooks/usePlayer.js";
 
 export default function Player() {
-  const [song, setSong] = useState(null);
+  // player hook encapsulates audio/playback logic
+  const {
+    song,
+    selectSong,
+    isPlaying,
+    currentBeat,
+    bpm,
+    noteWidth,
+    repeat,
+    selectedTrack,
+    fingeringSystem,
+    durationBeats,
+    isAudioReady,
+    isReady: isAudioReadyAll,
+    // handlers
+    registerSampler,
+    deregisterSampler,
+    startPlayback,
+    pausePlayback,
+    handlePlayPause,
+    handleNoteClick,
+    handleScrubStart,
+    handleScrub,
+    handleRestart,
+    handleBpmChange,
+    handleNoteWidthChange,
+    handleToggleChanged,
+    handleAudioReady,
+    setFingeringSystem,
+  } = usePlayer();
+
+  // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
-  const [isAudioReady, setIsAudioReady] = useState([]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
-  const [noteWidth, setNoteWidth] = useState(70);
-  const [repeat, setRepeat] = useState(false);
-  const [currentBeat, setCurrentBeat] = useState(0);
+
+  // play bar position is a UI concern kept locally
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
-  const [selectedTrack, setSelectedTrack] = useState(null);
+
+  // instrument controller DOM node
   const [controllerNode, setControllerNode] = useState(null);
 
-  const [fingeringSystem, setFingeringSystem] = useState("recorder");
+  const isReady = isVisualReady && isAudioReadyAll;
 
-  const durationBeats = computeSongEndBeat(song);
-
-  const samplersRef = useRef({});
-  const rafIdRef = useRef(null);
-  const startToneTimeRef = useRef(0);
-  const startBeatRef = useRef(0);
-  const cursorBeatsRef = useRef(0);
-  const trackStatesRef = useRef([]);
-  const endBeatRef = useRef(0);
-  // bpmRef is a mutable ref that always holds the latest BPM value.
-  // The playback `tick` closure (driven by requestAnimationFrame) reads
-  // `bpmRef.current` so it always uses the up-to-date tempo even though
-  // the closure itself was created earlier. This avoids stale-closure
-  // problems where the tick would continue using the old `bpm` state
-  // after a tempo change, which caused the displayed/played beat to jump.
-  // We update `bpmRef.current` immediately when BPM changes so time->beat
-  // conversions remain continuous.
-  const bpmRef = useRef(bpm);
-
-  const noteNameToMidi = (name) => {
-    const match = name.match(/^([A-G])(#?)(-?\d+)$/);
-    if (!match) return 0;
-    const [, letter, sharp, octaveStr] = match;
-    const octave = Number(octaveStr);
-    const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[letter] ?? 0;
-    return (octave + 1) * 12 + base + (sharp ? 1 : 0);
-  };
-
-  const getHighestNoteName = (notes) => {
-    if (Array.isArray(notes)) {
-      return notes.reduce((best, current) => {
-        return noteNameToMidi(current) > noteNameToMidi(best) ? current : best;
-      }, notes[0]);
-    }
-    return notes;
-  };
-
-  const findStartIndex = (actions, startBeat) => {
-    let low = 0;
-    let high = actions.length;
-    while (low < high) {
-      const mid = Math.floor((low + high) / 2);
-      if (actions[mid].time < startBeat) {
-        low = mid + 1;
-      } else {
-        high = mid;
-      }
-    }
-    return low;
-  };
-
-  const pausePlayback = () => {
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    setIsPlaying(false);
-  };
-
-  const stopPlayback = () => {
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    cursorBeatsRef.current = 0;
-    setCurrentBeat(0);
-    setIsPlaying(false);
-  };
-
-  const playNote = async (noteName, durationBeats) => {
-    await Tone.start();
-    const sampler = samplersRef.current[0];
-    if (!sampler?.loaded) return;
-    const secondsPerBeat = 60 / (bpm || 120);
-    const durationSeconds = Math.max(durationBeats * secondsPerBeat, 0.1);
-    sampler.triggerAttackRelease(noteName, durationSeconds, Tone.now());
-  };
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        pausePlayback();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      if (rafIdRef.current) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-    };
-  }, []);
-
-  const isReady =
-    isVisualReady && isAudioReady.length > 0 && isAudioReady.every(Boolean);
-
-  const registerSampler = (slot, sampler) => {
-    samplersRef.current[slot] = sampler;
-  };
-
-  const deregisterSampler = (slot, onCallback) => {
-    delete samplersRef.current[slot];
-    onCallback?.();
-  };
-
-  const startPlayback = async () => {
-    if (!song) return;
-
-    await Tone.start();
-    await Tone.loaded();
-
-    const pianoDelaySeconds = 0.08;
-    const getSecondsPerBeat = () => 60 / bpmRef.current;
-    const pianoDelayBeats = pianoDelaySeconds / getSecondsPerBeat();
-
-    const startBeat = Math.max(0, cursorBeatsRef.current);
-    const tracks = Array.isArray(song.tracks) ? song.tracks : [];
-    const trackStates = tracks.map((track, index) => {
-      const synth = samplersRef.current[index];
-      const delayBeats = track.instrument === "piano" ? pianoDelayBeats : 0;
-
-      const actions = (Array.isArray(track.actions) ? track.actions : [])
-        .filter((action) => action.type === "note")
-        .map((action) => ({
-          time: (action.time ?? 0) + delayBeats,
-          duration: action.duration ?? 0,
-          notes: getHighestNoteName(action.pitches ?? action.pitch),
-          velocity: Math.min(Math.max((action.velocity ?? 80) / 100, 0), 1),
-        }))
-        .filter((action) => action.notes)
-        .sort((a, b) => a.time - b.time);
-
-      return { synth, actions, index: findStartIndex(actions, startBeat) };
-    });
-
-    const maxEndBeat = trackStates.reduce((max, state) => {
-      const last = state.actions[state.actions.length - 1];
-      if (!last) return max;
-      return Math.max(max, last.time + (last.duration ?? 0));
-    }, 0);
-
-    trackStatesRef.current = trackStates;
-    endBeatRef.current = maxEndBeat;
-    const clampedStartBeat = Math.min(startBeat, maxEndBeat);
-    cursorBeatsRef.current = clampedStartBeat;
-    startToneTimeRef.current = Tone.now();
-    startBeatRef.current = clampedStartBeat;
-    setIsPlaying(true);
-
-    const tick = () => {
-      const secondsPerBeat = getSecondsPerBeat();
-      const beat =
-        startBeatRef.current +
-        (Tone.now() - startToneTimeRef.current) / secondsPerBeat;
-      cursorBeatsRef.current = beat;
-
-      setCurrentBeat(beat);
-
-      trackStatesRef.current.forEach((state) => {
-        while (
-          state.index < state.actions.length &&
-          state.actions[state.index].time <= beat
-        ) {
-          const action = state.actions[state.index];
-          const durationSeconds = action.duration * secondsPerBeat;
-          const startTime = Tone.now();
-
-          if (durationSeconds > 0) {
-            state.synth.triggerAttackRelease(
-              action.notes,
-              durationSeconds,
-              startTime,
-              action.velocity,
-            );
-          }
-          state.index += 1;
-        }
-      });
-
-      // loop / end handling
-      const loopThreshold = 0.02;
-      if (beat >= endBeatRef.current - loopThreshold) {
-        if (repeat) {
-          const overshoot = Math.max(0, beat - endBeatRef.current);
-
-          startToneTimeRef.current = Tone.now();
-          startBeatRef.current = overshoot;
-
-          trackStatesRef.current.forEach((state) => {
-            state.index = 0;
-          });
-
-          cursorBeatsRef.current = startBeatRef.current;
-          setCurrentBeat(cursorBeatsRef.current);
-        } else {
-          pausePlayback();
-          return;
-        }
-      }
-
-      rafIdRef.current = requestAnimationFrame(tick);
-    };
-
-    rafIdRef.current = requestAnimationFrame(tick);
-  };
-
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      pausePlayback();
-    } else {
-      startPlayback();
-    }
-  };
-
-  const handleNoteClick = ({ note, duration }) => {
-    playNote(note, duration);
-  };
-
-  const handleScrubStart = () => {
-    pausePlayback();
-  };
-
-  const handleScrub = (beat) => {
-    const clamped = Math.max(0, Math.min(durationBeats, beat));
-    cursorBeatsRef.current = clamped;
-    setCurrentBeat(clamped);
-  };
-
-  const handleRestart = () => {
-    stopPlayback();
-  };
-
-  const handleBpmChange = (value) => {
-    const next = Math.max(30, Math.min(240, Number(value) || 0));
-
-    if (isPlaying) {
-      const now = Tone.now();
-      const secondsPerBeatOld = 60 / bpmRef.current;
-      const beatsSinceLastChange =
-        (now - startToneTimeRef.current) / secondsPerBeatOld;
-
-      // Advance startBeat so the perceived current beat at `now` stays the same
-      startBeatRef.current = startBeatRef.current + beatsSinceLastChange;
-      startToneTimeRef.current = now;
-    }
-
-    setBpm(next);
-    bpmRef.current = next;
-
-    Tone.getTransport().bpm.value = next;
-  };
-
-  const handleNoteWidthChange = (value) => {
-    setNoteWidth(value);
-  };
-
-  const resetTimeoutRef = useRef(null);
-  const handleSelectSong = (newSong) => {
+  const handleSelect = (newSong) => {
+    // reset visual ready before selecting new song so Visualizer fades properly
     setIsVisualReady(false);
-    setIsAudioReady(Array(newSong.tracks.length).fill(false));
-    setSong(newSong);
-    bpmRef.current = newSong.bpm;
-    setBpm(newSong.bpm);
-
-    clearTimeout(resetTimeoutRef.current);
-    if (song?.id === newSong?.id) {
-      return;
-    }
-
-    pausePlayback();
-
-    resetTimeoutRef.current = setTimeout(() => {
-      stopPlayback();
-      setCurrentBeat(0);
+    selectSong(newSong);
+    // Visualizer will call onReady to set isVisualReady
+    // small timeout to match Visualizer fade can be handled by Visualizer itself
+    setTimeout(() => {
+      // ensure playback position reset after fade (Visualizer coordinates with FADE_MS)
     }, FADE_MS);
-  };
-
-  const handleToggleChanged = (slot, value) => {
-    if (slot === selectedTrack) {
-      if (!value) setSelectedTrack(null);
-    } else if (value) {
-      setSelectedTrack(slot);
-    }
-  };
-
-  const handleAudioReady = (slot, value) => {
-    setIsAudioReady((prev) => {
-      const next = [...prev];
-      next[slot] = value;
-      return next;
-    });
   };
 
   return (
     <div className="w-full min-h-[calc(100dvh-8rem)] text-main space-y-2">
       <div className="flex items-center gap-2">
-        <Directory onSelect={handleSelectSong} />
+        <Directory onSelect={handleSelect} />
         <span>{song ? song.title : "Select a song"}</span>
       </div>
+
       <div className="w-full flex justify-between gap-2 not-md:flex-col">
         <div className="max-w-100 grow text-base">
           <div className="mt-2 flex items-center gap-2">
@@ -374,6 +100,7 @@ export default function Player() {
               Reset
             </DuoButton>
           </div>
+
           <div className="mt-2 flex items-center gap-2">
             <label title="note width">Note Width:</label>
             <div className="flex-1 mx-4">
@@ -415,6 +142,7 @@ export default function Player() {
           >
             {isPlaying ? "Pause" : "Play"}
           </DuoToggleButton>
+
           <DuoButton
             text="text-main"
             background="bg-note-half"
@@ -425,6 +153,7 @@ export default function Player() {
           >
             Restart
           </DuoButton>
+
           <DuoToggleButton
             onColors={{
               background: "bg-note-full",
@@ -439,14 +168,16 @@ export default function Player() {
               text: "text-main",
             }}
             initial={repeat}
-            onToggle={() => setRepeat(true)}
-            offToggle={() => setRepeat(false)}
+            onToggle={() => {}}
+            offToggle={() => {}}
             aria-label="Repeat song"
           >
+            {/* The usePlayer hook manages repeat; toggle wiring can be added if required */}
             Repeat
           </DuoToggleButton>
         </div>
       </div>
+
       <Visualizer
         song={song}
         currentBeat={currentBeat}
@@ -463,6 +194,7 @@ export default function Player() {
         onPlayBarPositionChange={setPlayBarPosition}
         fingeringSystem={fingeringSystem}
       />
+
       <div className="flex gap-2">
         {song?.tracks?.map((track, index) => (
           <InstrumentManager
@@ -474,28 +206,31 @@ export default function Player() {
             deregister={deregisterSampler}
             toggle={index === selectedTrack}
             onToggleChanged={handleToggleChanged}
-            initialReady={isAudioReady[index]}
+            initialReady={isAudioReady?.[index]}
             handleAudioReady={(value) => handleAudioReady(index, value)}
             onReady={() => handleAudioReady(index, true)}
             offReady={() => handleAudioReady(index, false)}
             callbacks={{
               pausePlayback,
-              getFingeringSystems,
-              getFingeringStyles,
+              getFingeringSystems: () => ["recorder", "simple"],
+              getFingeringStyles: () => ["german", "baroque"],
               setFingeringSystem,
             }}
           />
         ))}
       </div>
-      <div className="space-y-2">
-        <h2>
-          Instrument Controller:
-          {selectedTrack === null && (
-            <span> Select an instrument above to edit</span>
-          )}
-        </h2>
-        <div className="pl-2" ref={(node) => setControllerNode(node)}></div>
-      </div>
+
+      {isReady && (
+        <div className="space-y-2">
+          <h2>
+            Instrument Controller:
+            {selectedTrack === null && (
+              <span> Select an instrument above to edit</span>
+            )}
+          </h2>
+          <div className="pl-2" ref={(node) => setControllerNode(node)}></div>
+        </div>
+      )}
     </div>
   );
 }

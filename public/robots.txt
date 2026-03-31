@@ -1,0 +1,17 @@
+# robots.txt for Synrecordia
+# Allow all well-behaved crawlers to index the site.
+# Replace the sitemap URL if you publish the sitemap at a different location.
+
+User-agent: *
+Allow: /
+
+# Preferred sitemap location (used by search engines)
+Sitemap: https://synrecordia.netlify.app/sitemap.xml
+
+# Optional hints (uncomment to enable)
+# Crawl-delay: 5
+
+# Notes:
+# - If you need to block specific paths, add lines like:
+#   Disallow: /private/
+# - Keep robots.txt at the site root: https://your-domain/robots.txt

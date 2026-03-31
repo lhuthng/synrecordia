@@ -1,16 +1,124 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Primary metadata -->
+    <title>Synrecordia — Interactive Recorder Visualizer & Player</title>
+    <meta
+      name="description"
+      content="Synrecordia is an interactive recorder visualizer and player. Browse songs, view fingering diagrams, and practice with sampled instruments using an animated playhead and scrub controls."
+    />
+    <meta
+      name="keywords"
+      content="recorder, music visualizer, fingering diagrams, music player, music education, WebAudio, Tone.js, Pixi.js"
+    />
+    <meta name="author" content="Synrecordia" />
+    <meta
+      name="robots"
+      content="index, follow, max-snippet:-1, max-image-preview:large"
+    />
+    <!-- Replace with your production canonical absolute URL -->
+    <link rel="canonical" href="https://synrecordia.netlify.app/" />
+
+    <!-- Icons & Web App Manifest -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="manifest" href="/site.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>synrecordia</title>
+
+    <!-- Mobile / theme -->
+    <meta name="theme-color" content="#060a0c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Synrecordia" />
+
+    <!-- Open Graph (Facebook, Slack, etc.) -->
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Synrecordia — Interactive Recorder Visualizer & Player"
+    />
+    <meta
+      property="og:description"
+      content="Browse songs, view recorder fingering diagrams, and practice with sampled instruments using an animated visual playhead."
+    />
+    <meta property="og:site_name" content="Synrecordia" />
+    <meta property="og:url" content="https://synrecordia.netlify.app/" />
+    <!-- Use a fully-qualified absolute URL to an image for best social previews -->
+    <meta
+      property="og:image"
+      content="https://synrecordia.netlify.app/og-image.jpg"
+    />
+    <meta property="og:image:alt" content="Synrecordia visualizer screenshot" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Synrecordia — Interactive Recorder Visualizer & Player"
+    />
+    <meta
+      name="twitter:description"
+      content="Explore recorder fingering visualizations and practice with sampled instruments using an animated playhead."
+    />
+    <meta
+      name="twitter:image"
+      content="https://synrecordia.netlify.app/og-image.jpg"
+    />
+
+    <!-- Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "url": "https://synrecordia.netlify.app/",
+            "name": "Synrecordia",
+            "description": "Interactive recorder visualizer and player for exploring fingering diagrams and practicing with sampled instruments.",
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://synrecordia.netlify.app/?q={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Synrecordia",
+            "operatingSystem": "Web",
+            "applicationCategory": "MusicApplication",
+            "url": "https://synrecordia.netlify.app/",
+            "description": "A web application that visualizes recorder fingering and provides sampled playback to help learners practice.",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            }
+          }
+        ]
+      }
+    </script>
+
+    <!-- Performance hints -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Optionally preload critical CSS or fonts:
+         <link rel="preload" href="/src/index.css" as="style"> -->
+
+    <!-- Optional: sitemap (replace if you provide one) -->
+    <link
+      rel="sitemap"
+      type="application/xml"
+      title="Sitemap"
+      href="/sitemap.xml"
+    />
   </head>
+
   <body class="bg-dark">
     <div id="root"></div>
+
+    <!-- Client app entry -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

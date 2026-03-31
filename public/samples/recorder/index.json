@@ -1,4 +1,4 @@
 {
   "versions": ["forte", "mezzo-forte", "mezzo-piano", "pianissimo", "piano"],
-  "default": "mezzo-forte"
+  "default": "forte"
 }

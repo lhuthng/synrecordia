@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import DuoToggleButton from "./DuoToggleButton";
-import { motion, AnimatePresence } from "motion/react";
+import { motion as Motion, AnimatePresence } from "motion/react";
 
 export default function Directory({ onSelect }) {
   const [open, setOpen] = useState(false);
-  const [songs, setSongs] = useState(null); // null = not yet fetched, [] = fetched empty
-  const [status, setStatus] = useState("idle"); // idle | loading | ready | error
+  const [songs, setSongs] = useState(null);
+  const [status, setStatus] = useState("idle");
   const [loadingId, setLoadingId] = useState(null);
   const [songCache, setSongCache] = useState({});
   const buttonRef = useRef(null);
@@ -124,7 +124,7 @@ export default function Directory({ onSelect }) {
 
       <AnimatePresence>
         {open && (
-          <motion.div
+          <Motion.div
             ref={panelRef}
             role="dialog"
             aria-label="Song directory"
@@ -179,7 +179,7 @@ export default function Directory({ onSelect }) {
                 ))}
               </ul>
             )}
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -17,7 +17,7 @@ export default function DuoButton({
       <Activity mode={disabled ? "hidden" : "visible"}>
         <div
           className={cn(
-            "absolute full translate-y-0.5 rounded-2xl z-0",
+            "absolute inset-0 translate-y-0.5 rounded-2xl z-0",
             shadowBackground,
           )}
         />
