@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from "react";
+import { useParams } from "react-router-dom";
 import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
 import Directory from "./Directory";
-import Visualizer, { FADE_MS } from "./Visualizer";
+import Visualizer from "./Visualizer";
 import InstrumentManager from "./instruments/InstrumentManager";
 import usePlayer from "../hooks/usePlayer.js";
 
 export default function Player() {
+  // URL param — present when route is /songs/:songId
+  const { songId: urlSongId } = useParams();
+
   // player hook encapsulates audio/playback logic
   const {
     song,
@@ -44,6 +48,13 @@ export default function Player() {
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
 
+  // URL-based loading state
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlError, setUrlError] = useState(null);
+
+  // Cache for songs fetched via URL so navigating back doesn't re-fetch
+  const songCacheRef = useRef({});
+
   // per-track flash counters — increment each time a track fires a note
   const [flashCounters, setFlashCounters] = useState({});
   const flashCountersRef = useRef(flashCounters);
@@ -64,6 +75,77 @@ export default function Player() {
     return () => setNoteTriggerListener(null);
   }, [setNoteTriggerListener]);
 
+  // Load a song when the URL param changes
+  useEffect(() => {
+    if (!urlSongId) {
+      setUrlError(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      setUrlLoading(true);
+      setUrlError(null);
+
+      try {
+        // Return from cache if available
+        if (songCacheRef.current[urlSongId]) {
+          if (!cancelled) {
+            setIsVisualReady(false);
+            selectSong(songCacheRef.current[urlSongId]);
+            setUrlLoading(false);
+          }
+          return;
+        }
+
+        // Fetch the song index to resolve the file name
+        const indexRes = await fetch("/songs/index.json");
+        if (!indexRes.ok) throw new Error("Failed to load song index.");
+        const index = await indexRes.json();
+
+        const meta = Array.isArray(index)
+          ? index.find((s) => s.id === urlSongId)
+          : null;
+
+        if (!meta) {
+          if (!cancelled) {
+            setUrlError(
+              `No song with the id "${urlSongId}" was found in the library.`,
+            );
+            setUrlLoading(false);
+          }
+          return;
+        }
+
+        // Fetch the song file
+        const songRes = await fetch(`/songs/${meta.file}`);
+        if (!songRes.ok)
+          throw new Error(`Failed to load song file "${meta.file}".`);
+        const songData = await songRes.json();
+
+        if (!cancelled) {
+          songCacheRef.current[urlSongId] = songData;
+          setIsVisualReady(false);
+          selectSong(songData);
+          setUrlLoading(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setUrlError(err.message ?? "An unexpected error occurred.");
+          setUrlLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+    // selectSong is stable (wrapped in useCallback inside the hook)
+  }, [urlSongId, selectSong]);
+
   // play bar position is a UI concern kept locally
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
 
@@ -72,21 +154,29 @@ export default function Player() {
 
   const isReady = isVisualReady && isAudioReadyAll;
 
-  const handleSelect = (newSong) => {
-    // reset visual ready before selecting new song so Visualizer fades properly
-    if (!song || song.id !== newSong?.id) {
-      setIsVisualReady(false);
-      selectSong(newSong);
-    }
-  };
+  // ── render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="w-full min-h-[calc(100dvh-8rem)] text-main space-y-2">
+      {/* Song selector row */}
       <div className="flex items-center gap-2">
-        <Directory onSelect={handleSelect} />
-        <span>{song ? song.title : "Select a song"}</span>
+        <Directory />
+
+        {urlLoading ? (
+          <span className="opacity-60 italic">Loading song…</span>
+        ) : urlError ? (
+          /* Error banner for invalid / failed song IDs */
+          <span className="flex items-center gap-2 text-sm">
+            <span className="inline-block rounded-lg bg-red-900/60 border border-red-500 px-3 py-1 text-red-200">
+              ⚠ {urlError}
+            </span>
+          </span>
+        ) : (
+          <span>{song ? song.title : "Select a song"}</span>
+        )}
       </div>
 
+      {/* Controls */}
       <div className="w-full flex justify-between gap-2 not-md:flex-col">
         <div className="max-w-100 grow text-base">
           <div className="mt-2 flex items-center gap-2">

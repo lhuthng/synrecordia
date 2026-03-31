@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DuoToggleButton from "./DuoToggleButton";
 import { motion as Motion, AnimatePresence } from "motion/react";
 
-export default function Directory({ onSelect }) {
+export default function Directory() {
   const [open, setOpen] = useState(false);
   const [songs, setSongs] = useState(null);
   const [status, setStatus] = useState("idle");
-  const [loadingId, setLoadingId] = useState(null);
-  const [songCache, setSongCache] = useState({});
   const buttonRef = useRef(null);
   const panelRef = useRef(null);
+  const navigate = useNavigate();
 
   // Fetch index on first open (lazy)
   useEffect(() => {
@@ -65,27 +65,10 @@ export default function Directory({ onSelect }) {
     };
   }, [open]);
 
-  const handleSelect = async (meta) => {
-    if (loadingId !== null) return;
-    if (songCache[meta.id]) {
-      onSelect?.(songCache[meta.id]);
-      setOpen(false);
-      return;
-    }
-
-    setLoadingId(meta.id);
-    try {
-      const res = await fetch(`/songs/${meta.file}`);
-      if (!res.ok) throw new Error(`Failed to load song ${meta.file}`);
-      const song = await res.json();
-      setSongCache((prev) => ({ ...prev, [meta.id]: song }));
-      onSelect?.(song);
-      setOpen(false);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingId(null);
-    }
+  const handleSelect = (meta) => {
+    // Navigate to the song URL — Player will handle fetching & loading
+    navigate(`/songs/${meta.id}`);
+    setOpen(false);
   };
 
   return (
@@ -150,7 +133,7 @@ export default function Directory({ onSelect }) {
               </button>
             </div>
 
-            {status === "loading" && <div>Loading songs...</div>}
+            {status === "loading" && <div>Loading songs…</div>}
             {status === "error" && <div>Failed to load songs.</div>}
             {status === "ready" &&
               Array.isArray(songs) &&
@@ -166,15 +149,11 @@ export default function Directory({ onSelect }) {
                     <button
                       type="button"
                       onClick={() => handleSelect(song)}
-                      disabled={loadingId !== null}
                       className="text-left w-full px-2 py-1 rounded-xl bg-main hover:bg-note-half text-card-bg hover:text-main border-2 border-note-half-dark cursor-pointer"
                     >
                       <div className="font-medium">{song.title}</div>
                       <div className="text-xs">{song.bpm} BPM</div>
                     </button>
-                    <div className="w-20 text-right text-xs">
-                      {loadingId === song.id ? "loading..." : ""}
-                    </div>
                   </li>
                 ))}
               </ul>
