@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { motion as Motion, AnimatePresence } from "motion/react";
 import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
@@ -34,7 +35,6 @@ export default function Player() {
     startPlayback,
     pausePlayback,
     stopPlayback,
-    handlePlayPause,
     handleNoteClick,
     handleScrubStart,
     handleScrub,
@@ -59,6 +59,58 @@ export default function Player() {
   // Visualizer finishes its fade transition (onReady). This avoids the visual
   // cross-fade being interrupted by an immediate reset.
   const pendingResetRef = useRef(false);
+
+  // ── Start timer ────────────────────────────────────────────────────────────
+  // How many seconds to count down before starting playback (0 = instant)
+  const [startDelay, setStartDelay] = useState(0);
+  // Current countdown value being displayed; null when idle
+  const [countdown, setCountdown] = useState(null);
+  const countdownTimerRef = useRef(null);
+
+  const cancelCountdown = useCallback(() => {
+    clearTimeout(countdownTimerRef.current);
+    countdownTimerRef.current = null;
+    setCountdown(null);
+  }, []);
+
+  const handlePlay = useCallback(() => {
+    if (startDelay === 0) {
+      startPlayback();
+      return;
+    }
+    // Kick off a visual countdown, then start playback when it reaches 0
+    let remaining = startDelay;
+    setCountdown(remaining);
+    const tick = () => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        setCountdown(null);
+        startPlayback();
+      } else {
+        setCountdown(remaining);
+        countdownTimerRef.current = setTimeout(tick, 1000);
+      }
+    };
+    countdownTimerRef.current = setTimeout(tick, 1000);
+  }, [startDelay, startPlayback]);
+
+  // Combined handler used by both the Play button and the Space-bar shortcut
+  const handleTogglePlayback = useCallback(() => {
+    if (countdown !== null) cancelCountdown();
+    else if (isPlaying) pausePlayback();
+    else handlePlay();
+  }, [countdown, isPlaying, cancelCountdown, pausePlayback, handlePlay]);
+
+  // Cancel any in-progress countdown when the loaded song changes
+  useEffect(() => {
+    cancelCountdown();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [song?.id]);
+
+  // Cleanup the timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(countdownTimerRef.current);
+  }, []);
 
   // per-track flash counters — increment each time a track fires a note
   const [flashCounters, setFlashCounters] = useState({});
@@ -97,9 +149,6 @@ export default function Player() {
         // Return from cache if available
         if (songCacheRef.current[urlSongId]) {
           if (!cancelled) {
-            // Mark that we want to reset playback once the visualizer reports
-            // it has finished fading to the new song. Do not reset immediately,
-            // otherwise the visual cross-fade will be interrupted.
             pendingResetRef.current = true;
             setIsVisualReady(false);
             selectSong(songCacheRef.current[urlSongId]);
@@ -135,6 +184,7 @@ export default function Player() {
 
         if (!cancelled) {
           songCacheRef.current[urlSongId] = songData;
+          pendingResetRef.current = true;
           setIsVisualReady(false);
           selectSong(songData);
           setUrlLoading(false);
@@ -188,6 +238,7 @@ export default function Player() {
       {/* Controls */}
       <div className="w-full flex justify-between gap-2 not-md:flex-col">
         <div className="max-w-100 grow text-base">
+          {/* BPM */}
           <div className="mt-2 flex items-center gap-2">
             <label title="bpm">BPM:</label>
             <div className="flex-1 ml-4 mr-8">
@@ -219,6 +270,7 @@ export default function Player() {
             </DuoButton>
           </div>
 
+          {/* Note width */}
           <div className="mt-2 flex items-center gap-2">
             <label title="note width">Note Width:</label>
             <div className="flex-1 mx-4">
@@ -237,13 +289,46 @@ export default function Player() {
               />
             </div>
           </div>
+
+          {/* Start timer selector */}
+          <div className="mt-2 flex items-center gap-2">
+            <label title="start timer">Start:</label>
+            <div className="flex gap-1 ml-4">
+              {[0, 1, 2, 3].map((s) => (
+                <DuoButton
+                  key={s}
+                  padding="px-1.5 py-0.5"
+                  className="w-10 text-sm"
+                  text={startDelay === s ? "text-card-bg" : "text-main"}
+                  background={
+                    startDelay === s ? "bg-note-full" : "bg-note-half"
+                  }
+                  shadowBackground={
+                    startDelay === s ? "bg-note-full-dark" : "bg-note-half-dark"
+                  }
+                  border={
+                    startDelay === s
+                      ? "border-note-full-dark"
+                      : "border-note-half-dark"
+                  }
+                  onClick={() => setStartDelay(s)}
+                  disabled={!isReady}
+                >
+                  {s}s
+                </DuoButton>
+              ))}
+            </div>
+          </div>
         </div>
 
+        {/* Playback buttons */}
         <div className="flex gap-2 not-md:ml-auto items-center *:w-18 *:h-8">
           <DuoToggleButton
-            value={isPlaying}
-            onToggle={() => startPlayback()}
-            offToggle={() => pausePlayback()}
+            value={isPlaying || countdown !== null}
+            onToggle={handlePlay}
+            offToggle={() =>
+              countdown !== null ? cancelCountdown() : pausePlayback()
+            }
             onColors={{
               background: "bg-note-full",
               shadowBackground: "bg-note-full-dark",
@@ -258,7 +343,7 @@ export default function Player() {
             }}
             disabled={!isReady}
           >
-            {isPlaying ? "Pause" : "Play"}
+            {countdown !== null ? countdown : isPlaying ? "Pause" : "Play"}
           </DuoToggleButton>
 
           <DuoButton
@@ -266,7 +351,10 @@ export default function Player() {
             background="bg-note-half"
             shadowBackground="bg-note-half-dark"
             border="border-note-half-dark"
-            onClick={handleRestart}
+            onClick={() => {
+              cancelCountdown();
+              handleRestart();
+            }}
             disabled={!isReady}
           >
             Restart
@@ -295,33 +383,59 @@ export default function Player() {
         </div>
       </div>
 
-      <Visualizer
-        song={song}
-        currentBeat={currentBeat}
-        durationBeats={durationBeats}
-        isPlaying={isPlaying}
-        bpm={bpm}
-        noteWidth={noteWidth}
-        playBarPosition={playBarPosition}
-        onReady={() => {
-          // Visualizer notifies when it finished the fade/crossfade. Mark UI as
-          // visually ready and (if requested) perform the playback reset that
-          // was deferred to avoid tearing during the visual transition.
-          setIsVisualReady(true);
-          if (pendingResetRef.current) {
-            // stopPlayback resets the audio/playback state (including cursor).
-            // clear the pending flag immediately to avoid double resets.
-            stopPlayback();
-            pendingResetRef.current = false;
-          }
-        }}
-        onScrubStart={handleScrubStart}
-        onScrub={handleScrub}
-        onNoteClick={handleNoteClick}
-        onPlayPause={handlePlayPause}
-        onPlayBarPositionChange={setPlayBarPosition}
-        fingeringSystem={fingeringSystem}
-      />
+      {/* Visualizer with countdown overlay */}
+      <div className="relative">
+        <Visualizer
+          song={song}
+          currentBeat={currentBeat}
+          durationBeats={durationBeats}
+          isPlaying={isPlaying}
+          bpm={bpm}
+          noteWidth={noteWidth}
+          playBarPosition={playBarPosition}
+          onReady={() => {
+            setIsVisualReady(true);
+            if (pendingResetRef.current) {
+              stopPlayback();
+              pendingResetRef.current = false;
+            }
+          }}
+          onScrubStart={handleScrubStart}
+          onScrub={handleScrub}
+          onNoteClick={handleNoteClick}
+          onPlayPause={handleTogglePlayback}
+          onPlayBarPositionChange={setPlayBarPosition}
+          fingeringSystem={fingeringSystem}
+        />
+
+        {/* Countdown number overlay — shown over the visualizer */}
+        <AnimatePresence>
+          {countdown !== null && (
+            <Motion.div
+              key="countdown-overlay"
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
+              <AnimatePresence mode="wait">
+                <Motion.span
+                  key={countdown}
+                  className="text-9xl font-bold text-accent-pink select-none"
+                  style={{ textShadow: "0 0 48px rgba(45,212,191,0.65)" }}
+                  initial={{ opacity: 0, scale: 1.7, y: -16 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.55, y: 16 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                >
+                  {countdown}
+                </Motion.span>
+              </AnimatePresence>
+            </Motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <div className="flex gap-2">
         {song?.tracks?.map((track, index) => (
