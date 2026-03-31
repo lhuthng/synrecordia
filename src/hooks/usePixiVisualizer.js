@@ -110,6 +110,12 @@ export function usePixiVisualizer({
   const isPlayBarDraggingRef = useRef(false);
   const dragStartPlayBarPositionRef = useRef(0);
 
+  // ─── Sliding-window culling refs ──────────────────────────────────────────────
+  // maxSpriteWidthRef: widest note sprite (px) – used as conservative left-boundary buffer.
+  // visWinRef: [start, end) index range into noteSpritesRef that was visible last frame.
+  const maxSpriteWidthRef = useRef(0);
+  const visWinRef = useRef({ start: 0, end: 0 });
+
   // ─── React state ─────────────────────────────────────────────────────────────
   const [isDragging, setIsDragging] = useState(false);
   const [isHoveringNote, setIsHoveringNote] = useState(false);
@@ -650,6 +656,8 @@ export function usePixiVisualizer({
           container.x =
             -scaledGraphicsWidth - event.time * (pixelsPerBeatRef.current || 1);
           container.y = containerY;
+          // Start hidden; the ticker's sliding window will reveal on first frame.
+          container.visible = false;
           notesLayer.addChild(container);
           noteSpritesRef.current.push({
             container,
@@ -668,6 +676,18 @@ export function usePixiVisualizer({
             glowPadding: NOTE_GLOW_PADDING,
           });
         });
+
+        // Sort by start time so binary search in the ticker is valid.
+        noteSpritesRef.current.sort((a, b) => a.time - b.time);
+
+        // Widest sprite (px) – conservative buffer for the left time boundary.
+        maxSpriteWidthRef.current = noteSpritesRef.current.reduce(
+          (m, s) => Math.max(m, s.width),
+          0,
+        );
+
+        // Reset window so the ticker doesn't try to clean up stale indices.
+        visWinRef.current = { start: 0, end: 0 };
 
         requestAnimationFrame(() => {
           if (!cancelled) setSongState((prev) => ({ ...prev, isReady: true }));
@@ -726,81 +746,139 @@ export function usePixiVisualizer({
           child.visible = screenX > -2 && screenX < width;
         });
 
-        // ── Note sprite updates ────────────────────────────────────────────────
-        noteSpritesRef.current.forEach((sprite) => {
-          const screenX = actualScrollX + sprite.container.x;
-          const glowPadding = Number(sprite.glowPadding ?? 0);
-          const isVisible =
-            screenX + sprite.width + glowPadding > 0 &&
-            screenX - glowPadding < width;
-          sprite.container.visible = isVisible;
-          if (!isVisible) return;
+        // ── Note sprite updates (sliding-window culling) ───────────────────────
+        // Sprites are sorted by `time`. We compute beat-time bounds for the
+        // visible screen and binary-search into the array instead of scanning
+        // every note.
+        //
+        // Derivation (container.x = -sprWidth - time * ppb):
+        //   screenX            = actualScrollX + container.x
+        //                      = actualScrollX - sprWidth - time * ppb
+        //   right edge on screen → screenX + sprWidth + glowPad > 0
+        //                        → time < (actualScrollX + glowPad) / ppb   [timeMax]
+        //   left  edge on screen → screenX - glowPad < width
+        //                        → time > (actualScrollX - maxW - glowPad - width) / ppb  [timeMin, conservative]
+        {
+          const sprites = noteSpritesRef.current;
+          const n = sprites.length;
+          if (n > 0) {
+            const ppb = pixelsPerBeatRef.current || 1;
+            const glowPad = NOTE_GLOW_PADDING;
+            const maxW = maxSpriteWidthRef.current;
 
-          const isActive =
-            beat >= sprite.time && beat < sprite.time + sprite.duration;
+            const timeMax = (actualScrollX + glowPad) / ppb;
+            const timeMin = (actualScrollX - maxW - glowPad - width) / ppb;
 
-          // Hover background fade
-          if (sprite.hoverBg && sprite.hoverState) {
-            sprite.hoverBg.alpha +=
-              (sprite.hoverState.targetAlpha - sprite.hoverBg.alpha) * 0.2;
+            // Binary search: first index where time >= timeMin
+            let lo = 0;
+            let hi = n;
+            while (lo < hi) {
+              const mid = (lo + hi) >>> 1;
+              if (sprites[mid].time < timeMin) lo = mid + 1;
+              else hi = mid;
+            }
+            const newStart = lo;
+
+            // Binary search: first index where time > timeMax
+            lo = 0;
+            hi = n;
+            while (lo < hi) {
+              const mid = (lo + hi) >>> 1;
+              if (sprites[mid].time <= timeMax) lo = mid + 1;
+              else hi = mid;
+            }
+            const newEnd = lo;
+
+            // Hide sprites that slid out of the window on the left
+            const prev = visWinRef.current;
+            for (let i = prev.start; i < Math.min(prev.end, newStart); i++) {
+              sprites[i].container.visible = false;
+            }
+            // Hide sprites that slid out of the window on the right
+            for (let i = Math.max(prev.start, newEnd); i < prev.end; i++) {
+              sprites[i].container.visible = false;
+            }
+
+            visWinRef.current = { start: newStart, end: newEnd };
+
+            // Process only the candidate window; fine-cull each sprite exactly.
+            for (let i = newStart; i < newEnd; i++) {
+              const sprite = sprites[i];
+              const screenX = actualScrollX + sprite.container.x;
+              const isVisible =
+                screenX + sprite.width + glowPad > 0 &&
+                screenX - glowPad < width;
+              sprite.container.visible = isVisible;
+              if (!isVisible) continue;
+
+              const isActive =
+                beat >= sprite.time && beat < sprite.time + sprite.duration;
+
+              // Hover background fade
+              if (sprite.hoverBg && sprite.hoverState) {
+                sprite.hoverBg.alpha +=
+                  (sprite.hoverState.targetAlpha - sprite.hoverBg.alpha) * 0.2;
+              }
+
+              // Brightness pulse on active note
+              if (sprite.brightnessFilter && sprite.brightnessState) {
+                sprite.brightnessState.target = isActive ? 1.2 : 1.0;
+                sprite.brightnessState.current +=
+                  (sprite.brightnessState.target -
+                    sprite.brightnessState.current) *
+                  0.25;
+                sprite.brightnessFilter.brightness(
+                  sprite.brightnessState.current,
+                  false,
+                );
+              }
+
+              // Hole scale bounce on active note
+              if (sprite.holeSprites?.length) {
+                sprite.holeSprites.forEach((hole) => {
+                  const target = isActive ? HOLE_PLAY_SCALE : 1.0;
+                  hole.scale.y += (target - hole.scale.y) * HOLE_SCALE_ALPHA;
+                });
+              }
+
+              // Particle emission from active holes while playing
+              if (
+                sprite.activeHoles?.length &&
+                particleLayerRef.current &&
+                particleTextureRef.current &&
+                isActive &&
+                isPlayingRef.current &&
+                particlesRef.current.length < MAX_PARTICLES
+              ) {
+                sprite.activeHoles.forEach(({ y, color }) => {
+                  if (Math.random() > PARTICLE_SPAWN_CHANCE) return;
+                  if (particlesRef.current.length >= MAX_PARTICLES) return;
+                  const spr = new PIXI.Sprite(particleTextureRef.current);
+                  spr.anchor.set(0.5);
+                  spr.tint = 0xffffff;
+                  const spawnX = barXRef.current + (Math.random() - 0.5) * 10;
+                  const spawnY = y + (Math.random() - 0.5) * 5;
+                  spr.x = spawnX;
+                  spr.y = spawnY;
+                  particleLayerRef.current.addChild(spr);
+                  particlesRef.current.push({
+                    spr,
+                    x: spawnX,
+                    y: spawnY,
+                    vx: -(Math.random() * 3 + 1),
+                    vy: (Math.random() - 0.5) * 2,
+                    age: 0,
+                    lifetime:
+                      PARTICLE_LIFETIME_MIN +
+                      Math.random() *
+                        (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN),
+                    targetColor: color,
+                  });
+                });
+              }
+            }
           }
-
-          // Brightness pulse on active note
-          if (sprite.brightnessFilter && sprite.brightnessState) {
-            sprite.brightnessState.target = isActive ? 1.2 : 1.0;
-            sprite.brightnessState.current +=
-              (sprite.brightnessState.target - sprite.brightnessState.current) *
-              0.25;
-            sprite.brightnessFilter.brightness(
-              sprite.brightnessState.current,
-              false,
-            );
-          }
-
-          // Hole scale bounce on active note
-          if (sprite.holeSprites?.length) {
-            sprite.holeSprites.forEach((hole) => {
-              const target = isActive ? HOLE_PLAY_SCALE : 1.0;
-              hole.scale.y += (target - hole.scale.y) * HOLE_SCALE_ALPHA;
-            });
-          }
-
-          // Particle emission from active holes while playing
-          if (
-            sprite.activeHoles?.length &&
-            particleLayerRef.current &&
-            particleTextureRef.current &&
-            isActive &&
-            isPlayingRef.current &&
-            particlesRef.current.length < MAX_PARTICLES
-          ) {
-            sprite.activeHoles.forEach(({ y, color }) => {
-              if (Math.random() > PARTICLE_SPAWN_CHANCE) return;
-              if (particlesRef.current.length >= MAX_PARTICLES) return;
-              const spr = new PIXI.Sprite(particleTextureRef.current);
-              spr.anchor.set(0.5);
-              spr.tint = 0xffffff;
-              const spawnX = barXRef.current + (Math.random() - 0.5) * 10;
-              const spawnY = y + (Math.random() - 0.5) * 5;
-              spr.x = spawnX;
-              spr.y = spawnY;
-              particleLayerRef.current.addChild(spr);
-              particlesRef.current.push({
-                spr,
-                x: spawnX,
-                y: spawnY,
-                vx: -(Math.random() * 3 + 1),
-                vy: (Math.random() - 0.5) * 2,
-                age: 0,
-                lifetime:
-                  PARTICLE_LIFETIME_MIN +
-                  Math.random() *
-                    (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN),
-                targetColor: color,
-              });
-            });
-          }
-        });
+        }
 
         // ── Particle lifecycle ─────────────────────────────────────────────────
         for (let i = particlesRef.current.length - 1; i >= 0; i -= 1) {
