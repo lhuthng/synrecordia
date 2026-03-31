@@ -416,21 +416,21 @@
           "type": "note",
           "time": 52.5,
           "duration": 0.916667,
-          "pitches": ["G4", "C6"],
+          "pitches": "C6",
           "velocity": 63
         },
         {
           "type": "note",
           "time": 53.5,
           "duration": 0.5,
-          "pitches": ["G4", "C6"],
+          "pitches": "C6",
           "velocity": 63
         },
         {
           "type": "note",
           "time": 54,
           "duration": 0.916667,
-          "pitches": ["G4", "C6"],
+          "pitches": "C6",
           "velocity": 63
         },
         {
@@ -647,21 +647,21 @@
           "type": "note",
           "time": 84.5,
           "duration": 0.916667,
-          "pitches": ["G4", "C6"],
+          "pitches": "C6",
           "velocity": 63
         },
         {
           "type": "note",
           "time": 85.5,
           "duration": 0.5,
-          "pitches": ["G4", "C6"],
+          "pitches": "C6",
           "velocity": 63
         },
         {
           "type": "note",
           "time": 86,
           "duration": 0.916667,
-          "pitches": ["G4", "C6"],
+          "pitches": "C6",
           "velocity": 63
         },
         {

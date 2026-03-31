@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPackedSampler } from "../../libs/packedSampler/factory";
-import { motion as Motion, AnimatePresence } from "motion/react";
+import { motion as Motion, AnimatePresence, useAnimate } from "motion/react";
 
 export default function InstrumentManager({
   slot,
@@ -13,14 +13,31 @@ export default function InstrumentManager({
   initialReady,
   handleAudioReady,
   controllerNode,
+  flashCount = 0,
 }) {
   const [samplerInstance, setSamplerInstance] = useState(null);
+  const [scope, animate] = useAnimate();
 
   const isReadyRef = useRef(false);
   const packedSamplerRef = useRef(null);
   const registeredSamplerRef = useRef(null);
 
   const [Presentation, setPresentation] = useState(null);
+
+  useEffect(() => {
+    if (flashCount === 0 || !scope.current) return;
+    animate(
+      scope.current,
+      {
+        scale: [1.05, 1],
+        filter: ["brightness(1.2)", "brightness(1)"],
+      },
+      {
+        duration: 0.25,
+        ease: "easeOut",
+      },
+    );
+  }, [flashCount, animate, scope]);
 
   const handleSamplerChanged = () => {
     const sampler = packedSamplerRef.current.getSampler();
@@ -123,6 +140,7 @@ export default function InstrumentManager({
     <AnimatePresence>
       {Presentation ? (
         <Motion.div
+          ref={scope}
           initial={{ opacity: 0, x: -5 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -5 }}

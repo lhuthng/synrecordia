@@ -9,6 +9,7 @@ const MIN_DB = -60;
 export default class PianoSampler extends PackedSampler {
   constructor(urls, baseUrl, callback, addition) {
     super(addition);
+
     this.reverb = new Tone.Reverb({
       decay: 5,
       preDelay: 0.02,

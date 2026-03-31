@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
+import { PIANO_DELAY_MS } from "../components/utils/constants.js";
 
 /* Utility: compute end beat for a song */
 const computeSongEndBeat = (songData) => {
@@ -40,11 +41,18 @@ export default function usePlayer() {
   const trackStatesRef = useRef([]);
   const endBeatRef = useRef(0);
   const bpmRef = useRef(bpm);
+  const repeatRef = useRef(repeat);
+  const noteTriggerListenerRef = useRef(null);
 
   // Keep bpmRef up-to-date for the running tick
   useEffect(() => {
     bpmRef.current = bpm;
   }, [bpm]);
+
+  // Keep repeatRef up-to-date for the running tick
+  useEffect(() => {
+    repeatRef.current = repeat;
+  }, [repeat]);
 
   // Keep currentBeat and target refs in sync when external changes happen
   useEffect(() => {
@@ -110,16 +118,20 @@ export default function usePlayer() {
     await Tone.start();
     await Tone.loaded();
 
-    const pianoDelaySeconds = 0.08;
     const getSecondsPerBeat = () => 60 / (bpmRef.current || 120);
-    const pianoDelayBeats = pianoDelaySeconds / getSecondsPerBeat();
 
     const startBeat = Math.max(0, cursorBeatsRef.current);
     const tracks = Array.isArray(song.tracks) ? song.tracks : [];
 
+    const trackDelayMsArray = tracks.map((track) =>
+      track.instrument === "piano" ? PIANO_DELAY_MS : 0,
+    );
+    const maxTrackDelayMs = Math.max(0, ...trackDelayMsArray);
+
     const trackStates = tracks.map((track, index) => {
       const synth = samplersRef.current[index];
-      const delayBeats = track.instrument === "piano" ? pianoDelayBeats : 0;
+      const trackDelayMs = trackDelayMsArray[index];
+      const delayBeats = trackDelayMs / 1000 / getSecondsPerBeat();
 
       const actions = (Array.isArray(track.actions) ? track.actions : [])
         .filter((action) => action.type === "note")
@@ -151,7 +163,12 @@ export default function usePlayer() {
       }
       idx = low;
 
-      return { synth, actions, index: idx };
+      return {
+        synth,
+        actions,
+        index: idx,
+        notifyDelayMs: maxTrackDelayMs - trackDelayMs,
+      };
     });
 
     const maxEndBeat = trackStates.reduce((max, state) => {
@@ -179,7 +196,9 @@ export default function usePlayer() {
       setCurrentBeat(beat);
 
       // advance each track state
-      trackStatesRef.current.forEach((state) => {
+      const triggerGroups = new Map(); // notifyDelayMs -> trackIndex[]
+      trackStatesRef.current.forEach((state, trackIndex) => {
+        let anyTriggered = false;
         while (
           state.index < state.actions.length &&
           state.actions[state.index].time <= beat
@@ -200,14 +219,28 @@ export default function usePlayer() {
               // ignore synth errors to avoid stopping the whole loop
             }
           }
+          anyTriggered = true;
           state.index += 1;
+        }
+        if (anyTriggered) {
+          const delay = state.notifyDelayMs ?? 0;
+          const group = triggerGroups.get(delay) ?? [];
+          group.push(trackIndex);
+          triggerGroups.set(delay, group);
+        }
+      });
+      triggerGroups.forEach((tracks, delayMs) => {
+        if (delayMs === 0) {
+          noteTriggerListenerRef.current?.(tracks);
+        } else {
+          setTimeout(() => noteTriggerListenerRef.current?.(tracks), delayMs);
         }
       });
 
       // handle loop / end
       const loopThreshold = 0.02;
       if (beat >= endBeatRef.current - loopThreshold) {
-        if (repeat) {
+        if (repeatRef.current) {
           const overshoot = Math.max(0, beat - endBeatRef.current);
 
           startToneTimeRef.current = Tone.now();
@@ -230,7 +263,7 @@ export default function usePlayer() {
 
     // prime RAF loop
     rafIdRef.current = requestAnimationFrame(tick);
-  }, [song, pausePlayback, repeat]);
+  }, [song, pausePlayback]);
 
   const handlePlayPause = useCallback(() => {
     if (isPlaying) pausePlayback();
@@ -365,6 +398,9 @@ export default function usePlayer() {
     // setters / handlers
     setNoteWidth: setNoteWidth,
     setRepeat: setRepeat,
+    setNoteTriggerListener: (fn) => {
+      noteTriggerListenerRef.current = fn;
+    },
     setSelectedTrack: setSelectedTrack,
     setFingeringSystem: setFingeringSystem,
     handleBpmChange,

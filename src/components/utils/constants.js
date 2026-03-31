@@ -1,3 +1,5 @@
+export const PIANO_DELAY_MS = 80;
+
 export const DEFAULT_WIDTH = 1200;
 export const DEFAULT_HEIGHT = 400;
 export const FADE_MS = 500;

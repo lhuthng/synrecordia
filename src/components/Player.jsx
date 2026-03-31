@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
@@ -17,6 +17,8 @@ export default function Player() {
     bpm,
     noteWidth,
     repeat,
+    setRepeat,
+    setNoteTriggerListener,
     selectedTrack,
     fingeringSystem,
     durationBeats,
@@ -42,6 +44,26 @@ export default function Player() {
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
 
+  // per-track flash counters — increment each time a track fires a note
+  const [flashCounters, setFlashCounters] = useState({});
+  const flashCountersRef = useRef(flashCounters);
+  useEffect(() => {
+    flashCountersRef.current = flashCounters;
+  }, [flashCounters]);
+
+  useEffect(() => {
+    setNoteTriggerListener((trackIndices) => {
+      setFlashCounters((prev) => {
+        const next = { ...prev };
+        for (const i of trackIndices) {
+          next[i] = (next[i] ?? 0) + 1;
+        }
+        return next;
+      });
+    });
+    return () => setNoteTriggerListener(null);
+  }, [setNoteTriggerListener]);
+
   // play bar position is a UI concern kept locally
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
 
@@ -52,13 +74,10 @@ export default function Player() {
 
   const handleSelect = (newSong) => {
     // reset visual ready before selecting new song so Visualizer fades properly
-    setIsVisualReady(false);
-    selectSong(newSong);
-    // Visualizer will call onReady to set isVisualReady
-    // small timeout to match Visualizer fade can be handled by Visualizer itself
-    setTimeout(() => {
-      // ensure playback position reset after fade (Visualizer coordinates with FADE_MS)
-    }, FADE_MS);
+    if (!song || song.id !== newSong?.id) {
+      setIsVisualReady(false);
+      selectSong(newSong);
+    }
   };
 
   return (
@@ -167,12 +186,11 @@ export default function Player() {
               border: "border-note-half-dark",
               text: "text-main",
             }}
-            initial={repeat}
-            onToggle={() => {}}
-            offToggle={() => {}}
+            value={repeat}
+            onToggle={() => setRepeat(true)}
+            offToggle={() => setRepeat(false)}
             aria-label="Repeat song"
           >
-            {/* The usePlayer hook manages repeat; toggle wiring can be added if required */}
             Repeat
           </DuoToggleButton>
         </div>
@@ -201,6 +219,7 @@ export default function Player() {
             controllerNode={controllerNode}
             key={`${index}-${track.instrument}`}
             slot={index}
+            flashCount={flashCounters[index] ?? 0}
             name={track.instrument}
             register={registerSampler}
             deregister={deregisterSampler}
