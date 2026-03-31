@@ -115,7 +115,10 @@ export function usePixiVisualizer({
   const [isHoveringNote, setIsHoveringNote] = useState(false);
   const [isHoveringPlayBar, setIsHoveringPlayBar] = useState(false);
   const [isPlayBarDragging, setIsPlayBarDragging] = useState(false);
-  const [songState, setSongState] = useState({ displaySong: song, isReady: false });
+  const [songState, setSongState] = useState({
+    displaySong: song,
+    isReady: false,
+  });
   const { displaySong, isReady } = songState;
 
   // ─── Resize observer ─────────────────────────────────────────────────────────
@@ -331,7 +334,7 @@ export function usePixiVisualizer({
       for (let i = 0; i < NUM_HOLES; i += 1) {
         const cy = holesTop + holePositions[i] + HOLE_SIZE.y / 2;
         const holeLine = new PIXI.Graphics();
-        holeLine.setStrokeStyle({ width: 1, color: 0xffffff, alpha: 0.15 });
+        holeLine.setStrokeStyle({ width: 1, color: 0xffffff, alpha: 0.5 });
         holeLine.moveTo(0, cy);
         holeLine.lineTo(width, cy);
         holeLine.stroke();
@@ -393,7 +396,11 @@ export function usePixiVisualizer({
               if (barBeat > segEndBeat) break;
 
               const barLine = new PIXI.Graphics();
-              barLine.setStrokeStyle({ width: 2, color: 0xffffff, alpha: 0.35 });
+              barLine.setStrokeStyle({
+                width: 2,
+                color: 0xffffff,
+                alpha: 0.35,
+              });
               barLine.moveTo(0, 0);
               barLine.lineTo(0, height);
               barLine.stroke();
@@ -405,7 +412,7 @@ export function usePixiVisualizer({
                 style: {
                   fill: 0xffffff,
                   fontSize: 12,
-                  fontFamily: "Arial",
+                  fontFamily: "Iosevka Charon",
                   align: "right",
                 },
               });
@@ -462,7 +469,7 @@ export function usePixiVisualizer({
               style: {
                 fill: 0xffffff,
                 fontSize: 12,
-                fontFamily: "Arial",
+                fontFamily: "Iosevka Charon",
                 align: "right",
               },
             });
@@ -610,7 +617,7 @@ export function usePixiVisualizer({
             style: {
               fill: 0xffffff,
               fontSize: 14,
-              fontFamily: "Arial",
+              fontFamily: "Iosevka Charon",
             },
           });
           label.x = Math.max((scaledGraphicsWidth - label.width) / 2, 0);
@@ -641,8 +648,7 @@ export function usePixiVisualizer({
           });
 
           container.x =
-            -scaledGraphicsWidth -
-            event.time * (pixelsPerBeatRef.current || 1);
+            -scaledGraphicsWidth - event.time * (pixelsPerBeatRef.current || 1);
           container.y = containerY;
           notesLayer.addChild(container);
           noteSpritesRef.current.push({
@@ -704,8 +710,7 @@ export function usePixiVisualizer({
         const pxPerBeat = pixelsPerBeatRef.current || 1;
         const bx = barXRef.current || barX;
         const desiredX = bx + beat * pxPerBeat;
-        const currentX =
-          typeof scrollLayer.x === "number" ? scrollLayer.x : 0;
+        const currentX = typeof scrollLayer.x === "number" ? scrollLayer.x : 0;
         const diff = desiredX - currentX;
 
         if (Math.abs(diff) > 120) {
@@ -744,8 +749,7 @@ export function usePixiVisualizer({
           if (sprite.brightnessFilter && sprite.brightnessState) {
             sprite.brightnessState.target = isActive ? 1.2 : 1.0;
             sprite.brightnessState.current +=
-              (sprite.brightnessState.target -
-                sprite.brightnessState.current) *
+              (sprite.brightnessState.target - sprite.brightnessState.current) *
               0.25;
             sprite.brightnessFilter.brightness(
               sprite.brightnessState.current,
@@ -790,7 +794,8 @@ export function usePixiVisualizer({
                 age: 0,
                 lifetime:
                   PARTICLE_LIFETIME_MIN +
-                  Math.random() * (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN),
+                  Math.random() *
+                    (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN),
                 targetColor: color,
               });
             });

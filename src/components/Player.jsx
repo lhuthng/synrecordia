@@ -33,6 +33,7 @@ export default function Player() {
     deregisterSampler,
     startPlayback,
     pausePlayback,
+    stopPlayback,
     handlePlayPause,
     handleNoteClick,
     handleScrubStart,
@@ -54,6 +55,10 @@ export default function Player() {
 
   // Cache for songs fetched via URL so navigating back doesn't re-fetch
   const songCacheRef = useRef({});
+  // When true, Player should perform the playback position reset after the
+  // Visualizer finishes its fade transition (onReady). This avoids the visual
+  // cross-fade being interrupted by an immediate reset.
+  const pendingResetRef = useRef(false);
 
   // per-track flash counters — increment each time a track fires a note
   const [flashCounters, setFlashCounters] = useState({});
@@ -92,6 +97,10 @@ export default function Player() {
         // Return from cache if available
         if (songCacheRef.current[urlSongId]) {
           if (!cancelled) {
+            // Mark that we want to reset playback once the visualizer reports
+            // it has finished fading to the new song. Do not reset immediately,
+            // otherwise the visual cross-fade will be interrupted.
+            pendingResetRef.current = true;
             setIsVisualReady(false);
             selectSong(songCacheRef.current[urlSongId]);
             setUrlLoading(false);
@@ -294,7 +303,18 @@ export default function Player() {
         bpm={bpm}
         noteWidth={noteWidth}
         playBarPosition={playBarPosition}
-        onReady={() => setIsVisualReady(true)}
+        onReady={() => {
+          // Visualizer notifies when it finished the fade/crossfade. Mark UI as
+          // visually ready and (if requested) perform the playback reset that
+          // was deferred to avoid tearing during the visual transition.
+          setIsVisualReady(true);
+          if (pendingResetRef.current) {
+            // stopPlayback resets the audio/playback state (including cursor).
+            // clear the pending flag immediately to avoid double resets.
+            stopPlayback();
+            pendingResetRef.current = false;
+          }
+        }}
         onScrubStart={handleScrubStart}
         onScrub={handleScrub}
         onNoteClick={handleNoteClick}

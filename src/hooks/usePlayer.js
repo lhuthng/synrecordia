@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
-import { PIANO_DELAY_MS } from "../components/utils/constants.js";
+import { PIANO_DELAY_MS, FADE_MS } from "../components/utils/constants.js";
 
 /* Utility: compute end beat for a song */
 const computeSongEndBeat = (songData) => {
@@ -337,7 +337,7 @@ export default function usePlayer() {
       resetTimeoutRef.current = setTimeout(() => {
         stopPlayback();
         setCurrentBeat(0);
-      }, 200); // keep a small fade timeout; visual component may coordinate with FADE_MS
+      }, FADE_MS); // delay reset until visualizer fade completes (FADE_MS)
     },
     [pausePlayback, stopPlayback],
   );
