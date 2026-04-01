@@ -556,7 +556,7 @@ export function usePixiVisualizer({
           }),
         ];
         pb.eventMode = "static";
-        pb.hitArea = new PIXI.Rectangle(barXRef.current - 5, 0, 10, height);
+        pb.hitArea = new PIXI.Rectangle(barXRef.current - 12, 0, 24, height);
         pb.on("pointerover", () => {
           playBarHoveredRef.current = true;
           setIsHoveringPlayBar(true);

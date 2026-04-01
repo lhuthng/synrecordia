@@ -6,6 +6,7 @@ import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
 import Directory from "./Directory";
 import Visualizer from "./Visualizer";
+import SongTimeline from "./SongTimeline";
 import InstrumentManager from "./instruments/InstrumentManager";
 import usePlayer from "../hooks/usePlayer.js";
 
@@ -333,7 +334,7 @@ export default function Player() {
               background: "bg-note-full",
               shadowBackground: "bg-note-full-dark",
               border: "border-note-full-dark",
-              text: "text-main",
+              text: "text-dark",
             }}
             offColors={{
               background: "bg-note-half",
@@ -365,7 +366,7 @@ export default function Player() {
               background: "bg-note-full",
               shadowBackground: "bg-note-full-dark",
               border: "border-note-full-dark",
-              text: "text-main",
+              text: "text-dark",
             }}
             offColors={{
               background: "bg-note-half",
@@ -422,8 +423,7 @@ export default function Player() {
               <AnimatePresence mode="wait">
                 <Motion.span
                   key={countdown}
-                  className="text-9xl font-bold text-accent-pink select-none"
-                  style={{ textShadow: "0 0 48px rgba(45,212,191,0.65)" }}
+                  className="text-9xl font-iosevka font-bold text-accent-pink text-shadow-[0_0_48px_var(--color-note-full)] select-none"
                   initial={{ opacity: 0, scale: 1.7, y: -16 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.55, y: 16 }}
@@ -436,6 +436,19 @@ export default function Player() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Song timeline */}
+      {song && (
+        <SongTimeline
+          currentBeat={currentBeat}
+          durationBeats={durationBeats}
+          noteWidth={noteWidth}
+          playBarPosition={playBarPosition}
+          onScrubStart={handleScrubStart}
+          onScrub={handleScrub}
+          onNoteWidthChange={handleNoteWidthChange}
+        />
+      )}
 
       <div className="flex gap-2">
         {song?.tracks?.map((track, index) => (
