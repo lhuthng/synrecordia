@@ -142,7 +142,7 @@ export default function SongTimeline({
 
       {/* ── Thumb ──────────────────────────────────────────────────────────── */}
       <div
-        className="absolute top-0 bottom-0 border-x-2 bg-linear-to-r from-note-full/50 from-0% via-transparent via-50% to-note-full/50 to-100% border-note-full"
+        className="absolute top-0 bottom-0 border-x-2 bg-linear-to-r from-note-full/60 from-0% via-note-full/10 via-50% to-note-full/60 to-100% border-note-full hover:brightness-150"
         style={{
           left: `${thumbL * 100}%`,
           right: `${(1 - thumbR) * 100}%`,
@@ -151,17 +151,17 @@ export default function SongTimeline({
       >
         {/* Left handle — moves the high-beat (future) boundary */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-1/3 cursor-ew-resize touch-none hover:bg-note-full/30 transition-colors duration-200"
+          className="absolute -left-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none hover:bg-note-full/30 transition-colors duration-200"
           onPointerDown={(e) => startDrag("left", e)}
         />
         {/* Middle — scrub the whole view */}
         <div
-          className="absolute top-0 bottom-0 left-1/3 right-1/3 cursor-grab active:cursor-grabbing touch-none"
+          className="absolute top-0 bottom-0 left-1/6 right-1/6 cursor-grab active:cursor-grabbing touch-none"
           onPointerDown={(e) => startDrag("thumb", e)}
         />
         {/* Right handle — moves the low-beat (past) boundary */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-1/3 cursor-ew-resize touch-none hover:bg-note-full/30 transition-colors duration-200"
+          className="absolute -right-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none hover:bg-note-full/30 transition-colors duration-200"
           onPointerDown={(e) => startDrag("right", e)}
         />
       </div>
