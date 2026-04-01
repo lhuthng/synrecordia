@@ -39,7 +39,7 @@ export default function Piano({
       setVersion(value);
       pianoSampler.setVersion(value, onSamplerChanged);
     },
-    [pianoSampler, onSamplerChanged],
+    [offReady, callbacks, pianoSampler, onSamplerChanged],
   );
 
   return (

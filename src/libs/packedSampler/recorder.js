@@ -69,4 +69,17 @@ export default class RecorderSampler extends PackedSampler {
       onload: () => callback?.(),
     }).connect(this.volume);
   }
+
+  getVibrato() {
+    const depth = this.vibrato.depth.value;
+    return Math.round(depth * 100);
+  }
+
+  setVibrato(value) {
+    if (value < 0) value = 0;
+    if (value > 100) value = 100;
+
+    const depth = value / 100; // convert to 0–1 range
+    this.vibrato.depth.rampTo(depth, 0.1);
+  }
 }

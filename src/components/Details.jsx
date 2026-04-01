@@ -180,10 +180,20 @@ export default function Details() {
                 5. Why am I missing some fingering patterns?
               </h4>
               <p className="mt-2">
-                Some notes have multiple fingering options. I’m working on tools
-                to pick or let you set the fingering directly (or choose an
-                algorithm that minimizes finger strain). This is a planned
-                improvement - stay tuned.
+                The chart is for the soprano recorder and the UI currently
+                implements two systems: <strong>Baroque</strong> (default) and
+                <strong> Simple</strong>. To switch systems, open the Instrument
+                Controller for that track and choose a different fingering.
+                Reference:{" "}
+                <a
+                  className="underline text-note-full"
+                  href="/references/recorder-fingering-chart.png"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  a soprano recorder fingering chart
+                </a>{" "}
+                was used as a source for the diagrams.
               </p>
             </div>
           </div>

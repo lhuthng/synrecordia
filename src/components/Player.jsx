@@ -237,8 +237,8 @@ export default function Player() {
       </div>
 
       {/* Controls */}
-      <div className="w-full flex justify-between gap-2 not-md:flex-col">
-        <div className="max-w-100 grow text-base">
+      <div className="w-full flex justify-between gap-2 not-sm:flex-col">
+        <div className="max-w-full sm:max-w-100 grow text-base">
           {/* BPM */}
           <div className="mt-2 flex items-center gap-2">
             <label title="bpm">BPM:</label>

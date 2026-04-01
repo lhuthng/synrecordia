@@ -16,6 +16,7 @@ export default function Recorder({
   onSamplerChanged,
 }) {
   const [volume, setVolume] = useState(0);
+  const [vibrato, setVibrato] = useState(0);
 
   const [version, setVersion] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
@@ -25,6 +26,7 @@ export default function Recorder({
 
   useEffect(() => {
     setVolume(recorderSampler.getVolume());
+    setVibrato(recorderSampler.getVibrato());
     setAlternatives(recorderSampler.getAlternatives());
     setVersion(recorderSampler.getVersion());
   }, [recorderSampler]);
@@ -37,6 +39,14 @@ export default function Recorder({
     [recorderSampler],
   );
 
+  const handleVibratoChanged = useCallback(
+    (value) => {
+      setVibrato(value);
+      recorderSampler.setVibrato(value);
+    },
+    [recorderSampler],
+  );
+
   const handleVersionChanged = useCallback(
     (value) => {
       offReady?.();
@@ -44,7 +54,7 @@ export default function Recorder({
       setVersion(value);
       recorderSampler.setVersion(value, onSamplerChanged);
     },
-    [recorderSampler, onSamplerChanged, callbacks],
+    [offReady, recorderSampler, onSamplerChanged, callbacks],
   );
 
   const handleFingeringSystemChanged = useCallback(
@@ -78,8 +88,8 @@ export default function Recorder({
       {toggle &&
         controllerNode &&
         createPortal(
-          <div className="flex flex-col gap-2 max-w-100 [&>*>label]:w-10">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 max-w-full sm:max-w-100 [&>*>label]:w-10">
+            <div className="flex items-center gap-4">
               <label title="volume">Volume:</label>
               <div className="flex-1 mx-4">
                 <DuoSlideBar
@@ -88,6 +98,24 @@ export default function Recorder({
                   step={1}
                   value={volume}
                   onChange={handleVolumeChanged}
+                  thumbColors={{
+                    background: "bg-note-half",
+                    border: "border-note-half-dark",
+                    text: "text-main",
+                  }}
+                  barColor="bg-note-full"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <label title="volume">Vibrato:</label>
+              <div className="flex-1 mx-4">
+                <DuoSlideBar
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={vibrato}
+                  onChange={handleVibratoChanged}
                   thumbColors={{
                     background: "bg-note-half",
                     border: "border-note-half-dark",
