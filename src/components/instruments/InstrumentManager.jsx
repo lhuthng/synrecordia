@@ -154,6 +154,7 @@ export default function InstrumentManager({
             packedSampler={samplerInstance}
             label={slot + 1}
             toggle={toggle}
+            isReady={!!initialReady}
             offReady={() => {
               handleAudioReady?.(false);
               isReadyRef.current = false;

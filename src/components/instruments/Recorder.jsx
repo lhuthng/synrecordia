@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEffect } from "react";
 import { useCallback } from "react";
 import DuoSlideBar from "../DuoSlideBar";
+import DuoSelect from "../DuoSelect";
 
 export default function Recorder({
   packedSampler: recorderSampler,
@@ -14,6 +15,7 @@ export default function Recorder({
   onToggleChanged,
   controllerNode,
   onSamplerChanged,
+  isReady = true,
 }) {
   const [volume, setVolume] = useState(0);
   const [vibrato, setVibrato] = useState(0);
@@ -21,8 +23,12 @@ export default function Recorder({
   const [version, setVersion] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
 
-  const [fingeringSystem, setFingeringSystem] = useState("recorder");
-  const [fingeringSystems, _] = useState(["simple", "recorder"]);
+  const [fingeringSystem, setFingeringSystem] = useState("baroque");
+  const [fingeringSystems] = useState([
+    { value: "baroque", label: "Baroque" },
+    { value: "german", label: "German" },
+    { value: "simple", label: "Simple" },
+  ]);
 
   useEffect(() => {
     setVolume(recorderSampler.getVolume());
@@ -128,33 +134,24 @@ export default function Recorder({
             <div className="flex items-center gap-2">
               <label title="variant">Variant:</label>
               <div className="flex-1 mx-4">
-                <select
-                  className="rounded-xl px-1 focus:outline-main"
+                <DuoSelect
+                  options={alternatives}
                   value={version}
-                  onChange={(e) => handleVersionChanged(e.target.value)}
-                >
-                  {alternatives.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  padding="px-2"
+                  onChange={handleVersionChanged}
+                  disabled={!isReady}
+                />
               </div>
             </div>
             <div className="flex items-center gap-2">
               <label title="version">System:</label>
               <div className="flex-1 mx-4">
-                <select
-                  className="rounded-xl px-1 focus:outline-main"
+                <DuoSelect
+                  options={fingeringSystems}
                   value={fingeringSystem}
-                  onChange={(e) => handleFingeringSystemChanged(e.target.value)}
-                >
-                  {fingeringSystems.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  padding="px-2"
+                  onChange={handleFingeringSystemChanged}
+                />
               </div>
             </div>
           </div>,

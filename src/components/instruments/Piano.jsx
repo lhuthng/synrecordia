@@ -2,6 +2,7 @@ import { createPortal } from "react-dom";
 import Instrument from "./Instrument";
 import { useState } from "react";
 import DuoSlideBar from "../DuoSlideBar";
+import DuoSelect from "../DuoSelect";
 import { useCallback } from "react";
 import { useEffect } from "react";
 
@@ -14,6 +15,7 @@ export default function Piano({
   onToggleChanged,
   controllerNode,
   onSamplerChanged,
+  isReady,
 }) {
   const [volume, setVolume] = useState(0);
   const [version, setVersion] = useState(null);
@@ -83,17 +85,13 @@ export default function Piano({
             <div className="flex items-center gap-2">
               <label title="variant">Variant:</label>
               <div className="flex-1 mx-4">
-                <select
+                <DuoSelect
+                  options={alternatives}
                   value={version}
-                  onChange={(e) => handleVersionChanged(e.target.value)}
-                  className="rounded-xl px-1 focus:outline-main"
-                >
-                  {alternatives.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  padding="px-2"
+                  onChange={handleVersionChanged}
+                  disabled={!isReady}
+                />
               </div>
             </div>
           </div>,

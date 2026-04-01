@@ -1,5 +1,3 @@
-import fingeringChart from "../../assets/references/fingering-chart.json";
-
 const generateMidiMap = () => {
   const names = [
     "C",
@@ -33,18 +31,6 @@ export const getHighestNote = (notes) => {
     }, notes[0]);
   }
   return notes;
-};
-
-export const selectFingering = (noteName, system, preferSystem) => {
-  const map = fingeringChart?.systems?.[system] ?? {};
-  const entry = map[noteName];
-  if (!entry) return null;
-  if (typeof entry === "string") return entry;
-
-  if (entry[preferSystem]) return entry[preferSystem];
-  if (entry.I) return entry.I;
-  const firstKey = Object.keys(entry)[0];
-  return firstKey ? entry[firstKey] : null;
 };
 
 export const getBeatsPerBar = (timeSignature) => {

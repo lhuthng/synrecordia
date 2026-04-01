@@ -28,7 +28,7 @@ export default function usePlayer() {
   const [repeat, setRepeat] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [isAudioReady, setIsAudioReady] = useState([]);
-  const [fingeringSystem, setFingeringSystem] = useState("recorder");
+  const [fingeringSystem, setFingeringSystem] = useState("baroque");
 
   const durationBeats = computeSongEndBeat(song);
 

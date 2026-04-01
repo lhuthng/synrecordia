@@ -180,10 +180,11 @@ export default function Details() {
                 5. Why am I missing some fingering patterns?
               </h4>
               <p className="mt-2">
-                The chart is for the soprano recorder and the UI currently
-                implements two systems: <strong>Baroque</strong> (default) and
-                <strong> Simple</strong>. To switch systems, open the Instrument
-                Controller for that track and choose a different fingering.
+                The chart is for the soprano recorder. Some alternative
+                fingering variants that appear in reference materials are not
+                yet implemented in the UI but are planned for future updates. To
+                change between the available systems, open the Instrument
+                Controller for that track and choose a fingering system.
                 Reference:{" "}
                 <a
                   className="underline text-note-full"

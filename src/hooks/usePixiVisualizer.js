@@ -25,9 +25,9 @@ import {
 } from "../components/utils/colorUtils.js";
 import {
   getHighestNote,
-  selectFingering,
   getBeatsPerBar,
 } from "../components/utils/fingeringUtils.js";
+import { createFingeringResolver } from "../libs/fingering/FingeringResolverFactory.js";
 import {
   getHolePositions,
   drawFingering,
@@ -48,8 +48,7 @@ export function usePixiVisualizer({
   durationBeats = 0,
   isPlaying = false,
   bpm = 120,
-  fingeringSystem = "recorder",
-  baroque = true,
+  fingeringSystem = "baroque",
   noteWidth = 70,
   height,
   playBarPosition = 0.95,
@@ -166,14 +165,14 @@ export function usePixiVisualizer({
 
     if (!recorderTrack || !Array.isArray(recorderTrack.actions)) return [];
 
-    const prefer = baroque ? "B" : "G";
+    const resolver = createFingeringResolver(fingeringSystem);
 
     return recorderTrack.actions
       .filter((action) => action.type === "note")
       .map((action) => {
         const noteName = getHighestNote(action.pitches ?? action.pitch);
         if (!noteName) return null;
-        const fingering = selectFingering(noteName, fingeringSystem, prefer);
+        const fingering = resolver.getPattern(noteName);
         if (!fingering) return null;
         return {
           time: action.time ?? 0,
@@ -183,7 +182,7 @@ export function usePixiVisualizer({
         };
       })
       .filter(Boolean);
-  }, [displaySong, fingeringSystem, baroque]);
+  }, [displaySong, fingeringSystem]);
 
   // ─── Sync simple props into refs ─────────────────────────────────────────────
   useEffect(() => {

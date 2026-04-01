@@ -450,7 +450,7 @@ export default function Player() {
         />
       )}
 
-      <div className="flex gap-2">
+      <div className="flex mt-4 gap-2">
         {song?.tracks?.map((track, index) => (
           <InstrumentManager
             controllerNode={controllerNode}
@@ -468,15 +468,13 @@ export default function Player() {
             offReady={() => handleAudioReady(index, false)}
             callbacks={{
               pausePlayback,
-              getFingeringSystems: () => ["recorder", "simple"],
-              getFingeringStyles: () => ["german", "baroque"],
               setFingeringSystem,
             }}
           />
         ))}
       </div>
 
-      {isReady && (
+      {!!song && (
         <div className="space-y-2">
           <h2>
             Instrument Controller:
