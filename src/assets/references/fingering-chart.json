@@ -3,7 +3,16 @@
   "type": "soprano",
   "approximate": false,
   "noteShiftSemitones": 12,
-  "holes": ["T", "LLL", "RRRR"],
+  "holes": [
+    "left-thumb",
+    "left-index",
+    "left-middle",
+    "left-ring",
+    "right-index",
+    "right-middle",
+    "right-ring",
+    "right-pinky"
+  ],
   "legend": {
     "1": "pressed",
     "0": "open",
