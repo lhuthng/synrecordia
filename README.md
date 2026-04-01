@@ -3,6 +3,10 @@
 [![Progress](https://img.shields.io/badge/Progress-60%25-yellow?style=flat-square)](#)
 
 <p align="center">
+  <img src="demo/preview.gif" alt="Visualizer preview" />
+</p>
+
+<p align="center">
   You can view the SynRecordia live <a href="https://synrecordia.netlify.app/">demo</a> online.
 </p>
 
