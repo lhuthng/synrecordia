@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { cn } from "../libs/utils";
 
 const NOTE_WIDTH_MIN = 40;
 const NOTE_WIDTH_MAX = 200;
@@ -19,6 +20,7 @@ export default function SongTimeline({
   const trackRef = useRef(null);
   const [trackWidth, setTrackWidth] = useState(1);
   const dragRef = useRef(null);
+  const animRef = useRef(null);
   const atLimitRef = useRef(false);
   const [atLimit, setAtLimit] = useState(false);
 
@@ -116,12 +118,17 @@ export default function SongTimeline({
     return () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      if (animRef.current) cancelAnimationFrame(animRef.current);
     };
   }, []);
 
   // ── Start a drag ──────────────────────────────────────────────────────────
   const startDrag = (type, e) => {
     e.stopPropagation();
+    if (animRef.current) {
+      cancelAnimationFrame(animRef.current);
+      animRef.current = null;
+    }
     cbRef.current.onScrubStart?.();
     dragRef.current = {
       type,
@@ -135,56 +142,104 @@ export default function SongTimeline({
     };
   };
 
-  if (!durationBeats) return null;
+  // ── Click on track background to seek ────────────────────────────────────
+  const handleTrackClick = (e) => {
+    if (dragRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const clickFrac = (e.clientX - rect.left) / rect.width;
+    const d = Math.max(1, durationBeats);
+    const targetBeat = clamp((1 - clickFrac) * d, 0, d);
 
-  const borderColor = atLimit ? "border-accent-pink" : "border-note-full";
-  const gradientColors = atLimit
-    ? "from-accent-pink/60 via-accent-pink/10 to-accent-pink/60"
-    : "from-note-full/60 via-note-full/10 to-note-full/60";
-  const handleHover = atLimit
-    ? "hover:bg-accent-pink/30"
-    : "hover:bg-note-full/30";
+    if (animRef.current) {
+      cancelAnimationFrame(animRef.current);
+      animRef.current = null;
+    }
+
+    cbRef.current.onScrubStart?.();
+
+    const startBeat = currentBeat;
+    const startTime = performance.now();
+    const DURATION = 380; // ms
+
+    const animate = (now) => {
+      const t = Math.min((now - startTime) / DURATION, 1);
+      // Ease-out cubic
+      const easedT = 1 - Math.pow(1 - t, 3);
+      cbRef.current.onScrub?.(
+        clamp(startBeat + (targetBeat - startBeat) * easedT, 0, d),
+      );
+      if (t < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      } else {
+        animRef.current = null;
+      }
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+  };
+
+  if (!durationBeats) return null;
 
   return (
     <div
       ref={trackRef}
-      className="relative w-full h-7 bg-ui rounded-sm overflow-hidden select-none outline-note-full outline-2"
+      className="relative w-full h-7 rounded-sm overflow-hidden select-none cursor-pointer outline-note-full outline-2"
       title="Song timeline — drag thumb to scrub · drag edges to zoom"
+      onClick={handleTrackClick}
     >
-      {/* ── Dim regions outside the thumb ──────────────────────────────────── */}
-      <div
-        className="absolute top-0 bottom-0 left-0 bg-dark/40 pointer-events-none"
-        style={{ right: `${(1 - thumbL) * 100}%` }}
-      />
-      <div
-        className="absolute top-0 bottom-0 right-0 bg-dark/40 pointer-events-none"
-        style={{ left: `${thumbR * 100}%` }}
-      />
-
       {/* ── Thumb ──────────────────────────────────────────────────────────── */}
       <div
-        className={`absolute top-0 bottom-0 border-x-2 bg-linear-to-r ${gradientColors} ${borderColor} hover:brightness-150 transition-colors duration-200`}
+        className={cn(
+          "absolute top-0 bottom-0 border-x-2 bg-linear-to-r hover:brightness-150 transition-colors duration-200 ",
+          atLimit ? "border-accent-pink" : "border-note-full",
+          atLimit
+            ? "from-accent-pink/60 via-accent-pink/10 to-accent-pink/60"
+            : "from-note-full/60 via-note-full/10 to-note-full/60",
+        )}
         style={{
           left: `${thumbL * 100}%`,
           right: `${(1 - thumbR) * 100}%`,
-          minWidth: 24,
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Left handle — moves the high-beat (future) boundary */}
         <div
-          className={`absolute -left-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none ${handleHover} transition-colors duration-200`}
+          className={`absolute top-0 bottom-0 right-full sm:-translate-x-2 cursor-ew-resize touch-none flex items-center justify-center px-1`}
           onPointerDown={(e) => startDrag("left", e)}
-        />
-        {/* Middle — scrub the whole view */}
+        >
+          <svg
+            viewBox="0 0 12 16"
+            className={cn(
+              "w-3 h-4 fill-none stroke-2 transition-colors duration-200",
+              atLimit ? "stroke-accent-pink" : "stroke-note-full",
+            )}
+            aria-hidden="true"
+          >
+            <line x1="10" y1="2" x2="2" y2="8" strokeLinecap="round" />
+            <line x1="10" y1="14" x2="2" y2="8" strokeLinecap="round" />
+          </svg>
+        </div>
         <div
-          className="absolute top-0 bottom-0 left-1/6 right-1/6 cursor-grab active:cursor-grabbing touch-none"
+          className="absolute top-0 inset-0 cursor-grab active:cursor-grabbing touch-none"
           onPointerDown={(e) => startDrag("thumb", e)}
         />
         {/* Right handle — moves the low-beat (past) boundary */}
         <div
-          className={`absolute -right-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none ${handleHover} transition-colors duration-200`}
+          className={`absolute top-0 bottom-0 left-full sm:translate-x-2 cursor-ew-resize touch-none flex items-center justify-center px-1`}
           onPointerDown={(e) => startDrag("right", e)}
-        />
+        >
+          <svg
+            viewBox="0 0 12 16"
+            className={cn(
+              "w-3 h-4 fill-none stroke-2 transition-colors duration-200",
+              atLimit ? "stroke-accent-pink" : "stroke-note-full",
+            )}
+            aria-hidden="true"
+          >
+            <line x1="2" y1="2" x2="10" y2="8" strokeLinecap="round" />
+            <line x1="2" y1="14" x2="10" y2="8" strokeLinecap="round" />
+          </svg>
+        </div>
       </div>
 
       {/* ── Playhead ───────────────────────────────────────────────────────── */}

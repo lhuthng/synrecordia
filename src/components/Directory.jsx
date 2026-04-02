@@ -199,14 +199,12 @@ function SongEntry({ song, onSelect }) {
         )}
       >
         <div className="flex items-start justify-between gap-2">
-          <span className="font-semibold text-sm leading-snug">
+          <span className="font-semibold text-md leading-snug">
             {song.title}
           </span>
           <DifficultyBadge difficulty={song.difficulty} />
         </div>
-        <div className="text-xs text-main/50 mt-0.5 font-mono">
-          {song.bpm} BPM
-        </div>
+        <div className="text-xs text-main mt-0.5 font-mono">{song.bpm} BPM</div>
         <DifficultyExpression
           className="right-0 bottom-0 stroke-note-half-dark/40 translate-x-3 translate-y-4 -rotate-30"
           difficulty={song.difficulty}
