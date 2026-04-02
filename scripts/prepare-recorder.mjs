@@ -335,13 +335,7 @@ async function main() {
   console.log("prepare-recorder: completed.");
 }
 
-if (
-  process.argv &&
-  process.argv[1] &&
-  path.basename(process.argv[1]).startsWith("prepare-recorder")
-) {
-  main().catch((err) => {
-    console.error("prepare-recorder: fatal error:", err);
-    process.exit(1);
-  });
-}
+main().catch((err) => {
+  console.error(err.message || err);
+  process.exit(1);
+});

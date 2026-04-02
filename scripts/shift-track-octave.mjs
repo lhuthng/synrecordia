@@ -1,5 +1,27 @@
+#!/usr/bin/env node
+/**
+ * shift-track-octave.mjs
+ *
+ * Shifts all notes in a specific track of a song JSON file up or down by a
+ * given number of octaves. Optionally restricts the shift to a time range.
+ * The file is modified in place.
+ *
+ * Usage:
+ *   node scripts/shift-track-octave.mjs <json-path> <track-id> [up|down] [steps] [fromTime] [toTime]
+ *
+ * Arguments:
+ *   json-path   Path to the song JSON file (modified in place).
+ *   track-id    The `id` field of the track to shift.
+ *   up|down     Direction to shift (default: "up").
+ *   steps       Number of octaves to shift (default: 1).
+ *   fromTime    Start of the time range in beats (default: beginning).
+ *   toTime      End of the time range in beats (default: end).
+ */
+
 import fs from "node:fs";
 import path from "node:path";
+
+// ── Argument parsing ──────────────────────────────────────────────────────────
 
 const [
   ,
@@ -12,43 +34,62 @@ const [
   toArg,
 ] = process.argv;
 
-if (!inputArg || !trackIdArg) {
-  console.error(
-    "Usage: node scripts/shift-track-octave.mjs <json-path> <track-id> [up|down] [steps] [fromTime] [toTime]",
-  );
-  process.exit(1);
+function validateArgs() {
+  if (!inputArg || !trackIdArg) {
+    console.error(
+      "Usage: node scripts/shift-track-octave.mjs <json-path> <track-id> [up|down] [steps] [fromTime] [toTime]",
+    );
+    process.exit(1);
+  }
+
+  const direction = String(directionArg).toLowerCase();
+  if (direction !== "up" && direction !== "down") {
+    console.error('Direction must be "up" or "down".');
+    process.exit(1);
+  }
+
+  const steps = Number.parseInt(stepsArg, 10);
+  if (!Number.isFinite(steps) || steps < 0) {
+    console.error("Steps must be a non-negative integer.");
+    process.exit(1);
+  }
+
+  const fromTime = fromArg === undefined ? -Infinity : Number(fromArg);
+  const toTime = toArg === undefined ? Infinity : Number(toArg);
+
+  if (
+    (fromArg !== undefined && !Number.isFinite(fromTime)) ||
+    (toArg !== undefined && !Number.isFinite(toTime))
+  ) {
+    console.error("fromTime and toTime must be finite numbers.");
+    process.exit(1);
+  }
+
+  if (fromTime > toTime) {
+    console.error("fromTime must be less than or equal to toTime.");
+    process.exit(1);
+  }
+
+  return { direction, steps, fromTime, toTime };
 }
 
-const inputPath = path.resolve(inputArg);
-const direction = String(directionArg).toLowerCase();
-const steps = Number.parseInt(stepsArg, 10);
-const fromTime = fromArg === undefined ? -Infinity : Number(fromArg);
-const toTime = toArg === undefined ? Infinity : Number(toArg);
+// ── Pitch helpers ─────────────────────────────────────────────────────────────
 
-if (!Number.isFinite(steps) || steps < 0) {
-  console.error("Steps must be a non-negative integer");
-  process.exit(1);
-}
-
-if (direction !== "up" && direction !== "down") {
-  console.error('Direction must be either "up" or "down"');
-  process.exit(1);
-}
-
-if (
-  !Number.isFinite(fromTime) ||
-  !Number.isFinite(toTime) ||
-  fromTime > toTime
-) {
-  console.error(
-    "fromTime and toTime must be finite numbers with fromTime <= toTime",
-  );
-  process.exit(1);
-}
-
-function isObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
+const NOTE_ORDER = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const PITCH_CLASSES = [
+  "C",
+  "C#",
+  "D",
+  "D#",
+  "E",
+  "F",
+  "F#",
+  "G",
+  "G#",
+  "A",
+  "A#",
+  "B",
+];
 
 function shiftNoteName(noteName, semitones) {
   const match = String(noteName).match(/^([A-G])(#?)(-?\d+)$/);
@@ -56,107 +97,78 @@ function shiftNoteName(noteName, semitones) {
 
   const [, letter, sharp, octaveText] = match;
   const octave = Number(octaveText);
-
   if (!Number.isFinite(octave)) return noteName;
 
-  const noteOrder = {
-    C: 0,
-    D: 2,
-    E: 4,
-    F: 5,
-    G: 7,
-    A: 9,
-    B: 11,
-  };
-
-  let midi = (octave + 1) * 12 + noteOrder[letter] + (sharp ? 1 : 0);
+  let midi = (octave + 1) * 12 + NOTE_ORDER[letter] + (sharp ? 1 : 0);
   midi += semitones;
-
   if (midi < 0) return noteName;
 
-  const pitchClasses = [
-    "C",
-    "C#",
-    "D",
-    "D#",
-    "E",
-    "F",
-    "F#",
-    "G",
-    "G#",
-    "A",
-    "A#",
-    "B",
-  ];
-
-  const pitchClass = pitchClasses[midi % 12];
-  const shiftedOctave = Math.floor(midi / 12) - 1;
-  return `${pitchClass}${shiftedOctave}`;
+  return `${PITCH_CLASSES[midi % 12]}${Math.floor(midi / 12) - 1}`;
 }
 
 function shiftPitchValue(value, semitones) {
-  if (typeof value === "string") {
-    return shiftNoteName(value, semitones);
-  }
-
-  if (Array.isArray(value)) {
+  if (typeof value === "string") return shiftNoteName(value, semitones);
+  if (Array.isArray(value))
     return value.map((item) => shiftPitchValue(item, semitones));
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, shiftPitchValue(v, semitones)]),
+    );
   }
-
-  if (isObject(value)) {
-    const next = {};
-    for (const [key, innerValue] of Object.entries(value)) {
-      next[key] = shiftPitchValue(innerValue, semitones);
-    }
-    return next;
-  }
-
   return value;
 }
 
+// ── Track transform ───────────────────────────────────────────────────────────
+
 function shiftTrack(song, trackId, semitones, rangeStart, rangeEnd) {
-  if (!isObject(song) || !Array.isArray(song.tracks)) {
-    throw new Error("Invalid song JSON: expected a tracks array");
+  if (!song || !Array.isArray(song.tracks)) {
+    throw new Error("Invalid song JSON: expected a tracks array.");
   }
 
-  const nextSong = structuredClone(song);
-  const track = nextSong.tracks.find((entry) => entry && entry.id === trackId);
+  const result = structuredClone(song);
+  const track = result.tracks.find((t) => t?.id === trackId);
 
-  if (!track) {
-    throw new Error(`Track not found: ${trackId}`);
-  }
-
+  if (!track) throw new Error(`Track not found: "${trackId}".`);
   if (!Array.isArray(track.actions)) {
-    throw new Error(`Track "${trackId}" does not contain an actions array`);
+    throw new Error(`Track "${trackId}" has no actions array.`);
   }
 
   track.actions = track.actions.map((action) => {
-    if (!isObject(action)) return action;
+    if (!action || typeof action !== "object") return action;
 
-    const nextAction = { ...action };
-    const actionTime = Number(nextAction.time ?? 0);
-    const isInRange = actionTime >= rangeStart && actionTime <= rangeEnd;
+    const time = Number(action.time ?? 0);
+    if (time < rangeStart || time > rangeEnd) return action;
 
-    if (isInRange && "pitch" in nextAction) {
-      nextAction.pitch = shiftPitchValue(nextAction.pitch, semitones);
-    }
-
-    if (isInRange && "pitches" in nextAction) {
-      nextAction.pitches = shiftPitchValue(nextAction.pitches, semitones);
-    }
-
-    return nextAction;
+    const shifted = { ...action };
+    if ("pitch" in shifted)
+      shifted.pitch = shiftPitchValue(shifted.pitch, semitones);
+    if ("pitches" in shifted)
+      shifted.pitches = shiftPitchValue(shifted.pitches, semitones);
+    return shifted;
   });
 
-  return nextSong;
+  return result;
 }
 
-const semitones = direction === "up" ? steps * 12 : -steps * 12;
-const raw = fs.readFileSync(inputPath, "utf8");
-const song = JSON.parse(raw);
-const updated = shiftTrack(song, trackIdArg, semitones, fromTime, toTime);
+// ── Entry point ───────────────────────────────────────────────────────────────
 
-fs.writeFileSync(inputPath, `${JSON.stringify(updated, null, 2)}\n`);
-console.log(
-  `Shifted track "${trackIdArg}" ${direction} by ${steps} octave(s) from ${fromTime} to ${toTime} in ${inputPath}`,
-);
+function main() {
+  const { direction, steps, fromTime, toTime } = validateArgs();
+
+  const inputPath = path.resolve(inputArg);
+  const song = JSON.parse(fs.readFileSync(inputPath, "utf8"));
+  const semitones = direction === "up" ? steps * 12 : -(steps * 12);
+  const updated = shiftTrack(song, trackIdArg, semitones, fromTime, toTime);
+
+  fs.writeFileSync(inputPath, `${JSON.stringify(updated, null, 2)}\n`);
+
+  const rangeDesc =
+    fromTime === -Infinity && toTime === Infinity
+      ? "entire song"
+      : `beats ${fromTime}–${toTime}`;
+  console.log(
+    `Shifted track "${trackIdArg}" ${direction} by ${steps} octave(s) (${rangeDesc}) in ${inputPath}`,
+  );
+}
+
+main();

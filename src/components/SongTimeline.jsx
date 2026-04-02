@@ -21,6 +21,9 @@ export default function SongTimeline({
   const [trackWidth, setTrackWidth] = useState(1);
   const dragRef = useRef(null);
   const animRef = useRef(null);
+  // Set to true when a handle drag ends so the subsequent synthetic click on the
+  // track background (which fires after pointerup) is suppressed.
+  const didDragRef = useRef(false);
   const atLimitRef = useRef(false);
   const [atLimit, setAtLimit] = useState(false);
 
@@ -106,6 +109,11 @@ export default function SongTimeline({
     };
 
     const onUp = () => {
+      if (dragRef.current) {
+        // A handle drag just finished. Mark it so the click event that the
+        // browser fires immediately after pointerup is ignored.
+        didDragRef.current = true;
+      }
       if (atLimitRef.current) {
         atLimitRef.current = false;
         setAtLimit(false);
@@ -144,6 +152,11 @@ export default function SongTimeline({
 
   // ── Click on track background to seek ────────────────────────────────────
   const handleTrackClick = (e) => {
+    // Suppress the click that fires immediately after a handle drag ends.
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
     if (dragRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const clickFrac = (e.clientX - rect.left) / rect.width;

@@ -5,10 +5,11 @@
 //   node synrecordia/scripts/trim_recorder_notes.mjs <file-or-dir> [--in-place] [--backup]
 
 import { promises as fsp } from "fs";
-import fs from "fs";
 import path from "path";
 
-function noteNameToMidi(name) {
+// ── Pitch utilities ───────────────────────────────────────────────────────────
+
+function pitchToMidi(name) {
   if (name == null) return NaN;
   if (typeof name === "number") return name;
   if (typeof name === "string") {
@@ -25,12 +26,12 @@ function noteNameToMidi(name) {
   return NaN;
 }
 
-function pickHighest(pitches) {
+function highestPitch(pitches) {
   if (!Array.isArray(pitches) || pitches.length === 0) return null;
   let best = null;
   let bestMidi = -Infinity;
   for (const p of pitches) {
-    const m = noteNameToMidi(p);
+    const m = pitchToMidi(p);
     if (!Number.isNaN(m) && m > bestMidi) {
       bestMidi = m;
       best = p;
@@ -40,7 +41,89 @@ function pickHighest(pitches) {
   return best ?? pitches[0];
 }
 
-async function processFile(filePath, opts = { inPlace: false, makeBackup: false }) {
+// ── Core transformation ───────────────────────────────────────────────────────
+
+/**
+ * Apply all three trimming passes to an actions array.
+ *
+ * Mutations:
+ *   - Action objects may have their `duration` mutated in place (trim pass).
+ *   - The original array reference is NOT mutated; a new filtered array is
+ *     returned for the remove pass.
+ *
+ * @param {object[]} actions
+ * @returns {{ actions: object[], collapsed: number, trimmed: number, removed: number }}
+ */
+function trimActions(actions) {
+  // ── Pass 1: collapse polyphonic (multi-note) actions ──────────────────────
+  let collapsed = 0;
+  for (const a of actions) {
+    if (!a || a.type !== "note") continue;
+    if (Array.isArray(a.pitches) && a.pitches.length > 0) {
+      const chosen = highestPitch(a.pitches);
+      if (chosen != null) {
+        a.pitch = chosen;
+        delete a.pitches;
+        collapsed += 1;
+      }
+    } else if (Array.isArray(a.pitch) && a.pitch.length > 0) {
+      const chosen = highestPitch(a.pitch);
+      if (chosen != null) {
+        a.pitch = chosen;
+        collapsed += 1;
+      }
+    }
+  }
+
+  // ── Pass 2: trim overlapping note durations ───────────────────────────────
+  // Collect note actions with their original index, sorted by start time.
+  const noteItems = [];
+  for (let i = 0; i < actions.length; i += 1) {
+    const a = actions[i];
+    if (!a || a.type !== "note") continue;
+    const time = Number(a.time);
+    if (!Number.isFinite(time)) continue;
+    const dur = Number(a.duration);
+    noteItems.push({ idx: i, time, duration: Number.isFinite(dur) ? dur : 0 });
+  }
+  noteItems.sort((x, y) => x.time - y.time || x.idx - y.idx);
+
+  const removeIdx = new Set();
+  let trimmed = 0;
+
+  for (let k = 0; k < noteItems.length - 1; k += 1) {
+    const cur = noteItems[k];
+    const next = noteItems[k + 1];
+    if (!cur || !next) continue;
+    const curEnd = cur.time + cur.duration;
+    if (curEnd > next.time) {
+      const newDur = Math.max(0, next.time - cur.time);
+      if (newDur <= 0) {
+        removeIdx.add(cur.idx);
+      } else {
+        const a = actions[cur.idx];
+        if (a) {
+          a.duration = newDur;
+          // Keep noteItems in sync so subsequent iterations use the updated value.
+          cur.duration = newDur;
+          trimmed += 1;
+        }
+      }
+    }
+  }
+
+  // ── Pass 3: remove zero-duration notes ────────────────────────────────────
+  const removed = removeIdx.size;
+  const filtered =
+    removed > 0 ? actions.filter((_, i) => !removeIdx.has(i)) : actions;
+
+  return { actions: filtered, collapsed, trimmed, removed };
+}
+
+// ── File processing ───────────────────────────────────────────────────────────
+
+async function processFile(filePath, opts = { inPlace: false, backup: false }) {
+  // Read
   let raw;
   try {
     raw = await fsp.readFile(filePath, "utf8");
@@ -49,6 +132,7 @@ async function processFile(filePath, opts = { inPlace: false, makeBackup: false 
     return;
   }
 
+  // Parse
   let doc;
   try {
     doc = JSON.parse(raw);
@@ -62,99 +146,40 @@ async function processFile(filePath, opts = { inPlace: false, makeBackup: false 
     return;
   }
 
-  const trackIndex = doc.tracks.findIndex((t) => t && t.instrument === "recorder");
+  // Locate recorder track (fall back to index 0)
+  const trackIndex = doc.tracks.findIndex(
+    (t) => t && t.instrument === "recorder",
+  );
   const useIndex = trackIndex === -1 ? 0 : trackIndex;
   const track = doc.tracks[useIndex];
+
   if (!track || !Array.isArray(track.actions)) {
     console.error(`No usable actions in track ${useIndex} of ${filePath}`);
     return;
   }
 
-  const actions = track.actions;
-
-  // 1) Collapse multi-note actions (pitches -> pitch with highest)
-  let collapsed = 0;
-  for (const a of actions) {
-    if (!a || a.type !== "note") continue;
-    if (Array.isArray(a.pitches) && a.pitches.length > 0) {
-      const chosen = pickHighest(a.pitches);
-      if (chosen != null) {
-        a.pitch = chosen;
-        delete a.pitches;
-        collapsed += 1;
-      }
-    } else if (Array.isArray(a.pitch) && a.pitch.length > 0) {
-      const chosen = pickHighest(a.pitch);
-      if (chosen != null) {
-        a.pitch = chosen;
-        collapsed += 1;
-      }
-    }
-  }
-
-  // 2) Collect note actions sorted by start time then original index
-  const noteItems = [];
-  for (let i = 0; i < actions.length; i += 1) {
-    const a = actions[i];
-    if (!a || a.type !== "note") continue;
-    const time = Number(a.time);
-    if (!Number.isFinite(time)) continue;
-    const dur = Number(a.duration);
-    noteItems.push({ idx: i, time, duration: Number.isFinite(dur) ? dur : 0 });
-  }
-  noteItems.sort((x, y) => (x.time - y.time) || (x.idx - y.idx));
-
-  // 3) Trim overlaps based on temporal ordering
-  const removeIdx = new Set();
-  let trimmed = 0;
-  for (let k = 0; k < noteItems.length - 1; k += 1) {
-    const cur = noteItems[k];
-    // find the next note that hasn't been removed (using the ordered list)
-    const next = noteItems[k + 1];
-    if (!cur || !next) continue;
-    const curEnd = cur.time + (Number.isFinite(cur.duration) ? cur.duration : 0);
-    const nextStart = next.time;
-    if (curEnd > nextStart) {
-      const newDur = Math.max(0, nextStart - cur.time);
-      if (newDur <= 0) {
-        removeIdx.add(cur.idx);
-      } else {
-        const a = actions[cur.idx];
-        if (a) {
-          a.duration = newDur;
-          trimmed += 1;
-        }
-      }
-    }
-  }
-
-  // Remove zero-duration notes (marked)
-  if (removeIdx.size > 0) {
-    // Build new actions array preserving order and excluding removed indices
-    const newActions = [];
-    for (let i = 0; i < actions.length; i += 1) {
-      if (removeIdx.has(i)) continue;
-      newActions.push(actions[i]);
-    }
-    // Replace in-place
-    track.actions = newActions;
-  }
+  // Transform
+  const { actions, collapsed, trimmed, removed } = trimActions(track.actions);
+  track.actions = actions;
 
   // Summary
-  const removed = removeIdx.size;
   console.log(`File: ${filePath}`);
-  console.log(`  Track processed: index=${useIndex} instrument=${track.instrument || "unknown"}`);
-  console.log(`  Multi-note actions collapsed: ${collapsed}`);
-  console.log(`  Notes trimmed (duration shortened): ${trimmed}`);
-  console.log(`  Notes removed (zero duration): ${removed}`);
+  console.log(
+    `  Track:     index=${useIndex}  instrument=${track.instrument ?? "unknown"}`,
+  );
+  console.log(
+    `  Collapsed: ${collapsed} multi-note action(s) reduced to single pitch`,
+  );
+  console.log(`  Trimmed:   ${trimmed} note(s) had duration shortened`);
+  console.log(`  Removed:   ${removed} zero-duration note(s) dropped`);
 
-  // Write result
+  // Write
   if (opts.inPlace) {
-    if (opts.makeBackup) {
+    if (opts.backup) {
       const bak = `${filePath}.bak`;
       try {
         await fsp.writeFile(bak, raw, "utf8");
-        console.log(`  Backup written: ${bak}`);
+        console.log(`  Backup:    ${bak}`);
       } catch (err) {
         console.error(`  Failed to write backup ${bak}:`, err.message);
         return;
@@ -172,12 +197,14 @@ async function processFile(filePath, opts = { inPlace: false, makeBackup: false 
     const out = path.join(dir, `${base}.trimmed.json`);
     try {
       await fsp.writeFile(out, JSON.stringify(doc, null, 2), "utf8");
-      console.log(`  Written: ${out}`);
+      console.log(`  Written:   ${out}`);
     } catch (err) {
       console.error(`  Failed to write ${out}:`, err.message);
     }
   }
 }
+
+// ── Path dispatch ─────────────────────────────────────────────────────────────
 
 async function processPath(target, opts) {
   try {
@@ -196,15 +223,19 @@ async function processPath(target, opts) {
   }
 }
 
+// ── Entry point ───────────────────────────────────────────────────────────────
+
 async function main() {
   const argv = process.argv.slice(2);
   if (argv.length === 0) {
-    console.error("Usage: trim_recorder_notes.mjs <file-or-dir> [--in-place] [--backup]");
+    console.error(
+      "Usage: trim_recorder_notes.mjs <file-or-dir> [--in-place] [--backup]",
+    );
     process.exit(1);
   }
   const opts = {
     inPlace: argv.includes("--in-place"),
-    makeBackup: argv.includes("--backup"),
+    backup: argv.includes("--backup"),
   };
   const targets = argv.filter((a) => !a.startsWith("--"));
   for (const t of targets) {
@@ -212,9 +243,7 @@ async function main() {
   }
 }
 
-if (process.argv[1] && path.basename(process.argv[1]).endsWith("trim_recorder_notes.mjs")) {
-  main().catch((e) => {
-    console.error("Unhandled error:", e);
-    process.exit(2);
-  });
-}
+main().catch((e) => {
+  console.error("Unhandled error:", e);
+  process.exit(2);
+});
