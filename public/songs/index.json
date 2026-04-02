@@ -2,6 +2,7 @@
   {
     "id": "super-mario-main-theme",
     "title": "Super Mario Main Theme",
+    "composer": "Koji Kondo",
     "bpm": 180,
     "file": "super-mario-main-theme.json",
     "difficulty": "medium"
@@ -9,6 +10,7 @@
   {
     "id": "fallen-down-reprise",
     "title": "Fallen Down (Reprise)",
+    "composer": "Toby Fox",
     "bpm": 110,
     "file": "fallen-down-reprise.json",
     "difficulty": "easy"
@@ -16,6 +18,7 @@
   {
     "id": "ode-to-joy",
     "title": "Ode To Joy",
+    "composer": "Ludwig van Beethoven",
     "bpm": 140,
     "file": "ode-to-joy.json",
     "difficulty": "beginner"
@@ -23,6 +26,7 @@
   {
     "id": "song-of-storm",
     "title": "Song Of Storm",
+    "composer": "Koji Kondo",
     "bpm": 180,
     "file": "song-of-storm.json",
     "difficulty": "hard"
@@ -30,6 +34,7 @@
   {
     "id": "yuna",
     "title": "Yuna",
+    "composer": "PYKAMIA",
     "bpm": 120,
     "file": "yuna.json",
     "difficulty": "medium"

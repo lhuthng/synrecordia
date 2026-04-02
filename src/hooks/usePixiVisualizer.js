@@ -58,7 +58,6 @@ export function usePixiVisualizer({
   onNoteClick,
   onPlayBarPositionChange,
   onScrollHint,
-  onTouchHint,
   interactionLocked = false,
 }) {
   // ─── DOM refs ────────────────────────────────────────────────────────────────
@@ -112,15 +111,11 @@ export function usePixiVisualizer({
   const isPlayBarDraggingRef = useRef(false);
   const dragStartPlayBarPositionRef = useRef(0);
 
-  // ─── Multi-touch tracking refs (two-finger scrub) ────────────────────────────
+  // ─── Multi-touch tracking refs ───────────────────────────────────────────────
   const activeTouchPointersRef = useRef(new Map()); // pointerId → clientX
-  const isTwoFingerScrubRef = useRef(false);
-  const twoFingerStartAvgXRef = useRef(0);
-  const twoFingerStartBeatRef = useRef(0);
 
-  // ─── Interaction lock + hint-throttle refs ────────────────────────────────────
+  // ─── Interaction lock ref ────────────────────────────────────────────────────
   const interactionLockedRef = useRef(interactionLocked);
-  const touchHintShownRef = useRef(false); // prevent spamming hint per gesture
 
   // ─── Sliding-window culling refs ──────────────────────────────────────────────
   // maxSpriteWidthRef: widest note sprite (px) – used as conservative left-boundary buffer.
@@ -977,30 +972,26 @@ export function usePixiVisualizer({
         activeTouchPointersRef.current.set(e.pointerId, e.clientX);
 
         if (activeTouchPointersRef.current.size === 1) {
-          touchHintShownRef.current = false; // reset per new gesture
-          // Single finger: only allow playbar drag via coordinate check
-          // (avoids locking caused by pointerover firing before pointerdown)
           const containerRect = containerRef.current?.getBoundingClientRect();
           const relX = containerRect
             ? e.clientX - containerRect.left
             : e.clientX;
           if (Math.abs(relX - barXRef.current) <= 16) {
+            // Single finger on playbar → drag playbar
             dragStartXRef.current = e.clientX;
             isPlayBarDraggingRef.current = true;
             dragStartPlayBarPositionRef.current = playBarPositionRef.current;
             setIsPlayBarDragging(true);
+          } else {
+            // Single finger elsewhere → scrub the view
+            dragStartXRef.current = e.clientX;
+            dragStartBeatRef.current = currentBeatRef.current;
+            mouseDownRef.current = true;
+            isDraggingRef.current = true;
+            hasDraggedRef.current = true;
+            setIsDragging(true);
+            onScrubStart?.();
           }
-          // else: single finger not on playbar — do nothing, let page scroll
-        } else if (activeTouchPointersRef.current.size >= 2) {
-          // Two fingers: start two-finger scrub, cancel any single-finger drag
-          isPlayBarDraggingRef.current = false;
-          setIsPlayBarDragging(false);
-          const xs = [...activeTouchPointersRef.current.values()];
-          const avgX = xs.reduce((a, b) => a + b, 0) / xs.length;
-          twoFingerStartAvgXRef.current = avgX;
-          twoFingerStartBeatRef.current = currentBeatRef.current;
-          isTwoFingerScrubRef.current = true;
-          onScrubStart?.();
         }
         return;
       }
@@ -1033,28 +1024,6 @@ export function usePixiVisualizer({
           activeTouchPointersRef.current.set(e.pointerId, e.clientX);
         }
 
-        // Two-finger scrub
-        if (
-          isTwoFingerScrubRef.current &&
-          activeTouchPointersRef.current.size >= 2
-        ) {
-          const xs = [...activeTouchPointersRef.current.values()];
-          const currentAvgX = xs.reduce((a, b) => a + b, 0) / xs.length;
-          const deltaX = currentAvgX - twoFingerStartAvgXRef.current;
-          // Swipe right → positive deltaX → go forward in song (drag right = forward)
-          const deltaBeat = deltaX / (pixelsPerBeatRef.current || 1);
-          const newBeat = Math.max(
-            0,
-            Math.min(
-              durationBeatsRef.current || Infinity,
-              twoFingerStartBeatRef.current + deltaBeat,
-            ),
-          );
-          currentBeatRef.current = newBeat;
-          onScrub?.(newBeat);
-          return;
-        }
-
         // Single-finger playbar drag
         if (
           isPlayBarDraggingRef.current &&
@@ -1070,16 +1039,22 @@ export function usePixiVisualizer({
             ),
           );
           onPlayBarPositionChange?.(newPosition);
+          return;
         }
-        // Single-finger, not on playbar and not two-finger scrub: show hint once per gesture
-        if (
-          activeTouchPointersRef.current.size === 1 &&
-          !isPlayBarDraggingRef.current &&
-          !isTwoFingerScrubRef.current &&
-          !touchHintShownRef.current
-        ) {
-          touchHintShownRef.current = true;
-          onTouchHint?.();
+
+        // Single-finger scrub
+        if (isDraggingRef.current) {
+          const deltaX = e.clientX - dragStartXRef.current;
+          const deltaBeat = deltaX / (pixelsPerBeatRef.current || 1);
+          const newBeat = Math.max(
+            0,
+            Math.min(
+              durationBeatsRef.current || Infinity,
+              dragStartBeatRef.current + deltaBeat,
+            ),
+          );
+          currentBeatRef.current = newBeat;
+          onScrub?.(newBeat);
         }
         return;
       }
@@ -1119,7 +1094,7 @@ export function usePixiVisualizer({
       );
       onScrub?.(newBeat);
     },
-    [onScrub, onScrubStart, onPlayBarPositionChange, onTouchHint],
+    [onScrub, onScrubStart, onPlayBarPositionChange],
   );
 
   const handleDragEnd = useCallback((e) => {
@@ -1127,9 +1102,6 @@ export function usePixiVisualizer({
 
     if (isTouch) {
       activeTouchPointersRef.current.delete(e?.pointerId);
-      if (activeTouchPointersRef.current.size < 2) {
-        isTwoFingerScrubRef.current = false;
-      }
       if (activeTouchPointersRef.current.size === 0) {
         isPlayBarDraggingRef.current = false;
         mouseDownRef.current = false;

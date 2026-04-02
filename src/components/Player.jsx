@@ -232,7 +232,18 @@ export default function Player() {
             </span>
           </span>
         ) : (
-          <span>{song ? song.title : "Select a song"}</span>
+          <span>
+            {song ? (
+              <>
+                {song.title}
+                {song.composer && (
+                  <span className="opacity-60 text-sm"> — {song.composer}</span>
+                )}
+              </>
+            ) : (
+              "Select a song"
+            )}
+          </span>
         )}
       </div>
 

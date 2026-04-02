@@ -150,7 +150,10 @@ function DifficultyExpression({ className, difficulty }) {
   return (
     <svg
       viewBox="0 0 32 32"
-      className={cn(className, "absolute z-9 w-18 h-18 fill-none stroke-2")}
+      className={cn(
+        className,
+        "absolute w-18 h-18 -translate-x-10 fill-none stroke-2 pointer-events-none",
+      )}
     >
       {svg}
     </svg>
@@ -191,22 +194,29 @@ function SongEntry({ song, onSelect }) {
         type="button"
         onClick={onSelect}
         className={cn(
-          "relative z-10 w-full text-left px-3 py-2.5 rounded-2xl border-2",
+          "relative w-full text-left px-3 py-2.5 rounded-2xl border-2",
           "border-note-half-dark bg-note-half text-main",
           "cursor-pointer transition-all duration-75",
           "overflow-hidden",
           "hover:brightness-110 active:translate-y-0.5 focus:outline-main",
         )}
       >
-        <div className="flex items-start justify-between gap-2">
-          <span className="font-semibold text-md leading-snug">
-            {song.title}
-          </span>
-          <DifficultyBadge difficulty={song.difficulty} />
+        <div className="relative z-10">
+          <div className="flex items-start justify-between gap-2">
+            <span className="font-semibold text-md leading-snug">
+              {song.title}
+            </span>
+            <DifficultyBadge difficulty={song.difficulty} />
+          </div>
+          <div className="text-xs text-main mt-0.5 font-mono">
+            {song.composer && (
+              <span className="text-main/70 mr-2">{song.composer}</span>
+            )}
+            {song.bpm} BPM
+          </div>
         </div>
-        <div className="text-xs text-main mt-0.5 font-mono">{song.bpm} BPM</div>
         <DifficultyExpression
-          className="right-0 bottom-0 stroke-note-half-dark/40 translate-x-3 translate-y-4 -rotate-30"
+          className="right-0 bottom-0 stroke-note-half-dark/40 translate-x-3 translate-y-4 -rotate-30 pointer-events-none z-0"
           difficulty={song.difficulty}
         />
       </button>
@@ -302,17 +312,29 @@ export default function Directory({
         offToggle={() => setOpen(false)}
         value={open}
       >
-        <svg
-          viewBox="0 0 24 24"
-          className="w-5 h-5 fill-main"
-          aria-hidden="true"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M1 5C1 3.34315 2.34315 2 4 2H8.43845C9.81505 2 11.015 2.93689 11.3489 4.27239L11.7808 6H13.5H20C21.6569 6 23 7.34315 23 9V19C23 20.6569 21.6569 22 20 22H4C2.34315 22 1 20.6569 1 19V10V9V5ZM3 9V10V19C3 19.5523 3.44772 20 4 20H20C20.5523 20 21 19.5523 21 19V9C21 8.44772 20.5523 8 20 8H13.5H11.7808H4C3.44772 8 3 8.44772 3 9ZM9.71922 6H4C3.64936 6 3.31278 6.06015 3 6.17071V5C3 4.44772 3.44772 4 4 4H8.43845C8.89732 4 9.2973 4.3123 9.40859 4.75746L9.71922 6Z"
-          />
-        </svg>
+        {open ? (
+          <svg
+            viewBox="0 0 24 24"
+            className="w-5 h-5 fill-none stroke-dark stroke-2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3 7a2 2 0 0 1 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+          </svg>
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            className="w-5 h-5 fill-main"
+            aria-hidden="true"
+          >
+            <path
+              fillRule="evenodd"
+              clipRule="evenodd"
+              d="M1 5C1 3.34315 2.34315 2 4 2H8.43845C9.81505 2 11.015 2.93689 11.3489 4.27239L11.7808 6H13.5H20C21.6569 6 23 7.34315 23 9V19C23 20.6569 21.6569 22 20 22H4C2.34315 22 1 20.6569 1 19V10V9V5ZM3 9V10V19C3 19.5523 3.44772 20 4 20H20C20.5523 20 21 19.5523 21 19V9C21 8.44772 20.5523 8 20 8H13.5H11.7808H4C3.44772 8 3 8.44772 3 9ZM9.71922 6H4C3.64936 6 3.31278 6.06015 3 6.17071V5C3 4.44772 3.44772 4 4 4H8.43845C8.89732 4 9.2973 4.3123 9.40859 4.75746L9.71922 6Z"
+            />
+          </svg>
+        )}
       </DuoToggleButton>
 
       {/* ── Dropdown panel ── */}

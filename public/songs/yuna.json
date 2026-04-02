@@ -1,6 +1,7 @@
 {
   "id": "yuna",
   "title": "Yuna",
+  "composer": "PYKAMIA",
   "bpm": 120,
   "timeSignatures": [
     {

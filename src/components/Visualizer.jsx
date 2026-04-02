@@ -92,7 +92,6 @@ export default function Visualizer({
     onNoteClick,
     onPlayBarPositionChange,
     onScrollHint: () => showHint("Hold Ctrl to scrub"),
-    onTouchHint: () => showHint("Use two fingers to scrub"),
     interactionLocked: showInstrument,
   });
 

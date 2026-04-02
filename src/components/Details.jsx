@@ -16,8 +16,8 @@ export default function Details() {
           <h2 className="text-center mb-6">About SynRecordia</h2>
 
           <p>
-            I built SynRecordia as an experiment in bringing high-performance
-            music visualization to the browser. Inspired by tools like{" "}
+            SynRecordia started as a personal experiment - I wanted to see how
+            far I could push music visualization in the browser. Inspired by{" "}
             <a
               className="underline text-note-full"
               href="https://synthesiagame.com/"
@@ -26,14 +26,13 @@ export default function Details() {
             >
               Synthesia
             </a>
-            , the goal was to create a lightweight, web-first platform where
-            users can see fingering and note labels in real-time alongside
-            high-quality sampled audio.
+            , I built a lightweight web app where you can watch fingering and
+            note labels update in real time as the song plays.
           </p>
 
-          <h3>The Origin</h3>
+          <h3>Where it came from</h3>
           <p>
-            This is a modern evolution of my previous project,
+            This is a rewrite of an older project of mine,{" "}
             <a
               className="underline text-note-full ml-1"
               href="https://github.com/lhuthng/RecorderVisualization"
@@ -42,51 +41,50 @@ export default function Details() {
             >
               RecorderVisualization
             </a>
-            . While the original was built in GameMaker Studio 2, I migrated to
-            a web-first stack to achieve better precision, performance, and
-            accessibility.
+            , which I originally built in GameMaker Studio 2. Moving it to the
+            web gave me much better control over precision, performance, and who
+            can actually use it.
           </p>
 
-          <h3>The Tech</h3>
+          <h3>The stack</h3>
           <p>
-            The app leverages PIXI.js for WebGL-accelerated visuals and Tone.js
-            for sample-accurate audio scheduling. The interface is managed by
-            React to keep state and configuration seamless.
+            The visualizer runs on PIXI.js for WebGL rendering and Tone.js for
+            sample-accurate audio. React handles all the state and UI logic on
+            top.
           </p>
 
-          <h3>Work in Progress</h3>
+          <h3>Still in progress</h3>
           <ul className="list-disc list-inside space-y-1">
             <li>
-              <strong>Practice Mode:</strong> Real-time note detection and
-              performance feedback.
+              <strong>Practice Mode:</strong> Real-time note detection so you
+              can play along and get feedback.
             </li>
             <li>
-              <strong>Song Library:</strong> Expanding the collection with more
-              simplified arrangements for beginners.
+              <strong>Song Library:</strong> More songs, especially
+              beginner-friendly arrangements.
             </li>
           </ul>
 
-          <h3>Known Issues</h3>
+          <h3>Known issues</h3>
           <ul className="list-disc list-inside text-sm opacity-80 space-y-1">
             <li>
-              Current mobile performance may experience latency. I am working on
-              optimizing the synchronization between the Tone.js audio timeline
-              and the PIXI.js render loop.
+              Mobile performance can be sluggish - the Tone.js audio timeline
+              and the PIXI.js render loop don't always sync up perfectly on
+              lower-end devices. It's something I'm actively looking into.
             </li>
             <li>
-              Some songs currently contain notes that are out of range for the
-              selected instrument's sample set.
+              A few songs have notes that fall outside the sample range, so they
+              may sound off or silent.
             </li>
           </ul>
 
-          <h3>Me and Source</h3>
+          <h3>About me & source</h3>
           <p>
-            I'm a developer who enjoys exploring the intersection of frontend
-            engineering and creative tools. SynRecordia is a personal challenge
-            for me to learn more about web audio and high-performance rendering.
-            This project is fully open-source, and I welcome any
-            contributions-especially from those with more experience in audio
-            engineering or canvas optimization.
+            I'm a developer who likes building things at the intersection of
+            frontend engineering and creative tools. SynRecordia is how I've
+            been learning web audio and high-performance canvas rendering - and
+            it's fully open source. If you want to contribute, especially around
+            audio or rendering, I'd love that.
           </p>
 
           <ul className="flex flex-wrap gap-4 pt-4 [&>li>a]:text-note-full [&>li>a]:underline [&>li>a]:font-medium">
@@ -116,11 +114,11 @@ export default function Details() {
           <h3 className="pt-6">FAQ</h3>
           <div className="space-y-3">
             <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">1. How to open a song?</h4>
+              <h4 className="font-semibold">1. How do I open a song?</h4>
               <div className="flex flex-wrap items-center mt-2 gap-2">
                 <p>
-                  Click the button on the top-left of the site, or open the
-                  directory here:
+                  Hit the folder button in the top-left, or open the directory
+                  right here:
                 </p>
                 <Directory
                   onSelected={() => {
@@ -132,96 +130,132 @@ export default function Details() {
             </div>
 
             <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">2. How to open my own song?</h4>
+              <h4 className="font-semibold">2. Can I load my own songs?</h4>
               <p className="mt-2">
-                You can not, for now. I am working on parsing user-provided
-                songs (MIDI/audio), with MIDI parsing prioritized. Stay tuned.
-              </p>
-            </div>
-
-            <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">3. What am I looking at?</h4>
-              <p className="mt-2">
-                You're looking at a visualization of the recorder holes being
-                pressed. I grouped the fingering into three logical groups to
-                make the layout easier to understand:
-              </p>
-              <ul className="list-disc list-inside mt-2">
-                <li>Group 1: the single left-thumb hole (bottom/back hole).</li>
-                <li>
-                  Group 2: three holes for the left hand's index, middle, and
-                  ring fingers.
-                </li>
-                <li>
-                  Group 3: the last four holes for the right hand's index,
-                  middle, ring, and pinky fingers.
-                </li>
-              </ul>
-              <p className="mt-2">
-                For an interactive explanation, click the circle button with a
-                question-mark icon in the UI - that toggles an overlay which
-                visualizes these groupings on the instrument diagram.
-              </p>
-            </div>
-
-            <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">4. Why is it so laggy?</h4>
-              <p className="mt-2">
-                I'm working on optimizations. For now the biggest cause is a
-                very narrow note width - try increasing the note width so fewer
-                notes are rendered on screen at once.
+                Not yet, but it's on the list. MIDI import is the priority -
+                stay tuned.
               </p>
             </div>
 
             <div className="bg-card-bg p-3 rounded-lg">
               <h4 className="font-semibold">
-                5. How can I report a bug or request a feature?
+                3. What am I actually looking at?
               </h4>
               <p className="mt-2">
-                I welcome bug reports and feature requests. Open an issue on the
-                GitHub repo{" "}
+                The visualizer shows which recorder holes are being pressed for
+                each note. The holes are split into three groups:
+              </p>
+              <ul className="list-disc list-inside mt-2">
+                <li>Group 1: the left-thumb hole (the back hole).</li>
+                <li>
+                  Group 2: three holes for the left hand - index, middle, and
+                  ring fingers.
+                </li>
+                <li>
+                  Group 3: four holes for the right hand - index, middle, ring,
+                  and pinky fingers.
+                </li>
+              </ul>
+              <p className="mt-2">
+                There's also a "?" button in the UI that overlays a diagram of
+                the actual instrument so you can see how the holes map to the
+                real thing.
+              </p>
+            </div>
+
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">4. Why is it lagging?</h4>
+              <p className="mt-2">
+                The most common cause is a very small note width - when the
+                notes are tiny, a lot more of them are on screen at once. Try
+                increasing the note width in the settings.
+              </p>
+            </div>
+
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">
+                5. Found a bug or have a feature idea?
+              </h4>
+              <p className="mt-2">
+                Open an issue on{" "}
                 <a
                   className="underline text-note-full"
                   href="https://github.com/lhuthng/synrecordia"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  https://github.com/lhuthng/synrecordia
-                </a>
-                , email{" "}
+                  GitHub
+                </a>{" "}
+                or shoot me an email at{" "}
                 <a
                   className="underline text-note-full"
                   href="mailto:huuthang.l@outlook.com"
                 >
                   huuthang.l@outlook.com
                 </a>
-                , or DM me on LinkedIn if you prefer. Please include your
-                browser/OS, steps to reproduce, and any console errors.
+                . Include your browser/OS, what you were doing, and any console
+                errors if you have them.
               </p>
             </div>
 
             <div className="bg-card-bg p-3 rounded-lg">
               <h4 className="font-semibold">
-                6. Why am I missing some fingering patterns?
+                6. Some fingering patterns are missing?
               </h4>
               <p className="mt-2">
-                The chart is for the soprano recorder. Some alternative
-                fingering variants that appear in reference materials are not
-                yet implemented in the UI but are planned for future updates. To
-                change between the available systems, open the Instrument
-                Controller for that track and choose a fingering system.
-                Reference:{" "}
+                The chart covers the soprano recorder. Some alternate fingerings
+                from reference materials aren't in yet, but they're planned. You
+                can switch between available fingering systems in the Instrument
+                Controller. The chart was sourced from{" "}
                 <a
                   className="underline text-note-full"
                   href="/references/recorder-fingering-chart.png"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  a soprano recorder fingering chart
-                </a>{" "}
-                was used as a source for the diagrams.
+                  this soprano recorder fingering reference
+                </a>
+                .
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Donate & credit */}
+        <div className="pt-6 flex flex-col items-center gap-3">
+          <a
+            href="https://buymeacoffee.com/huuthang.le"
+            target="_blank"
+            rel="noopener"
+          >
+            <img
+              src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+              alt="Buy Me A Coffee"
+              width="150"
+            />
+          </a>
+
+          <div className="text-sm text-main/80 flex items-center gap-2">
+            <span>Made by</span>
+            <a
+              href="https://www.linkedin.com/in/huuthangle/"
+              target="_blank"
+              rel="noopener"
+              className="flex items-center gap-2 underline text-note-full"
+            >
+              {/* LinkedIn logo (simple, small) */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                className="fill-current"
+                aria-hidden="true"
+              >
+                <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.11 1 2.5 1 4.98 2.12 4.98 3.5zM0 8h5v16H0zM7.5 8h4.8v2.2h.1c.7-1.3 2.4-2.7 4.9-2.7 5.2 0 6.2 3.4 6.2 7.8V24h-5V16.2c0-1.9 0-4.4-2.7-4.4-2.7 0-3.1 2.1-3.1 4.3V24h-5V8z" />
+              </svg>
+              Huu Thang Le
+            </a>
           </div>
         </div>
       </section>
