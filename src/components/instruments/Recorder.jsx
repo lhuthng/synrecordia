@@ -5,6 +5,22 @@ import DuoSlideBar from "../DuoSlideBar";
 import DuoSelect from "../DuoSelect";
 import { useTranslation } from "react-i18next";
 
+function fmtST(t) {
+  if (t === 0) return "0";
+  return t > 0 ? `+${t}` : `\u2212${Math.abs(t)}`;
+}
+
+function systemBadge(info) {
+  if (!info) return undefined;
+  if (info.impossible)
+    return { text: "\u2715", className: "text-accent-pink font-bold" };
+  const range =
+    info.tMin === info.tMax
+      ? fmtST(info.tMin)
+      : `${fmtST(info.tMin)}\u2026${fmtST(info.tMax)}`;
+  return { text: range, className: "opacity-90" };
+}
+
 export default function Recorder({
   packedSampler: recorderSampler,
   label,
@@ -15,6 +31,7 @@ export default function Recorder({
   controllerNode,
   onSamplerChanged,
   isReady = true,
+  trackNoteRange = null,
 }) {
   const [volume, setVolume] = useState(0);
   const [vibrato, setVibrato] = useState(0);
@@ -25,13 +42,44 @@ export default function Recorder({
   const { t } = useTranslation();
 
   const [fingeringSystem, setFingeringSystem] = useState("baroque");
+
+  const systemRangeInfo = useMemo(() => {
+    const compute = (system) => {
+      if (!trackNoteRange) return null;
+      const r = recorderSampler.getNoteRange(system);
+      if (!r) return null;
+
+      const tMin = r.min - trackNoteRange.min;
+      const tMax = r.max - trackNoteRange.max;
+      if (tMin > tMax) return { impossible: true };
+      return { tMin, tMax };
+    };
+    return {
+      baroque: compute("baroque"),
+      german: compute("german"),
+      simple: compute("simple"),
+    };
+  }, [recorderSampler, trackNoteRange]);
+
   const fingeringSystems = useMemo(
     () => [
-      { value: "baroque", label: t("fingeringSystem.baroque") },
-      { value: "german", label: t("fingeringSystem.german") },
-      { value: "simple", label: t("fingeringSystem.simple") },
+      {
+        value: "baroque",
+        label: t("fingeringSystem.baroque"),
+        badge: systemBadge(systemRangeInfo.baroque),
+      },
+      {
+        value: "german",
+        label: t("fingeringSystem.german"),
+        badge: systemBadge(systemRangeInfo.german),
+      },
+      {
+        value: "simple",
+        label: t("fingeringSystem.simple"),
+        badge: systemBadge(systemRangeInfo.simple),
+      },
     ],
-    [t],
+    [t, systemRangeInfo],
   );
 
   useEffect(() => {
@@ -98,7 +146,7 @@ export default function Recorder({
       {toggle &&
         controllerNode &&
         createPortal(
-          <div className="flex flex-col gap-2 max-w-full sm:max-w-100 [&>*>label]:w-10">
+          <div className="flex flex-col gap-2 max-w-full sm:max-w-100 [&>*>label]:min-w-10">
             <div className="flex items-center gap-4">
               <label title="volume">{t("recorder.volume")}:</label>
               <div className="flex-1 mx-4">

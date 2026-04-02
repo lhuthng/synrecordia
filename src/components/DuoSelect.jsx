@@ -2,6 +2,21 @@ import { useState, useRef, useEffect } from "react";
 import { Activity } from "react";
 import { cn } from "../libs/utils";
 
+/* Reusable badge element — declared outside to avoid "component created during render". */
+function Badge({ badge }) {
+  if (!badge) return null;
+  if (typeof badge === "string") {
+    return (
+      <span className="ml-1 text-amber-400 text-xs font-normal">{badge}</span>
+    );
+  }
+  return (
+    <span className={cn("ml-1 text-xs font-normal", badge.className)}>
+      {badge.text}
+    </span>
+  );
+}
+
 export default function DuoSelect({
   options = [],
   /** Controlled selected value. */
@@ -133,7 +148,10 @@ export default function DuoSelect({
           triggerBorder,
         )}
       >
-        <span>{selectedOption?.label ?? value ?? "—"}</span>
+        <span>
+          {selectedOption?.label ?? value ?? "—"}
+          <Badge badge={selectedOption?.badge} />
+        </span>
 
         {/* Chevron — rotates 180° when open */}
         <svg
@@ -177,6 +195,7 @@ export default function DuoSelect({
                 )}
               >
                 {opt.label}
+                <Badge badge={opt.badge} />
               </li>
             );
           })}

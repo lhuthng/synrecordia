@@ -28,6 +28,7 @@ import {
   getBeatsPerBar,
 } from "../components/utils/fingeringUtils.js";
 import { createFingeringResolver } from "../libs/fingering/FingeringResolverFactory.js";
+import { transposeNote } from "../libs/utils.js";
 import {
   getHolePositions,
   drawFingering,
@@ -52,6 +53,7 @@ export function usePixiVisualizer({
   noteWidth = 70,
   height,
   playBarPosition = 0.95,
+  transpose = 0,
   onReady,
   onScrubStart,
   onScrub,
@@ -178,8 +180,9 @@ export function usePixiVisualizer({
     return recorderTrack.actions
       .filter((action) => action.type === "note")
       .map((action) => {
-        const noteName = getHighestNote(action.pitches ?? action.pitch);
-        if (!noteName) return null;
+        const rawNote = getHighestNote(action.pitches ?? action.pitch);
+        if (!rawNote) return null;
+        const noteName = transposeNote(rawNote, transpose);
         const fingering = resolver.getPattern(noteName);
         if (!fingering) return null;
         return {
@@ -190,7 +193,7 @@ export function usePixiVisualizer({
         };
       })
       .filter(Boolean);
-  }, [displaySong, fingeringSystem]);
+  }, [displaySong, fingeringSystem, transpose]);
 
   // ─── Sync simple props into refs ─────────────────────────────────────────────
   useEffect(() => {
@@ -233,16 +236,39 @@ export function usePixiVisualizer({
     lastFrameTimeRef.current = performance.now();
   }, [currentBeat]);
 
-  // ─── Duration / time-signature changes → rebuild guides ──────────────────────
+  // ─── Duration / time-signature changes → rebuild guides + zones ──────────────
   useEffect(() => {
-    const beatsPerBar = getBeatsPerBar(effectiveTimeSignature);
-    const lastBarBeat =
-      beatsPerBar > 0
-        ? Math.ceil(durationBeats / beatsPerBar) * beatsPerBar
-        : durationBeats;
+    const timeSignatures = displaySong?.timeSignatures;
+    let lastBarBeat;
+
+    if (Array.isArray(timeSignatures) && timeSignatures.length > 1) {
+      // Multi-segment: round up to the bar boundary inside the segment that
+      // actually contains durationBeats, not just the first segment's bar size.
+      let segStart = 0;
+      lastBarBeat = durationBeats;
+      for (const seg of timeSignatures) {
+        const segBpb = Math.max(1, getBeatsPerBar(seg?.timeSignature ?? "4/4"));
+        const segLen = Math.max(0, Number(seg?.length) || 0);
+        const segEnd = segStart + segLen;
+        if (durationBeats <= segEnd) {
+          const beatsIn = durationBeats - segStart;
+          lastBarBeat = segStart + Math.ceil(beatsIn / segBpb) * segBpb;
+          break;
+        }
+        segStart = segEnd;
+      }
+    } else {
+      const beatsPerBar = getBeatsPerBar(effectiveTimeSignature);
+      lastBarBeat =
+        beatsPerBar > 0
+          ? Math.ceil(durationBeats / beatsPerBar) * beatsPerBar
+          : durationBeats;
+    }
+
     durationBeatsRef.current = lastBarBeat;
     buildGuidesRef.current?.();
-  }, [durationBeats, effectiveTimeSignature]);
+    buildZonesRef.current?.();
+  }, [durationBeats, effectiveTimeSignature, displaySong?.timeSignatures]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Note width changes → full scene rebuild + scroll correction ──────────────
   useEffect(() => {
@@ -917,6 +943,10 @@ export function usePixiVisualizer({
 
     return () => {
       cancelled = true;
+      buildGuidesRef.current = null;
+      buildPlayBarRef.current = null;
+      buildSpritesRef.current = null;
+      buildZonesRef.current = null;
       if (ticker && tick) ticker.remove(tick);
       if (scrollLayerRef.current) scrollLayerRef.current = null;
       appRef.current?.destroy(true, { children: true });

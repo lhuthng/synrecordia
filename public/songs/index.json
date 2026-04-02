@@ -10,6 +10,7 @@
   {
     "id": "final-duet",
     "title": "Final Duet",
+    "composer": "Pedro Silva",
     "bpm": 145,
     "file": "final-duet.json",
     "difficulty": "easy"

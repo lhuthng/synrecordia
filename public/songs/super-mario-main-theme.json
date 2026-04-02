@@ -2569,7 +2569,11 @@
           "pitch": "E4",
           "velocity": 63
         }
-      ]
+      ],
+      "noteRange": {
+        "min": 60,
+        "max": 81
+      }
     },
     {
       "id": "piano",
@@ -4864,7 +4868,11 @@
           "pitch": "C3",
           "velocity": 63
         }
-      ]
+      ],
+      "noteRange": {
+        "min": 43,
+        "max": 65
+      }
     }
   ]
 }

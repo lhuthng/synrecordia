@@ -1,3 +1,5 @@
+import { noteNameToMidi } from "../utils.js";
+
 export default class PackedSampler {
   constructor(addition) {
     this.name = addition.name;
@@ -31,6 +33,20 @@ export default class PackedSampler {
 
   getAlternatives() {
     return this.alternatives;
+  }
+
+  /**
+   * Returns {min, max} MIDI numbers derived from this sampler's loaded sample keys,
+   * or null if the sampler data is not yet available.
+   */
+  getNoteRange() {
+    const urls = this.samplerData?.urls;
+    if (!urls) return null;
+    const midiNums = Object.keys(urls)
+      .map((name) => noteNameToMidi(name))
+      .filter((n) => n !== null);
+    if (midiNums.length === 0) return null;
+    return { min: Math.min(...midiNums), max: Math.max(...midiNums) };
   }
 
   dispose() {

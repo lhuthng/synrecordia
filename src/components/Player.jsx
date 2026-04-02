@@ -10,6 +10,7 @@ import SongTimeline from "./SongTimeline";
 import InstrumentManager from "./instruments/InstrumentManager";
 import usePlayer from "../hooks/usePlayer.js";
 import { useTranslation } from "react-i18next";
+import { computeNoteRangeFromActions } from "../libs/utils.js";
 
 export default function Player() {
   // URL param — present when route is /songs/:songId
@@ -32,6 +33,8 @@ export default function Player() {
     durationBeats,
     isAudioReady,
     isReady: isAudioReadyAll,
+    transposeSemitones,
+    setTransposeSemitones,
     // handlers
     registerSampler,
     deregisterSampler,
@@ -114,6 +117,16 @@ export default function Player() {
   useEffect(() => {
     return () => clearTimeout(countdownTimerRef.current);
   }, []);
+
+  // Pause playback whenever the transpose value changes (skip initial mount)
+  const isFirstTransposeRender = useRef(true);
+  useEffect(() => {
+    if (isFirstTransposeRender.current) {
+      isFirstTransposeRender.current = false;
+      return;
+    }
+    pausePlayback();
+  }, [transposeSemitones, pausePlayback]);
 
   // per-track flash counters — increment each time a track fires a note
   const [flashCounters, setFlashCounters] = useState({});
@@ -304,6 +317,44 @@ export default function Player() {
             </div>
           </div>
 
+          {/* Transpose */}
+          <div className="mt-2 flex items-center gap-2">
+            <label title="transpose semitones">{t("player.transpose")}:</label>
+            <div className="flex-1 ml-4 mr-8">
+              <DuoSlideBar
+                min={-24}
+                max={24}
+                step={1}
+                value={transposeSemitones}
+                onChange={(v) => setTransposeSemitones(v)}
+                thumbColors={{
+                  background:
+                    transposeSemitones !== 0 ? "bg-amber-400" : "bg-note-half",
+                  border:
+                    transposeSemitones !== 0
+                      ? "border-amber-600"
+                      : "border-note-half-dark",
+                  text: transposeSemitones !== 0 ? "text-black" : "text-main",
+                }}
+                barColor={
+                  transposeSemitones !== 0 ? "bg-amber-400/60" : "bg-note-full"
+                }
+              />
+            </div>
+            <DuoButton
+              className="text-sm -translate-x-4"
+              text="text-main"
+              background="bg-note-half"
+              padding="px-1.5"
+              shadowBackground="bg-note-half-dark"
+              border="border-note-half-dark"
+              onClick={() => setTransposeSemitones(0)}
+              disabled={transposeSemitones === 0}
+            >
+              {t("player.reset")}
+            </DuoButton>
+          </div>
+
           {/* Start timer selector */}
           <div className="mt-2 flex items-center gap-2">
             <label title="start timer">{t("player.start")}:</label>
@@ -424,6 +475,7 @@ export default function Player() {
           onPlayPause={handleTogglePlayback}
           onPlayBarPositionChange={setPlayBarPosition}
           fingeringSystem={fingeringSystem}
+          transpose={transposeSemitones}
         />
 
         {/* Countdown number overlay — shown over the visualizer */}
@@ -483,6 +535,11 @@ export default function Player() {
             handleAudioReady={(value) => handleAudioReady(index, value)}
             onReady={() => handleAudioReady(index, true)}
             offReady={() => handleAudioReady(index, false)}
+            trackNoteRange={
+              track.noteRange ?? computeNoteRangeFromActions(track.actions)
+            }
+            transpose={transposeSemitones}
+            fingeringSystem={fingeringSystem}
             callbacks={{
               pausePlayback,
               setFingeringSystem,

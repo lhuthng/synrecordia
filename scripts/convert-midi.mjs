@@ -754,6 +754,20 @@ function collectNotes(tracks, indices, semitones = 0) {
   return notes;
 }
 
+// ── Compute MIDI note range from a list of parsed notes ────────────────────────
+function computeNoteRange(notes) {
+  if (!notes || notes.length === 0) return null;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const n of notes) {
+    if (typeof n.noteNumber === "number") {
+      min = Math.min(min, n.noteNumber);
+      max = Math.max(max, n.noteNumber);
+    }
+  }
+  return min === Infinity ? null : { min, max };
+}
+
 // ── Build timeSignatures output array ─────────────────────────────────────────
 function buildTimeSignatures(parsed, songEndTick) {
   if (parsed.timeSignatures && parsed.timeSignatures.length > 0) {
@@ -834,23 +848,39 @@ if (args.tracks.length > 0) {
         `  Transpose (${instrument}): ${Math.abs(semitones)} semitone(s) ${dir}`,
       );
     }
-    let actions = buildActions(
-      collectNotes(parsed.tracks, indices, semitones),
-      parsed.ppq,
-    );
+    const collected = collectNotes(parsed.tracks, indices, semitones);
+    const noteRange = computeNoteRange(collected);
+    let actions = buildActions(collected, parsed.ppq);
     // --trim applies to the first defined track only
     if (args.trim && i === 0) actions = trimMonophonicActions(actions);
-    return { id: instrument, instrument, actions };
+    return {
+      id: instrument,
+      instrument,
+      ...(noteRange && { noteRange }),
+      actions,
+    };
   });
 } else {
   // ── Auto-detect (legacy: recorder + piano) ──────────────────────────────────
   const split = splitTracks(parsed);
+  const mainNoteRange = computeNoteRange(split.right);
   let mainActions = buildActions(split.right, parsed.ppq);
   if (args.trim) mainActions = trimMonophonicActions(mainActions);
+  const otherNoteRange = computeNoteRange(split.left);
   const otherActions = buildActions(split.left, parsed.ppq);
   outputTracks = [
-    { id: "recorder", instrument: "recorder", actions: mainActions },
-    { id: "piano", instrument: "piano", actions: otherActions },
+    {
+      id: "recorder",
+      instrument: "recorder",
+      ...(mainNoteRange && { noteRange: mainNoteRange }),
+      actions: mainActions,
+    },
+    {
+      id: "piano",
+      instrument: "piano",
+      ...(otherNoteRange && { noteRange: otherNoteRange }),
+      actions: otherActions,
+    },
   ];
 }
 

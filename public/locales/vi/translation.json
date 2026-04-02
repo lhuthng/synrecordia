@@ -1,17 +1,18 @@
 {
   "player": {
-    "loadingSong": "Đang tải bài hát…",
+    "loadingSong": "Đang tải…",
     "selectSong": "Chọn bài hát",
     "bpm": "BPM",
-    "noteWidth": "Độ rộng nốt",
+    "noteWidth": "Độ rộng",
+    "transpose": "Dịch giọng",
     "start": "Bắt đầu",
-    "reset": "Đặt lại",
+    "reset": "Reset",
     "pause": "Tạm dừng",
     "play": "Phát",
     "restart": "Chơi lại",
     "repeat": "Lặp lại",
-    "instrumentController": "Điều khiển nhạc cụ",
-    "selectInstrumentHint": "Chọn nhạc cụ ở trên để chỉnh sửa"
+    "instrumentController": "Điều khiển",
+    "selectInstrumentHint": "Chọn nhạc cụ để cài đặt"
   },
   "directory": {
     "title": "Danh sách bài hát",
@@ -61,12 +62,12 @@
     },
     "knownIssues": {
       "title": "Vấn đề đã biết",
-      "mobilePerf": "Hiệu suất trên thiết bị di động có thể chậm - timeline âm thanh Tone.js và vòng lặp render PIXI.js không phải lúc nào cũng đồng bộ hoàn hảo trên các thiết bị cấu hình thấp. Đây là điều tui đang tích cực tìm hiểu.",
+      "mobilePerf": "Hiệu suất trên di động có thể chậm - âm Tone.js và vòng lặp render của PIXI.js không phải lúc nào cũng đồng bộ hoàn hảo trên thiết bị cấu hình thấp. Tui đang tích cực tìm hiểu.",
       "notesOutOfRange": "Một số bài hát có nốt nằm ngoài phạm vi mẫu, nên có thể phát ra âm sai hoặc không có tiếng."
     },
     "aboutMe": {
       "title": "Về tui & mã nguồn",
-      "text": "Tui là một lập trình viên thích xây dựng những thứ ở giao điểm giữa kỹ thuật frontend và công cụ sáng tạo. SynRecordia là cách tui học web audio và canvas rendering hiệu suất cao - và nó hoàn toàn mã nguồn mở. Nếu bạn muốn đóng góp, đặc biệt về âm thanh hoặc rendering, tui rất hoan nghênh.",
+      "text": "Tui là một lập trình viên thích xây dựng công cụ sáng tạo. SynRecordia là cách tui học web audio và canvas rendering hiệu suất cao - và nó hoàn toàn mã nguồn mở. Nếu bạn muốn đóng góp, đặc biệt về âm thanh hoặc rendering, tui rất hoan nghênh.",
       "github": "GitHub",
       "contact": "Liên hệ",
       "blog": "Blog"
@@ -79,27 +80,27 @@
       },
       "q2": {
         "question": "2. Tôi có thể tải bài hát của mình không?",
-        "answer": "Chưa có, nhưng đã có trong danh sách. Import MIDI là ưu tiên - hãy chờ đợi nhé."
+        "answer": "Không, nhưng có thể trong tương lại."
       },
       "q3": {
-        "question": "3. Tôi đang xem gì vậy?",
-        "intro": "Bộ trực quan hóa hiển thị lỗ nào của sáo recorder được nhấn cho từng nốt nhạc. Các lỗ được chia thành ba nhóm:",
+        "question": "3. Tôi đang xem cái quái gì vậy?",
+        "intro": "Bộ trực quan hóa hiển thị lỗ của sáo recorder được nhấn cho từng nốt. Các lỗ chia thành ba nhóm:",
         "group1": "Nhóm 1: lỗ ngón cái tay trái (lỗ phía sau).",
-        "group2": "Nhóm 2: ba lỗ cho tay trái - ngón trỏ, ngón giữa và ngón đeo nhẫn.",
-        "group3": "Nhóm 3: bốn lỗ cho tay phải - ngón trỏ, ngón giữa, ngón đeo nhẫn và ngón út.",
-        "outro": "Còn có nút \"?\" trong giao diện hiển thị sơ đồ nhạc cụ thực tế để bạn thấy cách các lỗ tương ứng với nhạc cụ thật."
+        "group2": "Nhóm 2: ba lỗ cho tay trái — ngón trỏ, ngón giữa và ngón đeo nhẫn.",
+        "group3": "Nhóm 3: bốn lỗ cho tay phải — ngón trỏ, ngón giữa, ngón đeo nhẫn và ngón út.",
+        "outro": "Còn có nút \"?\" hiển thị sơ đồ nhạc cụ thực tế để bạn thấy cách các lỗ tương ứng với nhạc cụ thật."
       },
       "q4": {
-        "question": "4. Tại sao bị giật lag?",
-        "answer": "Nguyên nhân phổ biến nhất là độ rộng nốt quá nhỏ - khi nốt nhỏ, sẽ có nhiều nốt hơn trên màn hình cùng lúc. Hãy thử tăng độ rộng nốt trong cài đặt."
+        "question": "4. Tại sao bị lag?",
+        "answer": "Nguyên nhân phổ biến nhất là độ rộng nốt quá nhỏ — khi nốt nhỏ, sẽ có nhiều nốt hơn trên màn hình cùng lúc. Hãy thử tăng độ rộng trong cài đặt."
       },
       "q5": {
-        "question": "5. Tìm thấy lỗi hoặc có ý tưởng tính năng?",
-        "answer": "Mở issue trên <github>GitHub</github> hoặc gửi email cho tôi tại <email>huuthang.l@outlook.com</email>. Vui lòng ghi rõ trình duyệt/hệ điều hành, bạn đang làm gì và các lỗi console nếu có."
+        "question": "5. Tìm thấy lỗi hoặc có ý tưởng?",
+        "answer": "Mở issue trên <github>GitHub</github> hoặc gửi email tại <email>huuthang.l@outlook.com</email>. Vui lòng ghi rõ trình duyệt/hệ điều hành, bạn đang làm gì và lỗi console nếu có."
       },
       "q6": {
         "question": "6. Một số mẫu bấm bị thiếu?",
-        "answer": "Bảng tra cứu bao gồm sáo recorder soprano. Một số cách bấm thay thế từ tài liệu tham khảo chưa có, nhưng đã được lên kế hoạch. Bạn có thể chuyển đổi giữa các hệ thống bấm trong Instrument Controller. Bảng tra cứu được lấy từ <chart>tài liệu tham khảo bấm sáo recorder soprano này</chart>."
+        "answer": "Bảng tra cứu bao gồm sáo recorder soprano. Một số cách bấm thay thế chưa có nhưng đã được lên kế hoạch. Bạn có thể chuyển đổi hệ thống bấm trong Điều khiển. Bảng tra cứu lấy từ <chart>tài liệu tham khảo này</chart>."
       }
     },
     "footer": {
@@ -111,8 +112,8 @@
     "changeLanguage": "Đổi ngôn ngữ"
   },
   "visualizer": {
-    "pickSong": "Chọn một bài hát để bắt đầu",
-    "scrollHint": "Giữ Ctrl để cuộn ngang",
+    "pickSong": "Chọn bài hát để bắt đầu",
+    "scrollHint": "Ctrl + kéo để di chuyển",
     "showFingering": "Hiện hướng dẫn bấm",
     "hideFingering": "Ẩn hướng dẫn bấm",
     "legendFull": "Kín",

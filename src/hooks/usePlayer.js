@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 import { PIANO_DELAY_MS, FADE_MS } from "../components/utils/constants.js";
+import { transposeNotes } from "../libs/utils.js";
 
 /* Utility: compute end beat for a song */
 const computeSongEndBeat = (songData) => {
@@ -29,6 +30,7 @@ export default function usePlayer() {
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [isAudioReady, setIsAudioReady] = useState([]);
   const [fingeringSystem, setFingeringSystem] = useState("baroque");
+  const [transposeSemitones, setTransposeSemitones] = useState(0);
 
   const durationBeats = computeSongEndBeat(song);
 
@@ -42,6 +44,7 @@ export default function usePlayer() {
   const endBeatRef = useRef(0);
   const bpmRef = useRef(bpm);
   const repeatRef = useRef(repeat);
+  const transposeSemitonesRef = useRef(0);
   const noteTriggerListenerRef = useRef(null);
 
   // Keep bpmRef up-to-date for the running tick
@@ -53,6 +56,11 @@ export default function usePlayer() {
   useEffect(() => {
     repeatRef.current = repeat;
   }, [repeat]);
+
+  // Keep transposeSemitonesRef up-to-date for the running tick
+  useEffect(() => {
+    transposeSemitonesRef.current = transposeSemitones;
+  }, [transposeSemitones]);
 
   // Keep currentBeat and target refs in sync when external changes happen
   useEffect(() => {
@@ -210,7 +218,7 @@ export default function usePlayer() {
           if (durationSeconds > 0 && state.synth) {
             try {
               state.synth.triggerAttackRelease(
-                action.notes,
+                transposeNotes(action.notes, transposeSemitonesRef.current),
                 durationSeconds,
                 startTime,
                 action.velocity,
@@ -401,6 +409,8 @@ export default function usePlayer() {
     setNoteTriggerListener: (fn) => {
       noteTriggerListenerRef.current = fn;
     },
+    transposeSemitones,
+    setTransposeSemitones,
     setSelectedTrack: setSelectedTrack,
     setFingeringSystem: setFingeringSystem,
     handleBpmChange,

@@ -1,6 +1,8 @@
 import PackedSampler from ".";
 import * as Tone from "tone";
 import Recorder from "../../components/instruments/Recorder";
+import fingeringChart from "../../assets/references/fingering-chart.json";
+import { noteNameToMidi } from "../utils.js";
 
 const MAX_DB = 40;
 const DEFAULT_DB = 15;
@@ -16,7 +18,8 @@ export default class RecorderSampler extends PackedSampler {
       preDelay: 0.02,
       wet: 0.15,
     }).connect(this.vibrato);
-    this.filter = new Tone.Filter(2000, "lowpass").connect(this.reverb);
+
+    this.filter = new Tone.Filter(1600, "lowpass").connect(this.reverb);
 
     this.volume = new Tone.Volume(DEFAULT_DB).connect(this.reverb);
 
@@ -54,6 +57,23 @@ export default class RecorderSampler extends PackedSampler {
     const db = (percent / 100) * (MAX_DB - MIN_DB) + MIN_DB;
 
     this.volume.volume.rampTo(db, 0.1);
+  }
+
+  getNoteRange(fingeringSystem = "baroque") {
+    const chartKey = fingeringSystem === "simple" ? "simple" : "recorder";
+    const system = fingeringChart.systems?.[chartKey];
+
+    if (system) {
+      const midiNums = Object.keys(system)
+        .map((name) => noteNameToMidi(name))
+        .filter((n) => n !== null);
+      if (midiNums.length > 0) {
+        return { min: Math.min(...midiNums), max: Math.max(...midiNums) };
+      }
+    }
+
+    // Fall back to sample-based range from the base class
+    return super.getNoteRange();
   }
 
   async setVersion(version, callback) {

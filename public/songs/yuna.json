@@ -1589,7 +1589,11 @@
           "pitch": "D5",
           "velocity": 50
         }
-      ]
+      ],
+      "noteRange": {
+        "min": 67,
+        "max": 86
+      }
     },
     {
       "id": "piano",
@@ -3125,7 +3129,10 @@
           "type": "note",
           "time": 131.5,
           "duration": 0.5,
-          "pitches": ["A3", "A3"],
+          "pitches": [
+            "A3",
+            "A3"
+          ],
           "velocity": 50
         },
         {
@@ -3223,7 +3230,10 @@
           "type": "note",
           "time": 139.5,
           "duration": 0.5,
-          "pitches": ["A3", "A3"],
+          "pitches": [
+            "A3",
+            "A3"
+          ],
           "velocity": 50
         },
         {
@@ -3611,7 +3621,11 @@
           "pitch": "E3",
           "velocity": 50
         }
-      ]
+      ],
+      "noteRange": {
+        "min": 38,
+        "max": 69
+      }
     }
   ]
 }

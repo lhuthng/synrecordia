@@ -2156,7 +2156,11 @@
           "pitch": "D5",
           "velocity": 63
         }
-      ]
+      ],
+      "noteRange": {
+        "min": 66,
+        "max": 85
+      }
     },
     {
       "id": "piano",
@@ -3517,14 +3521,20 @@
           "type": "note",
           "time": 96.5,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 97,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3538,14 +3548,20 @@
           "type": "note",
           "time": 98,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 98.5,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3559,14 +3575,20 @@
           "type": "note",
           "time": 99.5,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 100,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3580,14 +3602,20 @@
           "type": "note",
           "time": 101,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 101.5,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3601,14 +3629,20 @@
           "type": "note",
           "time": 102.5,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 103,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
@@ -3622,14 +3656,20 @@
           "type": "note",
           "time": 104,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 104.5,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
@@ -3643,14 +3683,20 @@
           "type": "note",
           "time": 105.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 106,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -3664,14 +3710,20 @@
           "type": "note",
           "time": 107,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 107.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -3685,14 +3737,20 @@
           "type": "note",
           "time": 108.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 109,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -3706,14 +3764,20 @@
           "type": "note",
           "time": 110,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 110.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -3727,14 +3791,20 @@
           "type": "note",
           "time": 111.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 112,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -3748,14 +3818,20 @@
           "type": "note",
           "time": 113,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 113.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -3769,14 +3845,20 @@
           "type": "note",
           "time": 114.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 115,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -3790,14 +3872,20 @@
           "type": "note",
           "time": 116,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 116.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -3811,14 +3899,20 @@
           "type": "note",
           "time": 117.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 118,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -3832,14 +3926,20 @@
           "type": "note",
           "time": 119,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 119.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -3853,14 +3953,20 @@
           "type": "note",
           "time": 120.5,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 121,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3874,14 +3980,20 @@
           "type": "note",
           "time": 122,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 122.5,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3895,14 +4007,20 @@
           "type": "note",
           "time": 123.5,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 124,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3916,14 +4034,20 @@
           "type": "note",
           "time": 125,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 125.5,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -3937,14 +4061,20 @@
           "type": "note",
           "time": 126.5,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 127,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
@@ -3958,14 +4088,20 @@
           "type": "note",
           "time": 128,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 128.5,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
@@ -3979,14 +4115,20 @@
           "type": "note",
           "time": 129.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 130,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4000,14 +4142,20 @@
           "type": "note",
           "time": 131,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 131.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4021,14 +4169,20 @@
           "type": "note",
           "time": 132.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 133,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4042,14 +4196,20 @@
           "type": "note",
           "time": 134,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 134.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4063,14 +4223,20 @@
           "type": "note",
           "time": 135.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 136,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4084,14 +4250,20 @@
           "type": "note",
           "time": 137,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 137.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4105,14 +4277,20 @@
           "type": "note",
           "time": 138.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 139,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -4126,14 +4304,20 @@
           "type": "note",
           "time": 140,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 140.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -4147,14 +4331,20 @@
           "type": "note",
           "time": 141.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 142,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4168,14 +4358,20 @@
           "type": "note",
           "time": 143,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 143.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4189,14 +4385,20 @@
           "type": "note",
           "time": 144.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 145,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4210,14 +4412,20 @@
           "type": "note",
           "time": 146,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 146.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4231,14 +4439,20 @@
           "type": "note",
           "time": 147.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 148,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4252,14 +4466,20 @@
           "type": "note",
           "time": 149,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 149.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4273,14 +4493,20 @@
           "type": "note",
           "time": 150.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 151,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4294,14 +4520,20 @@
           "type": "note",
           "time": 152,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 152.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4315,14 +4547,20 @@
           "type": "note",
           "time": 153.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 154,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4336,14 +4574,20 @@
           "type": "note",
           "time": 155,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 155.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4357,14 +4601,20 @@
           "type": "note",
           "time": 156.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 157,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -4378,14 +4628,20 @@
           "type": "note",
           "time": 158,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 158.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -4399,14 +4655,20 @@
           "type": "note",
           "time": 159.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 160,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4420,14 +4682,20 @@
           "type": "note",
           "time": 161,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 161.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4441,14 +4709,20 @@
           "type": "note",
           "time": 162.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 163,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4462,14 +4736,20 @@
           "type": "note",
           "time": 164,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 164.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4483,14 +4763,20 @@
           "type": "note",
           "time": 165.5,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 166,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -4504,14 +4790,20 @@
           "type": "note",
           "time": 167,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 167.5,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -4525,14 +4817,20 @@
           "type": "note",
           "time": 168.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 169,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4546,14 +4844,20 @@
           "type": "note",
           "time": 170,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 170.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4567,14 +4871,20 @@
           "type": "note",
           "time": 171.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 172,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4588,14 +4898,20 @@
           "type": "note",
           "time": 173,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 173.5,
           "duration": 0.5,
-          "pitches": ["B2", "D3"],
+          "pitches": [
+            "B2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4609,14 +4925,20 @@
           "type": "note",
           "time": 174.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 175,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4630,14 +4952,20 @@
           "type": "note",
           "time": 176,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 176.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4651,14 +4979,20 @@
           "type": "note",
           "time": 177.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 178,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4672,14 +5006,20 @@
           "type": "note",
           "time": 179,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 179.5,
           "duration": 0.5,
-          "pitches": ["A2", "D3"],
+          "pitches": [
+            "A2",
+            "D3"
+          ],
           "velocity": 63
         },
         {
@@ -4693,14 +5033,20 @@
           "type": "note",
           "time": 180.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 181,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -4714,14 +5060,20 @@
           "type": "note",
           "time": 182,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 182.5,
           "duration": 0.5,
-          "pitches": ["G2", "B2"],
+          "pitches": [
+            "G2",
+            "B2"
+          ],
           "velocity": 63
         },
         {
@@ -4735,14 +5087,20 @@
           "type": "note",
           "time": 183.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 184,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4756,14 +5114,20 @@
           "type": "note",
           "time": 185,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 185.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4777,14 +5141,20 @@
           "type": "note",
           "time": 186.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 187,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4798,14 +5168,20 @@
           "type": "note",
           "time": 188,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 188.5,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
@@ -4819,14 +5195,20 @@
           "type": "note",
           "time": 189.5,
           "duration": 0.5,
-          "pitches": ["D3", "F#3"],
+          "pitches": [
+            "D3",
+            "F#3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 190,
           "duration": 0.5,
-          "pitches": ["F#3", "A3"],
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -4840,77 +5222,110 @@
           "type": "note",
           "time": 191,
           "duration": 0.5,
-          "pitches": ["C#3", "E3"],
+          "pitches": [
+            "C#3",
+            "E3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 191.5,
           "duration": 0.5,
-          "pitches": ["E3", "A3"],
+          "pitches": [
+            "E3",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 192,
           "duration": 3,
-          "pitches": ["A2", "A3"],
+          "pitches": [
+            "A2",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 198,
           "duration": 3,
-          "pitches": ["G2", "G3"],
+          "pitches": [
+            "G2",
+            "G3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 204,
           "duration": 3,
-          "pitches": ["A2", "A3"],
+          "pitches": [
+            "A2",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 210,
           "duration": 3,
-          "pitches": ["G2", "G3"],
+          "pitches": [
+            "G2",
+            "G3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 216,
           "duration": 3,
-          "pitches": ["A2", "A3"],
+          "pitches": [
+            "A2",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 222,
           "duration": 3,
-          "pitches": ["G2", "G3"],
+          "pitches": [
+            "G2",
+            "G3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 228,
           "duration": 3,
-          "pitches": ["A2", "A3"],
+          "pitches": [
+            "A2",
+            "A3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 234,
           "duration": 3,
-          "pitches": ["G2", "G3"],
+          "pitches": [
+            "G2",
+            "G3"
+          ],
           "velocity": 63
         },
         {
           "type": "note",
           "time": 240,
           "duration": 3,
-          "pitches": ["A2", "A3"],
+          "pitches": [
+            "A2",
+            "A3"
+          ],
           "velocity": 63
         },
         {
@@ -4941,7 +5356,11 @@
           "pitch": "D4",
           "velocity": 63
         }
-      ]
+      ],
+      "noteRange": {
+        "min": 40,
+        "max": 62
+      }
     }
   ]
 }

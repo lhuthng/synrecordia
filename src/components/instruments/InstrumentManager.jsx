@@ -1,7 +1,100 @@
 import { useEffect, useRef, useState } from "react";
 import { createPackedSampler } from "../../libs/packedSampler/factory";
 import { motion as Motion, AnimatePresence, useAnimate } from "motion/react";
+import { cn, midiToNoteName } from "../../libs/utils";
 
+// ── NoteRangeBar ─────────────────────────────────────────────────────────────
+function NoteRangeBar({ instrumentRange, trackRange, transpose }) {
+  const effectiveTrackMin =
+    trackRange != null ? trackRange.min + transpose : null;
+  const effectiveTrackMax =
+    trackRange != null ? trackRange.max + transpose : null;
+
+  const hasInstr = !!instrumentRange;
+  const hasTrack = effectiveTrackMin !== null && effectiveTrackMax !== null;
+
+  if (!hasInstr && !hasTrack) return null;
+
+  const globalMin = Math.min(
+    hasInstr ? instrumentRange.min : Infinity,
+    hasTrack ? effectiveTrackMin : Infinity,
+  );
+  const globalMax = Math.max(
+    hasInstr ? instrumentRange.max : -Infinity,
+    hasTrack ? effectiveTrackMax : -Infinity,
+  );
+
+  if (globalMin > globalMax) return null;
+
+  const span = globalMax - globalMin || 1;
+
+  // Build analytical segments from the union of both ranges
+  const breakpoints = [
+    ...new Set([
+      globalMin,
+      ...(hasInstr ? [instrumentRange.min, instrumentRange.max + 1] : []),
+      ...(hasTrack ? [effectiveTrackMin, effectiveTrackMax + 1] : []),
+      globalMax + 1,
+    ]),
+  ]
+    .sort((a, b) => a - b)
+    .filter((p) => p >= globalMin && p <= globalMax + 1);
+
+  const segments = [];
+  for (let i = 0; i < breakpoints.length - 1; i++) {
+    const start = breakpoints[i];
+    const end = breakpoints[i + 1] - 1;
+    if (start > end) continue;
+    const inInstr =
+      hasInstr && start >= instrumentRange.min && end <= instrumentRange.max;
+    const inTrack =
+      hasTrack && start >= effectiveTrackMin && end <= effectiveTrackMax;
+    segments.push({
+      left: ((start - globalMin) / span) * 100,
+      width: ((end - start + 1) / span) * 100,
+      inInstr,
+      inTrack,
+    });
+  }
+
+  const instrLabel = hasInstr
+    ? `${midiToNoteName(instrumentRange.min)}–${midiToNoteName(instrumentRange.max)}`
+    : null;
+  const trackLabel = hasTrack
+    ? `${midiToNoteName(effectiveTrackMin)}–${midiToNoteName(effectiveTrackMax)}`
+    : null;
+
+  const tooltipParts = [
+    instrLabel ? `Instrument: ${instrLabel}` : null,
+    trackLabel ? `Track: ${trackLabel}` : null,
+  ].filter(Boolean);
+
+  return (
+    <div className="w-24" title={tooltipParts.join(" | ")}>
+      {/* Segmented comparison bar */}
+      <div className="relative h-2 rounded-full overflow-hidden bg-white/10">
+        {segments.map((seg, i) => {
+          let colorClass = "";
+          if (seg.inInstr && seg.inTrack) colorClass = "bg-note-full";
+          else if (seg.inInstr) colorClass = "bg-accent-pink";
+          else if (seg.inTrack) colorClass = "bg-amber-400";
+          return (
+            <div
+              key={i}
+              className={cn("absolute top-0 h-full", colorClass)}
+              style={{
+                left: `${seg.left}%`,
+                width: `${seg.width}%`,
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── InstrumentManager ────────────────────────────────────────────────────────
 export default function InstrumentManager({
   slot,
   name,
@@ -14,6 +107,9 @@ export default function InstrumentManager({
   handleAudioReady,
   controllerNode,
   flashCount = 0,
+  trackNoteRange = null,
+  transpose = 0,
+  fingeringSystem = "baroque",
 }) {
   const [samplerInstance, setSamplerInstance] = useState(null);
   const [scope, animate] = useAnimate();
@@ -24,6 +120,20 @@ export default function InstrumentManager({
 
   const [Presentation, setPresentation] = useState(null);
 
+  // ── Out-of-range detection ────────────────────────────────────────────────
+  const samplerNoteRange =
+    samplerInstance?.getNoteRange?.(fingeringSystem) ?? null;
+
+  const outOfRange = (() => {
+    if (!samplerNoteRange || !trackNoteRange) return false;
+    const effectiveMin = trackNoteRange.min + transpose;
+    const effectiveMax = trackNoteRange.max + transpose;
+    return (
+      effectiveMin < samplerNoteRange.min || effectiveMax > samplerNoteRange.max
+    );
+  })();
+
+  // ── Flash animation ───────────────────────────────────────────────────────
   useEffect(() => {
     if (flashCount === 0 || !scope.current) return;
     animate(
@@ -51,6 +161,7 @@ export default function InstrumentManager({
 
     handleAudioReady?.(false);
     isReadyRef.current = false;
+
     const cleanupCurrentInstance = () => {
       setPresentation(null);
 
@@ -60,7 +171,6 @@ export default function InstrumentManager({
           registeredSamplerRef.current?.dispose();
         });
       } else {
-        // Direct cleanup if no deregister callback
         packedSamplerRef.current?.dispose();
         registeredSamplerRef.current?.dispose();
       }
@@ -70,7 +180,6 @@ export default function InstrumentManager({
     };
 
     const loadSampler = async () => {
-      // Always clean up previous instance first (fixes double register in StrictMode)
       cleanupCurrentInstance();
 
       try {
@@ -79,7 +188,6 @@ export default function InstrumentManager({
 
         const data = await response.json();
         const version = data.default || data.current;
-
         if (!version) return;
 
         const baseUrl = `/samples/${name}/${version}/`;
@@ -120,7 +228,6 @@ export default function InstrumentManager({
 
     loadSampler();
 
-    // Cleanup when component unmounts or dependencies change
     return () => {
       isCancelled = true;
       cleanupCurrentInstance();
@@ -150,20 +257,45 @@ export default function InstrumentManager({
             damping: 30,
           }}
         >
-          <Presentation
-            packedSampler={samplerInstance}
-            label={slot + 1}
-            toggle={toggle}
-            isReady={!!initialReady}
-            offReady={() => {
-              handleAudioReady?.(false);
-              isReadyRef.current = false;
-            }}
-            onToggleChanged={(value) => onToggleChanged(slot, value)}
-            callbacks={callbacks}
-            onSamplerChanged={handleSamplerChanged}
-            controllerNode={controllerNode}
-          />
+          {/* Flex column: button on top, range bar + warning below */}
+          <div className="inline-flex flex-col items-center gap-2">
+            {/* Instrument button with optional ⚠ badge */}
+            <div className="relative inline-block">
+              <Presentation
+                packedSampler={samplerInstance}
+                label={slot + 1}
+                toggle={toggle}
+                isReady={!!initialReady}
+                offReady={() => {
+                  handleAudioReady?.(false);
+                  isReadyRef.current = false;
+                }}
+                onToggleChanged={(value) => onToggleChanged(slot, value)}
+                callbacks={callbacks}
+                onSamplerChanged={handleSamplerChanged}
+                controllerNode={controllerNode}
+                trackNoteRange={trackNoteRange}
+                transpose={transpose}
+              />
+              {outOfRange && (
+                <span
+                  className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-black text-xs font-bold leading-none cursor-help z-10 select-none shadow"
+                  title="This instrument cannot play all notes in this track. Consider adjusting the transpose."
+                >
+                  ⚠
+                </span>
+              )}
+            </div>
+
+            {/* Range comparison bar — always shown when range data is available */}
+            {(samplerNoteRange || trackNoteRange) && (
+              <NoteRangeBar
+                instrumentRange={samplerNoteRange}
+                trackRange={trackNoteRange}
+                transpose={transpose}
+              />
+            )}
+          </div>
         </Motion.div>
       ) : (
         <></>

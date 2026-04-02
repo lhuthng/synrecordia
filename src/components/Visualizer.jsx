@@ -43,6 +43,7 @@ export default function Visualizer({
   noteWidth = 70,
   height = DEFAULT_HEIGHT,
   playBarPosition = 0.95,
+  transpose = 0,
   onReady,
   onScrubStart,
   onScrub,
@@ -101,6 +102,7 @@ export default function Visualizer({
     noteWidth,
     height,
     playBarPosition,
+    transpose,
     onReady,
     onScrubStart,
     onScrub,
@@ -223,6 +225,7 @@ export default function Visualizer({
       <AnimatePresence>
         {showInstrument && (
           <Motion.div
+            key="dim-overlay"
             className="absolute inset-0 pointer-events-none z-5"
             style={{
               background: `linear-gradient(to right,
@@ -247,6 +250,7 @@ export default function Visualizer({
         {/* ── RecorderIllustration overlay panel ─────────────────────────────── */}
         {showInstrument && (
           <Motion.div
+            key="recorder-overlay"
             className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-fit flex items-center justify-center rounded-xl bg-radial-[at_50%_75%] from-dark via-transparent to-transparent px-4 z-10 pointer-events-none"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -264,6 +268,7 @@ export default function Visualizer({
         {/* ── Connection lines: hole centres → playbar/hole-line intersections ── */}
         {showInstrument && holePoints.length > 0 && (
           <Motion.svg
+            key="connection-lines"
             className="absolute inset-0 pointer-events-none z-20"
             width={width}
             height={height}
