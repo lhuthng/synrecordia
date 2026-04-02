@@ -16,7 +16,6 @@
   --color-playhead: #ffffff;
   --color-lane-guide: #1e293b;
   --color-note-sub: #1e293b;
-  --color-note-sub: #1e293b;
   --color-accent-pink: #ff71ce;
 
   --color-ui-surface: #0f172a;
@@ -46,4 +45,14 @@ html {
 
 .w-cap {
   @apply w-full lg:w-7/8 max-w-360 not-lg:px-2 mx-auto;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
 }

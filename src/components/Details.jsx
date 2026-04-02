@@ -140,7 +140,32 @@ export default function Details() {
             </div>
 
             <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">3. Why is it so laggy?</h4>
+              <h4 className="font-semibold">3. What am I looking at?</h4>
+              <p className="mt-2">
+                You're looking at a visualization of the recorder holes being
+                pressed. I grouped the fingering into three logical groups to
+                make the layout easier to understand:
+              </p>
+              <ul className="list-disc list-inside mt-2">
+                <li>Group 1: the single left-thumb hole (bottom/back hole).</li>
+                <li>
+                  Group 2: three holes for the left hand's index, middle, and
+                  ring fingers.
+                </li>
+                <li>
+                  Group 3: the last four holes for the right hand's index,
+                  middle, ring, and pinky fingers.
+                </li>
+              </ul>
+              <p className="mt-2">
+                For an interactive explanation, click the circle button with a
+                question-mark icon in the UI - that toggles an overlay which
+                visualizes these groupings on the instrument diagram.
+              </p>
+            </div>
+
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">4. Why is it so laggy?</h4>
               <p className="mt-2">
                 I'm working on optimizations. For now the biggest cause is a
                 very narrow note width - try increasing the note width so fewer
@@ -150,7 +175,7 @@ export default function Details() {
 
             <div className="bg-card-bg p-3 rounded-lg">
               <h4 className="font-semibold">
-                4. How can I report a bug or request a feature?
+                5. How can I report a bug or request a feature?
               </h4>
               <p className="mt-2">
                 I welcome bug reports and feature requests. Open an issue on the
@@ -177,7 +202,7 @@ export default function Details() {
 
             <div className="bg-card-bg p-3 rounded-lg">
               <h4 className="font-semibold">
-                5. Why am I missing some fingering patterns?
+                6. Why am I missing some fingering patterns?
               </h4>
               <p className="mt-2">
                 The chart is for the soprano recorder. Some alternative
