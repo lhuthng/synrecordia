@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { usePixiVisualizer } from "../hooks/usePixiVisualizer.js";
 import {
   DEFAULT_HEIGHT,
@@ -49,6 +49,23 @@ export default function Visualizer({
   onPlayPause,
   onPlayBarPositionChange,
 }) {
+  // ── Instrument overlay ──────────────────────────────────────────────────────
+  const [showInstrument, setShowInstrument] = useState(false);
+  const [holePoints, setHolePoints] = useState([]);
+
+  // ── Interaction hint overlay ────────────────────────────────────────────────
+  const [hintMsg, setHintMsg] = useState(null);
+  const hintTimerRef = useRef(null);
+
+  const showHint = useCallback((msg) => {
+    setHintMsg(msg);
+    clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = setTimeout(() => setHintMsg(null), 1800);
+  }, []);
+
+  // Clean up hint timer on unmount
+  useEffect(() => () => clearTimeout(hintTimerRef.current), []);
+
   const {
     wrapperRef,
     containerRef,
@@ -74,11 +91,10 @@ export default function Visualizer({
     onScrub,
     onNoteClick,
     onPlayBarPositionChange,
+    onScrollHint: () => showHint("Hold Ctrl to scrub"),
+    onTouchHint: () => showHint("Use two fingers to scrub"),
+    interactionLocked: showInstrument,
   });
-
-  // ── Instrument overlay ──────────────────────────────────────────────────────
-  const [showInstrument, setShowInstrument] = useState(false);
-  const [holePoints, setHolePoints] = useState([]);
 
   /** Playbar X in pixels from the left edge of the wrapper. */
   const barX = playBarPosition * width;
@@ -171,6 +187,7 @@ export default function Visualizer({
           width,
           height,
           cursor,
+          touchAction: "none",
           opacity: isReady && song?.id === displaySong?.id ? 1 : 0,
           transition: `opacity ${FADE_MS}ms ease`,
         }}
@@ -304,7 +321,11 @@ export default function Visualizer({
         <button
           className="absolute flex items-center justify-center w-5 h-5 rounded-full text-dark text-sm font-bold leading-none cursor-pointer border border-main/70 bg-main hover:bg-main transition-all duration-150 z-30 select-none drop-shadow-2xl"
           style={{ right: 10, bottom: 10 }}
-          onClick={() => setShowInstrument((v) => !v)}
+          onClick={() => {
+            const next = !showInstrument;
+            setShowInstrument(next);
+            if (next) onScrubStart?.(); // pause the player when opening the guide
+          }}
           title={
             showInstrument ? "Hide fingering guide" : "Show fingering guide"
           }
@@ -312,6 +333,24 @@ export default function Visualizer({
           ?
         </button>
       )}
+
+      {/* ── Interaction hint overlay ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {hintMsg && (
+          <Motion.div
+            key={hintMsg}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-40"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ duration: 0.18 }}
+          >
+            <span className="px-4 py-2 rounded-lg bg-dark/80 border border-main/20 text-main/80 text-sm font-iosevka select-none backdrop-blur-sm">
+              {hintMsg}
+            </span>
+          </Motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Legend ─────────────────────────────────────────────────────────── */}
       <div className="absolute p-4 bottom-0 select-none pointer-events-none">

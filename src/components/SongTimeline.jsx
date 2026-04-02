@@ -19,6 +19,8 @@ export default function SongTimeline({
   const trackRef = useRef(null);
   const [trackWidth, setTrackWidth] = useState(1);
   const dragRef = useRef(null);
+  const atLimitRef = useRef(false);
+  const [atLimit, setAtLimit] = useState(false);
 
   // Always-fresh callbacks — updated every render, no dep-array needed.
   const cbRef = useRef({ onScrubStart, onScrub, onNoteWidthChange });
@@ -44,8 +46,9 @@ export default function SongTimeline({
   const latestBeat = currentBeat + barXPx / noteWidth; // LEFT  edge of canvas
   const earliestBeat = currentBeat - (trackWidth - barXPx) / noteWidth; // RIGHT edge of canvas
 
-  const thumbL = clamp(1 - latestBeat / dur, 0, 1); // visual left  = high beats
-  const thumbR = clamp(1 - earliestBeat / dur, 0, 1); // visual right = low  beats
+  // Right-to-left: visual left = high beats (future), visual right = low beats (past)
+  const thumbL = clamp(1 - latestBeat / dur, 0, 1);
+  const thumbR = clamp(1 - earliestBeat / dur, 0, 1);
   const playheadFrac = clamp(1 - currentBeat / dur, 0, 1);
 
   // ── Global drag listeners ─────────────────────────────────────────────────
@@ -66,28 +69,34 @@ export default function SongTimeline({
         // ── Scrub: move the whole view, zoom unchanged ──────────────────────
         scrub?.(clamp(startBeat + deltaBeat, 0, d));
       } else if (drag.type === "left") {
+        // Left handle: adjust future (latest) boundary, keep earliest fixed
         const newLatest = startLatest + deltaBeat;
         const rawWindow = newLatest - startEarliest;
-        const nw = clamp(
-          tw / Math.max(rawWindow, 1e-4),
-          NOTE_WIDTH_MIN,
-          NOTE_WIDTH_MAX,
-        );
+        const rawNw = tw / Math.max(rawWindow, 1e-4);
+        const nw = clamp(rawNw, NOTE_WIDTH_MIN, NOTE_WIDTH_MAX);
         const actualWindow = tw / nw;
-
+        // Update at-limit state
+        const hitLimit = rawNw < NOTE_WIDTH_MIN || rawNw > NOTE_WIDTH_MAX;
+        if (hitLimit !== atLimitRef.current) {
+          atLimitRef.current = hitLimit;
+          setAtLimit(hitLimit);
+        }
         const newCurrentBeat = startEarliest + (1 - pbPos) * actualWindow;
         setNW?.(nw);
         scrub?.(clamp(newCurrentBeat, 0, d));
       } else {
+        // Right handle: adjust past (earliest) boundary, keep latest fixed
         const newEarliest = startEarliest + deltaBeat;
         const rawWindow = startLatest - newEarliest;
-        const nw = clamp(
-          tw / Math.max(rawWindow, 1e-4),
-          NOTE_WIDTH_MIN,
-          NOTE_WIDTH_MAX,
-        );
+        const rawNw = tw / Math.max(rawWindow, 1e-4);
+        const nw = clamp(rawNw, NOTE_WIDTH_MIN, NOTE_WIDTH_MAX);
         const actualWindow = tw / nw;
-
+        // Update at-limit state
+        const hitLimit = rawNw < NOTE_WIDTH_MIN || rawNw > NOTE_WIDTH_MAX;
+        if (hitLimit !== atLimitRef.current) {
+          atLimitRef.current = hitLimit;
+          setAtLimit(hitLimit);
+        }
         const newCurrentBeat = startLatest - pbPos * actualWindow;
         setNW?.(nw);
         scrub?.(clamp(newCurrentBeat, 0, d));
@@ -95,6 +104,10 @@ export default function SongTimeline({
     };
 
     const onUp = () => {
+      if (atLimitRef.current) {
+        atLimitRef.current = false;
+        setAtLimit(false);
+      }
       dragRef.current = null;
     };
 
@@ -124,6 +137,14 @@ export default function SongTimeline({
 
   if (!durationBeats) return null;
 
+  const borderColor = atLimit ? "border-accent-pink" : "border-note-full";
+  const gradientColors = atLimit
+    ? "from-accent-pink/60 via-accent-pink/10 to-accent-pink/60"
+    : "from-note-full/60 via-note-full/10 to-note-full/60";
+  const handleHover = atLimit
+    ? "hover:bg-accent-pink/30"
+    : "hover:bg-note-full/30";
+
   return (
     <div
       ref={trackRef}
@@ -142,7 +163,7 @@ export default function SongTimeline({
 
       {/* ── Thumb ──────────────────────────────────────────────────────────── */}
       <div
-        className="absolute top-0 bottom-0 border-x-2 bg-linear-to-r from-note-full/60 from-0% via-note-full/10 via-50% to-note-full/60 to-100% border-note-full hover:brightness-150"
+        className={`absolute top-0 bottom-0 border-x-2 bg-linear-to-r ${gradientColors} ${borderColor} hover:brightness-150 transition-colors duration-200`}
         style={{
           left: `${thumbL * 100}%`,
           right: `${(1 - thumbR) * 100}%`,
@@ -151,7 +172,7 @@ export default function SongTimeline({
       >
         {/* Left handle — moves the high-beat (future) boundary */}
         <div
-          className="absolute -left-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none hover:bg-note-full/30 transition-colors duration-200"
+          className={`absolute -left-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none ${handleHover} transition-colors duration-200`}
           onPointerDown={(e) => startDrag("left", e)}
         />
         {/* Middle — scrub the whole view */}
@@ -161,7 +182,7 @@ export default function SongTimeline({
         />
         {/* Right handle — moves the low-beat (past) boundary */}
         <div
-          className="absolute -right-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none hover:bg-note-full/30 transition-colors duration-200"
+          className={`absolute -right-1/3 top-0 bottom-0 w-1/2 cursor-ew-resize touch-none ${handleHover} transition-colors duration-200`}
           onPointerDown={(e) => startDrag("right", e)}
         />
       </div>
