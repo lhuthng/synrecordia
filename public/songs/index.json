@@ -1,18 +1,17 @@
 [
   {
-    "id": "super-mario-main-theme",
-    "title": "Super Mario Main Theme",
-    "composer": "Koji Kondo",
-    "bpm": 180,
-    "file": "super-mario-main-theme.json",
-    "difficulty": "medium"
-  },
-  {
     "id": "fallen-down-reprise",
     "title": "Fallen Down (Reprise)",
     "composer": "Toby Fox",
     "bpm": 110,
     "file": "fallen-down-reprise.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "final-duet",
+    "title": "Final Duet",
+    "bpm": 145,
+    "file": "final-duet.json",
     "difficulty": "easy"
   },
   {
@@ -30,6 +29,14 @@
     "bpm": 180,
     "file": "song-of-storm.json",
     "difficulty": "hard"
+  },
+  {
+    "id": "super-mario-main-theme",
+    "title": "Super Mario Main Theme",
+    "composer": "Koji Kondo",
+    "bpm": 180,
+    "file": "super-mario-main-theme.json",
+    "difficulty": "medium"
   },
   {
     "id": "yuna",
