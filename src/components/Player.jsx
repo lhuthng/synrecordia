@@ -9,10 +9,12 @@ import Visualizer from "./Visualizer";
 import SongTimeline from "./SongTimeline";
 import InstrumentManager from "./instruments/InstrumentManager";
 import usePlayer from "../hooks/usePlayer.js";
+import { useTranslation } from "react-i18next";
 
 export default function Player() {
   // URL param — present when route is /songs/:songId
   const { songId: urlSongId } = useParams();
+  const { t } = useTranslation();
 
   // player hook encapsulates audio/playback logic
   const {
@@ -223,7 +225,7 @@ export default function Player() {
         <Directory />
 
         {urlLoading ? (
-          <span className="opacity-60 italic">Loading song…</span>
+          <span className="opacity-60 italic">{t("player.loadingSong")}</span>
         ) : urlError ? (
           /* Error banner for invalid / failed song IDs */
           <span className="flex items-center gap-2 text-sm">
@@ -241,7 +243,7 @@ export default function Player() {
                 )}
               </>
             ) : (
-              "Select a song"
+              t("player.selectSong")
             )}
           </span>
         )}
@@ -252,7 +254,7 @@ export default function Player() {
         <div className="max-w-full sm:max-w-100 grow text-base">
           {/* BPM */}
           <div className="mt-2 flex items-center gap-2">
-            <label title="bpm">BPM:</label>
+            <label title="bpm">{t("player.bpm")}:</label>
             <div className="flex-1 ml-4 mr-8">
               <DuoSlideBar
                 min={30}
@@ -278,13 +280,13 @@ export default function Player() {
               onClick={() => song && handleBpmChange(song.bpm)}
               disabled={!isReady}
             >
-              Reset
+              {t("player.reset")}
             </DuoButton>
           </div>
 
           {/* Note width */}
           <div className="mt-2 flex items-center gap-2">
-            <label title="note width">Note Width:</label>
+            <label title="note width">{t("player.noteWidth")}:</label>
             <div className="flex-1 mx-4">
               <DuoSlideBar
                 min={40}
@@ -304,7 +306,7 @@ export default function Player() {
 
           {/* Start timer selector */}
           <div className="mt-2 flex items-center gap-2">
-            <label title="start timer">Start:</label>
+            <label title="start timer">{t("player.start")}:</label>
             <div className="flex gap-1 ml-4">
               {[0, 1, 2, 3].map((s) => (
                 <DuoButton
@@ -334,7 +336,7 @@ export default function Player() {
         </div>
 
         {/* Playback buttons */}
-        <div className="flex gap-2 not-md:ml-auto items-center *:w-18 *:h-8">
+        <div className="flex gap-2 not-md:ml-auto items-center *:h-8">
           <DuoToggleButton
             value={isPlaying || countdown !== null}
             onToggle={handlePlay}
@@ -355,7 +357,11 @@ export default function Player() {
             }}
             disabled={!isReady}
           >
-            {countdown !== null ? countdown : isPlaying ? "Pause" : "Play"}
+            {countdown !== null
+              ? countdown
+              : isPlaying
+                ? t("player.pause")
+                : t("player.play")}
           </DuoToggleButton>
 
           <DuoButton
@@ -369,7 +375,7 @@ export default function Player() {
             }}
             disabled={!isReady}
           >
-            Restart
+            {t("player.restart")}
           </DuoButton>
 
           <DuoToggleButton
@@ -390,7 +396,7 @@ export default function Player() {
             offToggle={() => setRepeat(false)}
             aria-label="Repeat song"
           >
-            Repeat
+            {t("player.repeat")}
           </DuoToggleButton>
         </div>
       </div>
@@ -488,9 +494,9 @@ export default function Player() {
       {!!song && (
         <div className="space-y-2">
           <h2>
-            Instrument Controller:
+            {t("player.instrumentController")}:
             {selectedTrack === null && (
-              <span> Select an instrument above to edit</span>
+              <span> {t("player.selectInstrumentHint")}</span>
             )}
           </h2>
           <div className="pl-2" ref={(node) => setControllerNode(node)}></div>

@@ -1,0 +1,121 @@
+{
+  "player": {
+    "loadingSong": "Loading song\u2026",
+    "selectSong": "Select a song",
+    "bpm": "BPM",
+    "noteWidth": "Note Width",
+    "start": "Start",
+    "reset": "Reset",
+    "pause": "Pause",
+    "play": "Play",
+    "restart": "Restart",
+    "repeat": "Repeat",
+    "instrumentController": "Instrument Controller",
+    "selectInstrumentHint": "Select an instrument above to edit"
+  },
+  "directory": {
+    "title": "Song Directory",
+    "failedToLoad": "Failed to load songs.",
+    "noSongs": "No songs available.",
+    "ariaLabel": "Song directory",
+    "closeAriaLabel": "Close directory"
+  },
+  "difficulty": {
+    "beginner": "Beginner",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "expert": "Expert"
+  },
+  "recorder": {
+    "volume": "Volume",
+    "vibrato": "Vibrato",
+    "variant": "Variant",
+    "system": "System"
+  },
+  "fingeringSystem": {
+    "baroque": "Baroque",
+    "german": "German",
+    "simple": "Simple"
+  },
+  "details": {
+    "avatar": "Developer Avatar",
+    "about": {
+      "title": "About SynRecordia",
+      "intro": "SynRecordia started as a personal experiment - I wanted to see how far I could push music visualization in the browser. Inspired by <synthesia>Synthesia</synthesia>, I built a lightweight web app where you can watch fingering and note labels update in real time as the song plays."
+    },
+    "whereFrom": {
+      "title": "Where it came from",
+      "text": "This is a rewrite of an older project of mine, <recorderVis>RecorderVisualization</recorderVis>, which I originally built in GameMaker Studio 2. Moving it to the web gave me much better control over precision, performance, and who can actually use it."
+    },
+    "stack": {
+      "title": "The stack",
+      "text": "The visualizer runs on PIXI.js for WebGL rendering and Tone.js for sample-accurate audio. React handles all the state and UI logic on top."
+    },
+    "inProgress": {
+      "title": "Still in progress",
+      "practiceMode": "Practice Mode",
+      "practiceModeText": "Real-time note detection so you can play along and get feedback.",
+      "songLibrary": "Song Library",
+      "songLibraryText": "More songs, especially beginner-friendly arrangements."
+    },
+    "knownIssues": {
+      "title": "Known issues",
+      "mobilePerf": "Mobile performance can be sluggish - the Tone.js audio timeline and the PIXI.js render loop don't always sync up perfectly on lower-end devices. It's something I'm actively looking into.",
+      "notesOutOfRange": "A few songs have notes that fall outside the sample range, so they may sound off or silent."
+    },
+    "aboutMe": {
+      "title": "About me & source",
+      "text": "I'm a developer who likes building things at the intersection of frontend engineering and creative tools. SynRecordia is how I've been learning web audio and high-performance canvas rendering - and it's fully open source. If you want to contribute, especially around audio or rendering, I'd love that.",
+      "github": "GitHub Repository",
+      "contact": "Contact",
+      "blog": "Blog"
+    },
+    "faq": {
+      "title": "FAQ",
+      "q1": {
+        "question": "1. How do I open a song?",
+        "answer": "Hit the folder button in the top-left, or open the directory right here:"
+      },
+      "q2": {
+        "question": "2. Can I load my own songs?",
+        "answer": "Not yet, but it's on the list. MIDI import is the priority - stay tuned."
+      },
+      "q3": {
+        "question": "3. What am I actually looking at?",
+        "intro": "The visualizer shows which recorder holes are being pressed for each note. The holes are split into three groups:",
+        "group1": "Group 1: the left-thumb hole (the back hole).",
+        "group2": "Group 2: three holes for the left hand - index, middle, and ring fingers.",
+        "group3": "Group 3: four holes for the right hand - index, middle, ring, and pinky fingers.",
+        "outro": "There's also a \"?\" button in the UI that overlays a diagram of the actual instrument so you can see how the holes map to the real thing."
+      },
+      "q4": {
+        "question": "4. Why is it lagging?",
+        "answer": "The most common cause is a very small note width - when the notes are tiny, a lot more of them are on screen at once. Try increasing the note width in the settings."
+      },
+      "q5": {
+        "question": "5. Found a bug or have a feature idea?",
+        "answer": "Open an issue on <github>GitHub</github> or shoot me an email at <email>huuthang.l@outlook.com</email>. Include your browser/OS, what you were doing, and any console errors if you have them."
+      },
+      "q6": {
+        "question": "6. Some fingering patterns are missing?",
+        "answer": "The chart covers the soprano recorder. Some alternate fingerings from reference materials aren't in yet, but they're planned. You can switch between available fingering systems in the Instrument Controller. The chart was sourced from <chart>this soprano recorder fingering reference</chart>."
+      }
+    },
+    "footer": {
+      "madeBy": "Made by",
+      "buyMeACoffee": "Buy Me A Coffee"
+    }
+  },
+  "header": {
+    "changeLanguage": "Change language"
+  },
+  "visualizer": {
+    "pickSong": "Pick a song to get started",
+    "scrollHint": "Hold Ctrl to scrub",
+    "showFingering": "Show fingering guide",
+    "hideFingering": "Hide fingering guide",
+    "legendFull": "Full",
+    "legendHalf": "Half"
+  }
+}

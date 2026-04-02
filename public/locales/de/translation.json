@@ -1,0 +1,121 @@
+{
+  "player": {
+    "loadingSong": "Lied wird geladen\u2026",
+    "selectSong": "Lied ausw\u00e4hlen",
+    "bpm": "BPM",
+    "noteWidth": "Notenbreite",
+    "start": "Start",
+    "reset": "Zur\u00fccksetzen",
+    "pause": "Pause",
+    "play": "Abspielen",
+    "restart": "Neustart",
+    "repeat": "Wiederholen",
+    "instrumentController": "Instrument-Steuerung",
+    "selectInstrumentHint": "Instrument oben ausw\u00e4hlen zum Bearbeiten"
+  },
+  "directory": {
+    "title": "Liedverzeichnis",
+    "failedToLoad": "Lieder konnten nicht geladen werden.",
+    "noSongs": "Keine Lieder verf\u00fcgbar.",
+    "ariaLabel": "Liedverzeichnis",
+    "closeAriaLabel": "Verzeichnis schlie\u00dfen"
+  },
+  "difficulty": {
+    "beginner": "Anf\u00e4nger",
+    "easy": "Einfach",
+    "medium": "Mittel",
+    "hard": "Schwer",
+    "expert": "Experte"
+  },
+  "recorder": {
+    "volume": "Lautst\u00e4rke",
+    "vibrato": "Vibrato",
+    "variant": "Variante",
+    "system": "System"
+  },
+  "fingeringSystem": {
+    "baroque": "Barock",
+    "german": "Deutsch",
+    "simple": "Einfach"
+  },
+  "details": {
+    "avatar": "Entwickler-Avatar",
+    "about": {
+      "title": "\u00dcber SynRecordia",
+      "intro": "SynRecordia begann als pers\u00f6nliches Experiment - ich wollte sehen, wie weit ich die Musikvisualisierung im Browser treiben kann. Inspiriert von <synthesia>Synthesia</synthesia>, habe ich eine leichtgewichtige Web-App gebaut, in der man Griffweise und Notenbezeichnungen in Echtzeit beim Spielen verfolgen kann."
+    },
+    "whereFrom": {
+      "title": "Wie es entstand",
+      "text": "Dies ist eine \u00dcberarbeitung eines meiner \u00e4lteren Projekte, <recorderVis>RecorderVisualization</recorderVis>, das ich urspr\u00fcnglich in GameMaker Studio 2 gebaut habe. Die Portierung ins Web gab mir viel mehr Kontrolle \u00fcber Pr\u00e4zision, Performance und die Nutzerreichweite."
+    },
+    "stack": {
+      "title": "Der Tech-Stack",
+      "text": "Der Visualisierer nutzt PIXI.js f\u00fcr WebGL-Rendering und Tone.js f\u00fcr sample-genaues Audio. React k\u00fcmmert sich um den gesamten Zustand und die UI-Logik."
+    },
+    "inProgress": {
+      "title": "Noch in Arbeit",
+      "practiceMode": "\u00dcbungsmodus",
+      "practiceModeText": "Echtzeit-Notenerkennung, damit du mitspielen und Feedback erhalten kannst.",
+      "songLibrary": "Lied-Bibliothek",
+      "songLibraryText": "Mehr Lieder, besonders anf\u00e4ngerfreundliche Arrangements."
+    },
+    "knownIssues": {
+      "title": "Bekannte Probleme",
+      "mobilePerf": "Die Mobilperformance kann tr\u00e4ge sein - die Tone.js-Audiotimeline und der PIXI.js-Render-Loop synchronisieren sich auf schw\u00e4cheren Ger\u00e4ten nicht immer perfekt. Ich arbeite aktiv daran.",
+      "notesOutOfRange": "Bei einigen Liedern liegen Noten au\u00dferhalb des Sample-Bereichs, sodass sie schief oder stumm klingen k\u00f6nnen."
+    },
+    "aboutMe": {
+      "title": "\u00dcber mich & Quellcode",
+      "text": "Ich bin ein Entwickler, der gerne Dinge an der Schnittstelle von Frontend-Engineering und kreativen Tools baut. SynRecordia ist mein Lernprojekt f\u00fcr Web-Audio und hochperformantes Canvas-Rendering - und es ist vollst\u00e4ndig Open Source. Wer beitragen m\u00f6chte, besonders im Bereich Audio oder Rendering, ist herzlich willkommen.",
+      "github": "GitHub-Repository",
+      "contact": "Kontakt",
+      "blog": "Blog"
+    },
+    "faq": {
+      "title": "FAQ",
+      "q1": {
+        "question": "1. Wie \u00f6ffne ich ein Lied?",
+        "answer": "Klicke auf den Ordner-Button oben links oder \u00f6ffne das Verzeichnis direkt hier:"
+      },
+      "q2": {
+        "question": "2. Kann ich eigene Lieder laden?",
+        "answer": "Noch nicht, aber es steht auf der Liste. MIDI-Import hat Priorit\u00e4t - bleib dran."
+      },
+      "q3": {
+        "question": "3. Was sehe ich da eigentlich?",
+        "intro": "Der Visualisierer zeigt, welche L\u00f6cher der Blockfl\u00f6te f\u00fcr jede Note gedr\u00fcckt werden. Die L\u00f6cher sind in drei Gruppen aufgeteilt:",
+        "group1": "Gruppe 1: das linke Daumenloch (das R\u00fcckloch).",
+        "group2": "Gruppe 2: drei L\u00f6cher f\u00fcr die linke Hand - Zeige-, Mittel- und Ringfinger.",
+        "group3": "Gruppe 3: vier L\u00f6cher f\u00fcr die rechte Hand - Zeige-, Mittel-, Ring- und kleiner Finger.",
+        "outro": "Es gibt auch einen \u201e?\u201c-Button in der UI, der ein Diagramm des echten Instruments einblendet, damit du sehen kannst, wie die L\u00f6cher dem realen Instrument entsprechen."
+      },
+      "q4": {
+        "question": "4. Warum ruckelt es?",
+        "answer": "Der h\u00e4ufigste Grund ist eine sehr kleine Notenbreite - wenn die Noten winzig sind, sind gleichzeitig viel mehr auf dem Bildschirm. Versuche, die Notenbreite in den Einstellungen zu erh\u00f6hen."
+      },
+      "q5": {
+        "question": "5. Fehler gefunden oder eine Idee?",
+        "answer": "Er\u00f6ffne ein Issue auf <github>GitHub</github> oder schreib mir eine E-Mail an <email>huuthang.l@outlook.com</email>. Bitte gib Browser/OS, deine Aktion und eventuelle Konsolenfehler an."
+      },
+      "q6": {
+        "question": "6. Einige Griffmuster fehlen?",
+        "answer": "Das Chart deckt die Sopranblockfl\u00f6te ab. Einige alternative Griffe aus Referenzmaterialien sind noch nicht enthalten, sind aber geplant. Du kannst zwischen verf\u00fcgbaren Griffsystemen im Instrument-Controller wechseln. Das Chart stammt von <chart>dieser Sopran-Blockfl\u00f6ten-Griffreferenz</chart>."
+      }
+    },
+    "footer": {
+      "madeBy": "Erstellt von",
+      "buyMeACoffee": "Kauf mir einen Kaffee"
+    }
+  },
+  "header": {
+    "changeLanguage": "Sprache \u00e4ndern"
+  },
+  "visualizer": {
+    "pickSong": "W\u00e4hle ein Lied aus",
+    "scrollHint": "Strg gedr\u00fcckt halten zum Scrubben",
+    "showFingering": "Griffdiagramm anzeigen",
+    "hideFingering": "Griffdiagramm ausblenden",
+    "legendFull": "Ganz",
+    "legendHalf": "Halb"
+  }
+}

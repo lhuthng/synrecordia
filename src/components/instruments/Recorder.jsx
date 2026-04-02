@@ -1,10 +1,9 @@
 import { createPortal } from "react-dom";
 import Instrument from "./Instrument";
-import { useState } from "react";
-import { useEffect } from "react";
-import { useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import DuoSlideBar from "../DuoSlideBar";
 import DuoSelect from "../DuoSelect";
+import { useTranslation } from "react-i18next";
 
 export default function Recorder({
   packedSampler: recorderSampler,
@@ -23,12 +22,17 @@ export default function Recorder({
   const [version, setVersion] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
 
+  const { t } = useTranslation();
+
   const [fingeringSystem, setFingeringSystem] = useState("baroque");
-  const [fingeringSystems] = useState([
-    { value: "baroque", label: "Baroque" },
-    { value: "german", label: "German" },
-    { value: "simple", label: "Simple" },
-  ]);
+  const fingeringSystems = useMemo(
+    () => [
+      { value: "baroque", label: t("fingeringSystem.baroque") },
+      { value: "german", label: t("fingeringSystem.german") },
+      { value: "simple", label: t("fingeringSystem.simple") },
+    ],
+    [t],
+  );
 
   useEffect(() => {
     setVolume(recorderSampler.getVolume());
@@ -96,7 +100,7 @@ export default function Recorder({
         createPortal(
           <div className="flex flex-col gap-2 max-w-full sm:max-w-100 [&>*>label]:w-10">
             <div className="flex items-center gap-4">
-              <label title="volume">Volume:</label>
+              <label title="volume">{t("recorder.volume")}:</label>
               <div className="flex-1 mx-4">
                 <DuoSlideBar
                   min={0}
@@ -114,7 +118,7 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <label title="volume">Vibrato:</label>
+              <label title="vibrato">{t("recorder.vibrato")}:</label>
               <div className="flex-1 mx-4">
                 <DuoSlideBar
                   min={0}
@@ -132,7 +136,7 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label title="variant">Variant:</label>
+              <label title="variant">{t("recorder.variant")}:</label>
               <div className="flex-1 mx-4">
                 <DuoSelect
                   options={alternatives}
@@ -144,7 +148,7 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label title="version">System:</label>
+              <label title="system">{t("recorder.system")}:</label>
               <div className="flex-1 mx-4">
                 <DuoSelect
                   options={fingeringSystems}

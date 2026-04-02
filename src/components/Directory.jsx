@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import DuoToggleButton from "./DuoToggleButton";
 import DuoButton from "./DuoButton";
@@ -8,30 +9,17 @@ import { cn } from "../libs/utils";
 // ── Difficulty badge ──────────────────────────────────────────────────────────
 
 const DIFFICULTY_CONFIG = {
-  beginner: {
-    label: "Beginner",
-    classes: "text-note-full border-note-full/50",
-  },
-  easy: {
-    label: "Easy",
-    classes: "text-note-full border-note-full/50",
-  },
-  medium: {
-    label: "Medium",
-    classes: "text-yellow-400 border-yellow-400/50",
-  },
-  hard: {
-    label: "Hard",
-    classes: "text-accent-pink border-accent-pink/50",
-  },
-  expert: {
-    label: "Expert",
-    classes: "text-red-400 border-red-400/50",
-  },
+  beginner: { classes: "text-note-full border-note-full/50" },
+  easy: { classes: "text-note-full border-note-full/50" },
+  medium: { classes: "text-yellow-400 border-yellow-400/50" },
+  hard: { classes: "text-accent-pink border-accent-pink/50" },
+  expert: { classes: "text-red-400 border-red-400/50" },
 };
 
 function DifficultyBadge({ difficulty }) {
-  const cfg = DIFFICULTY_CONFIG[difficulty?.toLowerCase()];
+  const { t } = useTranslation();
+  const key = difficulty?.toLowerCase();
+  const cfg = DIFFICULTY_CONFIG[key];
   if (!cfg) return null;
   return (
     <span
@@ -40,7 +28,7 @@ function DifficultyBadge({ difficulty }) {
         cfg.classes,
       )}
     >
-      {cfg.label}
+      {t(`difficulty.${key}`)}
     </span>
   );
 }
@@ -237,6 +225,7 @@ export default function Directory({
   const [status, setStatus] = useState("idle");
   const containerRef = useRef(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Fetch index on first open (lazy)
   useEffect(() => {
@@ -342,7 +331,7 @@ export default function Directory({
         {open && (
           <Motion.div
             role="dialog"
-            aria-label="Song directory"
+            aria-label={t("directory.ariaLabel")}
             className={cn(
               "absolute mt-2 w-80 border-2 border-note-half-dark bg-dark rounded-2xl",
               "shadow-[0_8px_32px_rgba(0,0,0,0.55)] p-3 z-50",
@@ -356,7 +345,7 @@ export default function Directory({
             {/* ── Header ── */}
             <div className="flex items-center justify-between mb-3">
               <span className="font-bold uppercase text-main tracking-wide text-sm select-none">
-                Song Directory
+                {t("directory.title")}
               </span>
               <DuoButton
                 padding="px-2 py-0.5"
@@ -365,7 +354,7 @@ export default function Directory({
                 border="border-note-half-dark"
                 text="text-main"
                 onClick={() => setOpen(false)}
-                aria-label="Close directory"
+                aria-label={t("directory.closeAriaLabel")}
               >
                 ✕
               </DuoButton>
@@ -377,14 +366,14 @@ export default function Directory({
             {/* ── Error ── */}
             {status === "error" && (
               <p className="py-4 text-center text-accent-pink font-bold uppercase text-sm">
-                Failed to load songs.
+                {t("directory.failedToLoad")}
               </p>
             )}
 
             {/* ── Empty ── */}
             {status === "ready" && songs?.length === 0 && (
               <p className="py-4 text-center text-dim font-bold uppercase text-sm">
-                No songs available.
+                {t("directory.noSongs")}
               </p>
             )}
 

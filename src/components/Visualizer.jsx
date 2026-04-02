@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { usePixiVisualizer } from "../hooks/usePixiVisualizer.js";
 import {
   DEFAULT_HEIGHT,
@@ -49,6 +50,8 @@ export default function Visualizer({
   onPlayPause,
   onPlayBarPositionChange,
 }) {
+  const { t } = useTranslation();
+
   // ── Instrument overlay ──────────────────────────────────────────────────────
   const [showInstrument, setShowInstrument] = useState(false);
   const [holePoints, setHolePoints] = useState([]);
@@ -65,6 +68,18 @@ export default function Visualizer({
 
   // Clean up hint timer on unmount
   useEffect(() => () => clearTimeout(hintTimerRef.current), []);
+
+  // ── Stable scroll-hint callback ─────────────────────────────────────────────
+  const scrollHintTextRef = useRef(t("visualizer.scrollHint"));
+
+  useEffect(() => {
+    scrollHintTextRef.current = t("visualizer.scrollHint");
+  }, [t]);
+
+  const handleScrollHint = useCallback(
+    () => showHint(scrollHintTextRef.current),
+    [showHint],
+  );
 
   const {
     wrapperRef,
@@ -91,7 +106,7 @@ export default function Visualizer({
     onScrub,
     onNoteClick,
     onPlayBarPositionChange,
-    onScrollHint: () => showHint("Hold Ctrl to scrub"),
+    onScrollHint: handleScrollHint,
     interactionLocked: showInstrument,
   });
 
@@ -165,7 +180,7 @@ export default function Visualizer({
         }}
       >
         <span style={{ fontSize: 14, fontFamily: "monospace" }}>
-          Pick a song to get started
+          {t("visualizer.pickSong")}
         </span>
       </div>
     );
@@ -326,7 +341,9 @@ export default function Visualizer({
             if (next) onScrubStart?.(); // pause the player when opening the guide
           }}
           title={
-            showInstrument ? "Hide fingering guide" : "Show fingering guide"
+            showInstrument
+              ? t("visualizer.hideFingering")
+              : t("visualizer.showFingering")
           }
         >
           ?
@@ -355,11 +372,11 @@ export default function Visualizer({
       <div className="absolute p-4 bottom-0 select-none pointer-events-none">
         <p>
           <span className="inline-block rounded-sm w-4 h-4 bg-note-full"></span>{" "}
-          Full
+          {t("visualizer.legendFull")}
         </p>
         <p>
           <span className="inline-block rounded-sm w-4 h-4 bg-note-half"></span>{" "}
-          Half
+          {t("visualizer.legendHalf")}
         </p>
       </div>
     </div>
