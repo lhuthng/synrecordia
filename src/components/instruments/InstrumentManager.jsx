@@ -247,20 +247,24 @@ export default function InstrumentManager({
     <AnimatePresence>
       {Presentation ? (
         <Motion.div
-          ref={scope}
+          key="container"
           initial={{ opacity: 0, x: -5 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -5 }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-          }}
         >
           {/* Flex column: button on top, range bar + warning below */}
           <div className="inline-flex flex-col items-center gap-2">
             {/* Instrument button with optional ⚠ badge */}
-            <div className="relative inline-block">
+            <Motion.div
+              key="button"
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+              }}
+              ref={scope}
+              className="relative inline-block"
+            >
               <Presentation
                 packedSampler={samplerInstance}
                 label={slot + 1}
@@ -285,7 +289,7 @@ export default function InstrumentManager({
                   ⚠
                 </span>
               )}
-            </div>
+            </Motion.div>
 
             {/* Range comparison bar — always shown when range data is available */}
             {(samplerNoteRange || trackNoteRange) && (

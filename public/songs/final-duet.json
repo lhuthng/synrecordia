@@ -681,14 +681,14 @@
           "time": 209,
           "duration": 5,
           "pitch": "F6",
-          "velocity": 100
+          "velocity": 80
         },
         {
           "type": "note",
           "time": 214,
           "duration": 3.833333,
           "pitch": "E6",
-          "velocity": 91
+          "velocity": 80
         },
         {
           "type": "note",
