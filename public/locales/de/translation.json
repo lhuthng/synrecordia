@@ -14,14 +14,21 @@
     "instrumentController": "Steuerung",
     "selectInstrumentHint": "Instrument auswählen zum Bearbeiten",
     "advancedSettings": "Erweitert",
-    "latencyCalibration": "Latenz"
+    "latencyCalibration": "Latenz",
+    "particles": "Partikel",
+    "pulseEffect": "Puls",
+    "scrollToTop": "Nach oben",
+    "close": "Schließen"
   },
   "directory": {
     "title": "Songverzeichnis",
     "failedToLoad": "Songs konnten nicht geladen werden.",
     "noSongs": "Keine Songs verfügbar.",
     "ariaLabel": "Songverzeichnis",
-    "closeAriaLabel": "Verzeichnis schließen"
+    "closeAriaLabel": "Verzeichnis schließen",
+    "searchPlaceholder": "Songs suchen…",
+    "noResults": "Keine Songs gefunden.",
+    "filterAll": "Alle"
   },
   "difficulty": {
     "beginner": "Anfänger",
@@ -45,7 +52,7 @@
     "avatar": "Entwickler-Avatar",
     "about": {
       "title": "Über SynRecordia",
-      "intro": "SynRecordia begann als persönliches Experiment — ich wollte sehen, wie weit ich die Musikvisualisierung im Browser treiben kann. Inspiriert von <synthesia>Synthesia</synthesia>, habe ich eine leichtgewichtige Web-App gebaut, in der man Griffweise und Notenbezeichnungen in Echtzeit beim Spielen verfolgen kann."
+      "intro": "SynRecordia begann als persönliches Experiment - ich wollte sehen, wie weit ich die Musikvisualisierung im Browser treiben kann. Inspiriert von <synthesia>Synthesia</synthesia>, habe ich eine leichtgewichtige Web-App gebaut, in der man Griffweise und Notenbezeichnungen in Echtzeit beim Spielen verfolgen kann."
     },
     "whereFrom": {
       "title": "Wie es entstand",
@@ -64,12 +71,12 @@
     },
     "knownIssues": {
       "title": "Bekannte Probleme",
-      "mobilePerf": "Die Mobilperformance kann träge sein — die Tone.js-Audiotimeline und der PIXI.js-Render-Loop synchronisieren sich auf schwächeren Geräten nicht immer perfekt. Ich arbeite aktiv daran.",
+      "mobilePerf": "Die Mobilperformance kann träge sein - die Tone.js-Audiotimeline und der PIXI.js-Render-Loop synchronisieren sich auf schwächeren Geräten nicht immer perfekt. Ich arbeite aktiv daran.",
       "notesOutOfRange": "Bei einigen Songs liegen Noten außerhalb des Sample-Bereichs, sodass sie schief oder stumm klingen können."
     },
     "aboutMe": {
       "title": "Über mich & Quellcode",
-      "text": "Ich bin ein Entwickler, der gerne Dinge an der Schnittstelle von Frontend-Engineering und kreativen Tools baut. SynRecordia ist mein Lernprojekt für Web-Audio und hochperformantes Canvas-Rendering — und es ist vollständig Open Source. Wer beitragen möchte, besonders im Bereich Audio oder Rendering, ist herzlich willkommen.",
+      "text": "Ich bin ein Entwickler, der gerne Dinge an der Schnittstelle von Frontend-Engineering und kreativen Tools baut. SynRecordia ist mein Lernprojekt für Web-Audio und hochperformantes Canvas-Rendering - und es ist vollständig Open Source. Wer beitragen möchte, besonders im Bereich Audio oder Rendering, ist herzlich willkommen.",
       "github": "GitHub",
       "contact": "Kontakt",
       "blog": "Blog"
@@ -77,32 +84,44 @@
     "faq": {
       "title": "FAQ",
       "q1": {
-        "question": "1. Wie öffne ich einen Song?",
-        "answer": "Klicke auf den Ordner-Button oben links oder öffne das Verzeichnis direkt hier:"
+        "question": "1. Für welche Art von Recorder ist das?",
+        "answer": "SynRecordia ist auf die Sopranblockflöte ausgelegt - genauer gesagt auf ein digitales Blasinstrument. Das während der Entwicklung verwendete Gerät ist die Carry-On Simple Recorder. Sie ist nicht mehr erhältlich, aber du findest die zweite Edition auf ihrer <carryOn>Website</carryOn>."
       },
       "q2": {
-        "question": "2. Kann ich eigene Songs laden?",
-        "answer": "Noch nicht, aber es steht auf der Liste. MIDI-Import hat Priorität — bleib dran."
-      },
-      "q3": {
-        "question": "3. Was sehe ich da eigentlich?",
+        "question": "2. Was sehe ich da eigentlich?",
         "intro": "Der Visualisierer zeigt, welche Löcher der Blockflöte für jede Note gedrückt werden. Die Löcher sind in drei Gruppen aufgeteilt:",
         "group1": "Gruppe 1: das linke Daumenloch (das Rückloch).",
-        "group2": "Gruppe 2: drei Löcher für die linke Hand — Zeige-, Mittel- und Ringfinger.",
-        "group3": "Gruppe 3: vier Löcher für die rechte Hand — Zeige-, Mittel-, Ring- und kleiner Finger.",
+        "group2": "Gruppe 2: drei Löcher für die linke Hand - Zeige-, Mittel- und Ringfinger.",
+        "group3": "Gruppe 3: vier Löcher für die rechte Hand - Zeige-, Mittel-, Ring- und kleiner Finger.",
         "outro": "Es gibt auch einen \"?\"-Button in der UI, der ein Diagramm des echten Instruments einblendet, damit du siehst, wie die Löcher dem realen Instrument entsprechen."
       },
+      "q3": {
+        "question": "3. Wie öffne ich einen Song?",
+        "answer": "Klicke auf den Ordner-Button oben links oder öffne das Verzeichnis direkt hier:"
+      },
       "q4": {
-        "question": "4. Warum ruckelt es?",
-        "answer": "Der häufigste Grund ist eine sehr kleine Notenbreite — wenn die Noten winzig sind, sind gleichzeitig viel mehr auf dem Bildschirm. Versuche, die Breite in den Einstellungen zu erhöhen."
+        "question": "4. Warum ist das Audio schneller als die Visualisierung?",
+        "answer": "Das ist ein Zeitversatz zwischen Audio und Visualisierung. Du kannst ihn in den erweiterten Einstellungen über den Latenz-Kalibrierungsregler anpassen."
       },
       "q5": {
-        "question": "5. Fehler gefunden oder eine Idee?",
-        "answer": "Eröffne ein Issue auf <github>GitHub</github> oder schreib mir eine E-Mail an <email>huuthang.l@outlook.com</email>. Bitte gib Browser/OS, deine Aktion und eventuelle Konsolenfehler an."
+        "question": "5. Warum haben manche Noten Audio aber keine Visualisierung?",
+        "answer": "Einige Noten liegen außerhalb des spielbaren Bereichs des aktuell gewählten Griffsystems. Versuche, in der Steuerung auf ein anderes Instrumentensystem zu wechseln."
       },
       "q6": {
         "question": "6. Einige Griffmuster fehlen?",
         "answer": "Das Chart deckt die Sopranblockflöte ab. Einige alternative Griffe sind noch nicht enthalten, aber geplant. Du kannst zwischen den Griffsystemen in der Steuerung wechseln. Das Chart stammt von <chart>dieser Sopran-Blockflöten-Griffreferenz</chart>."
+      },
+      "q7": {
+        "question": "7. Warum ruckelt es?",
+        "answer": "Der häufigste Grund ist eine sehr kleine Notenbreite - wenn die Noten winzig sind, sind gleichzeitig viel mehr auf dem Bildschirm. Versuche, die Breite in den Einstellungen zu erhöhen."
+      },
+      "q8": {
+        "question": "8. Kann ich eigene Songs laden?",
+        "answer": "Noch nicht, aber es steht auf der Liste. MIDI-Import hat Priorität - bleib dran."
+      },
+      "q9": {
+        "question": "9. Fehler gefunden oder eine Idee?",
+        "answer": "Eröffne ein Issue auf <github>GitHub</github> oder schreib mir eine E-Mail an <email>huuthang.l@outlook.com</email>. Bitte gib Browser/OS, deine Aktion und eventuelle Konsolenfehler an."
       }
     },
     "footer": {
@@ -115,7 +134,7 @@
   },
   "visualizer": {
     "pickSong": "Song auswählen und loslegen",
-    "scrollHint": "Ctrl + ziehen zum Scrubben",
+    "scrollHint": "Strg + scrollen zum Scrubben",
     "showFingering": "Griffdiagramm anzeigen",
     "hideFingering": "Griffdiagramm ausblenden",
     "legendFull": "Ganz",

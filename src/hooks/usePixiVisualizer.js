@@ -62,6 +62,7 @@ export function usePixiVisualizer({
   onScrollHint,
   interactionLocked = false,
   latencyMs = 0,
+  particlesEnabled = true,
 }) {
   // ─── DOM refs ────────────────────────────────────────────────────────────────
   const wrapperRef = useRef(null);
@@ -120,6 +121,9 @@ export function usePixiVisualizer({
 
   // ─── Interaction lock ref ────────────────────────────────────────────────────
   const interactionLockedRef = useRef(interactionLocked);
+
+  // ─── Particles enabled ref ───────────────────────────────────────────────────
+  const particlesEnabledRef = useRef(particlesEnabled);
 
   // ─── Sliding-window culling refs ──────────────────────────────────────────────
   // maxSpriteWidthRef: widest note sprite (px) – used as conservative left-boundary buffer.
@@ -205,6 +209,17 @@ export function usePixiVisualizer({
   useEffect(() => {
     interactionLockedRef.current = interactionLocked;
   }, [interactionLocked]);
+
+  useEffect(() => {
+    particlesEnabledRef.current = particlesEnabled;
+    // When particles are disabled, destroy any already-live particles immediately
+    if (!particlesEnabled && particleLayerRef.current) {
+      for (const p of particlesRef.current) {
+        p.spr.destroy();
+      }
+      particlesRef.current = [];
+    }
+  }, [particlesEnabled]);
 
   useEffect(() => {
     bpmRef.current = bpm;
@@ -915,6 +930,7 @@ export function usePixiVisualizer({
                 particleTextureRef.current &&
                 isActive &&
                 isPlayingRef.current &&
+                particlesEnabledRef.current &&
                 particlesRef.current.length < MAX_PARTICLES
               ) {
                 sprite.activeHoles.forEach(({ y, color }) => {

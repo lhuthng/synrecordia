@@ -103,10 +103,43 @@ export default function Details() {
 
           <h3 className="pt-6">{t("details.faq.title")}</h3>
           <div className="space-y-3">
+            {/* q1 — What kind of recorder is this for? */}
             <div className="bg-card-bg p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q1.question")}</h4>
+              <p className="mt-2">
+                <Trans
+                  i18nKey="details.faq.q1.answer"
+                  components={{
+                    carryOn: (
+                      <a
+                        className="underline text-note-full"
+                        href="https://us.carryonplaying.com/"
+                        target="_blank"
+                        rel="noreferrer"
+                      />
+                    ),
+                  }}
+                />
+              </p>
+            </div>
+
+            {/* q2 — What am I actually looking at? */}
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">{t("details.faq.q2.question")}</h4>
+              <p className="mt-2">{t("details.faq.q2.intro")}</p>
+              <ul className="list-disc list-inside mt-2">
+                <li>{t("details.faq.q2.group1")}</li>
+                <li>{t("details.faq.q2.group2")}</li>
+                <li>{t("details.faq.q2.group3")}</li>
+              </ul>
+              <p className="mt-2">{t("details.faq.q2.outro")}</p>
+            </div>
+
+            {/* q3 — How do I open a song? */}
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">{t("details.faq.q3.question")}</h4>
               <div className="flex flex-wrap items-center mt-2 gap-2">
-                <p>{t("details.faq.q1.answer")}</p>
+                <p>{t("details.faq.q3.answer")}</p>
                 <Directory
                   onSelected={() => {
                     document.body.scrollTop = 0;
@@ -116,32 +149,56 @@ export default function Details() {
               </div>
             </div>
 
-            <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">{t("details.faq.q2.question")}</h4>
-              <p className="mt-2">{t("details.faq.q2.answer")}</p>
-            </div>
-
-            <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">{t("details.faq.q3.question")}</h4>
-              <p className="mt-2">{t("details.faq.q3.intro")}</p>
-              <ul className="list-disc list-inside mt-2">
-                <li>{t("details.faq.q3.group1")}</li>
-                <li>{t("details.faq.q3.group2")}</li>
-                <li>{t("details.faq.q3.group3")}</li>
-              </ul>
-              <p className="mt-2">{t("details.faq.q3.outro")}</p>
-            </div>
-
+            {/* q4 — Why is the audio played faster than the visualization? */}
             <div className="bg-card-bg p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q4.question")}</h4>
               <p className="mt-2">{t("details.faq.q4.answer")}</p>
             </div>
 
+            {/* q5 — Why do some notes have audio but no visual? */}
             <div className="bg-card-bg p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q5.question")}</h4>
+              <p className="mt-2">{t("details.faq.q5.answer")}</p>
+            </div>
+
+            {/* q6 — Some fingering patterns are missing? */}
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">{t("details.faq.q6.question")}</h4>
               <p className="mt-2">
                 <Trans
-                  i18nKey="details.faq.q5.answer"
+                  i18nKey="details.faq.q6.answer"
+                  components={{
+                    chart: (
+                      <a
+                        className="underline text-note-full"
+                        href="/references/recorder-fingering-chart.png"
+                        target="_blank"
+                        rel="noreferrer"
+                      />
+                    ),
+                  }}
+                />
+              </p>
+            </div>
+
+            {/* q7 — Why is it lagging? */}
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">{t("details.faq.q7.question")}</h4>
+              <p className="mt-2">{t("details.faq.q7.answer")}</p>
+            </div>
+
+            {/* q8 — Can I load my own songs? */}
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">{t("details.faq.q8.question")}</h4>
+              <p className="mt-2">{t("details.faq.q8.answer")}</p>
+            </div>
+
+            {/* q9 — Found a bug or have a feature idea? */}
+            <div className="bg-card-bg p-3 rounded-lg">
+              <h4 className="font-semibold">{t("details.faq.q9.question")}</h4>
+              <p className="mt-2">
+                <Trans
+                  i18nKey="details.faq.q9.answer"
                   components={{
                     github: (
                       <a
@@ -155,25 +212,6 @@ export default function Details() {
                       <a
                         className="underline text-note-full"
                         href="mailto:huuthang.l@outlook.com"
-                      />
-                    ),
-                  }}
-                />
-              </p>
-            </div>
-
-            <div className="bg-card-bg p-3 rounded-lg">
-              <h4 className="font-semibold">{t("details.faq.q6.question")}</h4>
-              <p className="mt-2">
-                <Trans
-                  i18nKey="details.faq.q6.answer"
-                  components={{
-                    chart: (
-                      <a
-                        className="underline text-note-full"
-                        href="/references/recorder-fingering-chart.png"
-                        target="_blank"
-                        rel="noreferrer"
                       />
                     ),
                   }}

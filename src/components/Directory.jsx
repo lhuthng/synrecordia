@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import DuoToggleButton from "./DuoToggleButton";
@@ -6,7 +6,7 @@ import DuoButton from "./DuoButton";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import { cn } from "../libs/utils";
 
-// ── Difficulty badge ──────────────────────────────────────────────────────────
+// ── Difficulty config ─────────────────────────────────────────────────────────
 
 const DIFFICULTY_CONFIG = {
   beginner: { classes: "text-note-full border-note-full/50" },
@@ -15,6 +15,10 @@ const DIFFICULTY_CONFIG = {
   hard: { classes: "text-accent-pink border-accent-pink/50" },
   expert: { classes: "text-red-400 border-red-400/50" },
 };
+
+const DIFFICULTIES = ["beginner", "easy", "medium", "hard", "expert"];
+
+// ── Difficulty badge ──────────────────────────────────────────────────────────
 
 function DifficultyBadge({ difficulty }) {
   const { t } = useTranslation();
@@ -97,7 +101,6 @@ const DIFFICULTY_SVGS = {
   hard: (
     <>
       <ellipse cx="16.407" cy="16.043" rx="14.225" ry="14.225"></ellipse>
-
       <path
         style={{ strokeLinecap: "round" }}
         d="M 9.172 20.226 C 14.876 16.39 16.95 23.597 23.329 20.304"
@@ -115,7 +118,6 @@ const DIFFICULTY_SVGS = {
   expert: (
     <>
       <ellipse cx="16.407" cy="16.043" rx="14.225" ry="14.225"></ellipse>
-
       <path
         style={{ strokeLinecap: "round" }}
         d="M 9.172 20.226 C 14.876 16.39 16.95 23.597 23.329 20.304"
@@ -140,7 +142,7 @@ function DifficultyExpression({ className, difficulty }) {
       viewBox="0 0 32 32"
       className={cn(
         className,
-        "absolute w-18 h-18 -translate-x-10 fill-none stroke-2 pointer-events-none",
+        "absolute w-18 h-18 -translate-y-1 -translate-x-10 fill-none stroke-2 pointer-events-none",
       )}
     >
       {svg}
@@ -204,7 +206,7 @@ function SongEntry({ song, onSelect }) {
           </div>
         </div>
         <DifficultyExpression
-          className="right-0 bottom-0 stroke-note-half-dark/40 translate-x-3 translate-y-4 -rotate-30 pointer-events-none z-0"
+          className="right-0 top-0 stroke-note-half-dark/40 translate-x-3 translate-y-4 -rotate-30 pointer-events-none z-0"
           difficulty={song.difficulty}
         />
       </button>
@@ -223,9 +225,32 @@ export default function Directory({
   const [open, setOpen] = useState(false);
   const [songs, setSongs] = useState(null);
   const [status, setStatus] = useState("idle");
+
+  const [searchRaw, setSearchRaw] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Difficulty filter — null means "All"
+  const [activeDifficulty, setActiveDifficulty] = useState(null);
+
   const containerRef = useRef(null);
+  const searchRef = useRef(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  useEffect(() => {
+    const id = setTimeout(
+      () => setSearchTerm(searchRaw.trim().toLowerCase()),
+      300,
+    );
+    return () => clearTimeout(id);
+  }, [searchRaw]);
+
+  // Auto-focus the search input whenever the panel opens
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(() => searchRef.current?.focus(), 60);
+    return () => clearTimeout(id);
+  }, [open]);
 
   // Fetch index on first open (lazy)
   useEffect(() => {
@@ -274,6 +299,25 @@ export default function Directory({
       document.removeEventListener("keydown", onEsc);
     };
   }, [open]);
+
+  // Derived: songs filtered by current search term and difficulty chip
+  const filteredSongs = useMemo(() => {
+    if (!Array.isArray(songs)) return [];
+    return songs.filter((song) => {
+      const titleMatch =
+        !searchTerm || song.title.toLowerCase().includes(searchTerm);
+      const diffMatch =
+        !activeDifficulty ||
+        song.difficulty?.toLowerCase() === activeDifficulty;
+      return titleMatch && diffMatch;
+    });
+  }, [songs, searchTerm, activeDifficulty]);
+
+  const clearSearch = () => {
+    setSearchRaw("");
+    setSearchTerm("");
+    searchRef.current?.focus();
+  };
 
   const handleSelect = (meta) => {
     navigate(`/songs/${meta.id}`);
@@ -360,6 +404,95 @@ export default function Directory({
               </DuoButton>
             </div>
 
+            {/* ── Search input ── */}
+            <div className="relative mb-2">
+              {/* Search icon */}
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-main">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-4 h-4 fill-none stroke-current stroke-2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+              </div>
+
+              <input
+                ref={searchRef}
+                type="text"
+                value={searchRaw}
+                onChange={(e) => setSearchRaw(e.target.value)}
+                placeholder={t("directory.searchPlaceholder")}
+                className={cn(
+                  "w-full bg-note-half border-2 border-note-half-dark rounded-xl",
+                  "pl-8 py-1.5 text-sm text-main placeholder:text-main",
+                  "focus:outline-main transition-colors duration-75",
+                  searchRaw ? "pr-8" : "pr-3",
+                )}
+              />
+
+              {/* Clear button */}
+              {searchRaw && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-main/40 hover:text-main transition-colors duration-75 cursor-pointer"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="w-4 h-4 fill-none stroke-current stroke-2"
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* ── Difficulty filter chips ── */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {/* "All" chip */}
+              <button
+                type="button"
+                onClick={() => setActiveDifficulty(null)}
+                className={cn(
+                  "text-xs font-bold uppercase px-2 py-0.5 rounded-lg border-2",
+                  "transition-colors duration-75 cursor-pointer",
+                  activeDifficulty === null
+                    ? "bg-note-full border-note-full-dark text-dark"
+                    : "bg-transparent border-note-half-dark text-main/50 hover:text-main hover:border-main/30",
+                )}
+              >
+                {t("directory.filterAll")}
+              </button>
+
+              {DIFFICULTIES.map((d) => {
+                const isActive = activeDifficulty === d;
+                const cfg = DIFFICULTY_CONFIG[d];
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setActiveDifficulty(isActive ? null : d)}
+                    className={cn(
+                      "text-xs font-bold uppercase px-2 py-0.5 rounded-lg border-2",
+                      "transition-colors duration-75 cursor-pointer",
+                      isActive
+                        ? cn("bg-dark/80", cfg.classes)
+                        : "bg-transparent border-note-half-dark text-main/40 hover:text-main/70 hover:border-main/30",
+                    )}
+                  >
+                    {t(`difficulty.${d}`)}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* ── Loading ── */}
             {status === "loading" && <LoadingWave />}
 
@@ -370,27 +503,41 @@ export default function Directory({
               </p>
             )}
 
-            {/* ── Empty ── */}
+            {/* ── Empty index ── */}
             {status === "ready" && songs?.length === 0 && (
               <p className="py-4 text-center text-dim font-bold uppercase text-sm">
                 {t("directory.noSongs")}
               </p>
             )}
 
-            {/* ── Song list ── */}
+            {/* ── Song list (or no-results message) ── */}
             {Array.isArray(songs) && songs.length > 0 && (
-              <ul className="space-y-2">
-                {songs.map((song) => (
-                  <SongEntry
-                    key={song.id}
-                    song={song}
-                    onSelect={() => {
-                      handleSelect(song);
-                      onSelected?.();
+              <>
+                {filteredSongs.length === 0 ? (
+                  <p className="py-4 text-center text-dim font-bold uppercase text-sm">
+                    {t("directory.noResults")}
+                  </p>
+                ) : (
+                  <ul
+                    className="py-2 space-y-2 max-h-[min(386px,calc(100dvh-18rem))] overflow-y-auto pr-0.5 custom-scrollbar"
+                    style={{
+                      "--scrollbar-thumb": "var(--color-note-half)",
+                      "--scrollbar-thumb-hover": "var(--color-note-half-dark)",
                     }}
-                  />
-                ))}
-              </ul>
+                  >
+                    {filteredSongs.map((song) => (
+                      <SongEntry
+                        key={song.id}
+                        song={song}
+                        onSelect={() => {
+                          handleSelect(song);
+                          onSelected?.();
+                        }}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
           </Motion.div>
         )}

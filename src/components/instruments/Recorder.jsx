@@ -45,7 +45,7 @@ export default function Recorder({
 
   const { t } = useTranslation();
 
-  const [fingeringSystem, setFingeringSystem] = useState("baroque");
+  const [fingeringSystem, setFingeringSystem] = useState("german");
 
   const systemRangeInfo = useMemo(() => {
     const compute = (system) => {

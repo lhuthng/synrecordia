@@ -217,13 +217,13 @@ export default function SongTimeline({
       >
         {/* Left handle — moves the high-beat (future) boundary */}
         <div
-          className={`absolute top-0 bottom-0 right-full sm:-translate-x-2 cursor-ew-resize touch-none flex items-center justify-center px-1`}
+          className={`absolute top-0 bottom-0 right-full cursor-ew-resize touch-none flex items-center justify-center px-1`}
           onPointerDown={(e) => startDrag("left", e)}
         >
           <svg
             viewBox="0 0 12 16"
             className={cn(
-              "w-3 h-4 fill-none stroke-2 transition-colors duration-200",
+              "w-3 h-4 sm:-translate-x-2 fill-none stroke-2 transition-colors duration-200",
               atLimit ? "stroke-accent-pink" : "stroke-note-full",
             )}
             aria-hidden="true"
@@ -238,13 +238,13 @@ export default function SongTimeline({
         />
         {/* Right handle — moves the low-beat (past) boundary */}
         <div
-          className={`absolute top-0 bottom-0 left-full sm:translate-x-2 cursor-ew-resize touch-none flex items-center justify-center px-1`}
+          className={`absolute top-0 bottom-0 left-full cursor-ew-resize touch-none flex items-center justify-center px-1`}
           onPointerDown={(e) => startDrag("right", e)}
         >
           <svg
             viewBox="0 0 12 16"
             className={cn(
-              "w-3 h-4 fill-none stroke-2 transition-colors duration-200",
+              "w-3 h-4 sm:translate-x-2 fill-none stroke-2 transition-colors duration-200",
               atLimit ? "stroke-accent-pink" : "stroke-note-full",
             )}
             aria-hidden="true"

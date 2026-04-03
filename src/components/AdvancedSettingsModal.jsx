@@ -4,6 +4,7 @@ import { motion as Motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 import DuoSlideBar from "./DuoSlideBar";
 import DuoButton from "./DuoButton";
+import DuoToggleButton from "./DuoToggleButton";
 
 export default function AdvancedSettingsModal({
   isOpen,
@@ -12,6 +13,10 @@ export default function AdvancedSettingsModal({
   onNoteWidthChange,
   latencyMs,
   onLatencyChange,
+  particlesEnabled,
+  onParticlesToggle,
+  pulseEnabled,
+  onPulseToggle,
 }) {
   const { t } = useTranslation();
   const panelRef = useRef(null);
@@ -45,7 +50,7 @@ export default function AdvancedSettingsModal({
           <Motion.div
             key="adv-panel"
             ref={panelRef}
-            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,420px)] text-main bg-dark border-2 border-note-half-dark rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] p-5 space-y-5"
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(90vw,440px)] text-main bg-dark border-2 border-note-half-dark rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.6)] p-5 space-y-5"
             initial={{ opacity: 0, scale: 0.94, y: -12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: -12 }}
@@ -56,19 +61,76 @@ export default function AdvancedSettingsModal({
               <h2 className="font-bold uppercase text-main text-sm tracking-wide">
                 {t("player.advancedSettings")}
               </h2>
-              <button
-                type="button"
+              <DuoButton
+                padding="px-2 py-0.5"
+                background="bg-note-half"
+                shadowBackground="bg-note-half-dark"
+                border="border-note-half-dark"
+                text="text-main"
                 onClick={onClose}
-                className="w-6 h-6 flex items-center justify-center rounded-full text-main/60 hover:text-main hover:bg-note-half transition-colors duration-100 text-lg leading-none"
-                aria-label="Close"
+                aria-label={t("player.close")}
               >
-                ×
-              </button>
+                ✕
+              </DuoButton>
             </div>
+
+            {/* Divider */}
+            <div className="border-t border-note-half-dark/50" />
+
+            {/* Particles toggle */}
+            <div className="flex items-center gap-3">
+              <label className="shrink-0 min-w-28 text-sm">
+                {t("player.particles")}:
+              </label>
+              <DuoToggleButton
+                value={particlesEnabled}
+                onToggle={() => onParticlesToggle(true)}
+                offToggle={() => onParticlesToggle(false)}
+                onColors={{
+                  background: "bg-note-full",
+                  shadowBackground: "bg-note-full-dark",
+                  border: "border-note-full-dark",
+                  text: "text-dark",
+                }}
+                offColors={{
+                  background: "bg-note-half",
+                  shadowBackground: "bg-note-half-dark",
+                  border: "border-note-half-dark",
+                  text: "text-main",
+                }}
+              />
+            </div>
+
+            {/* Pulse effect toggle */}
+            <div className="flex items-center gap-3">
+              <label className="shrink-0 min-w-28 text-sm">
+                {t("player.pulseEffect")}:
+              </label>
+              <DuoToggleButton
+                value={pulseEnabled}
+                onToggle={() => onPulseToggle(true)}
+                offToggle={() => onPulseToggle(false)}
+                onColors={{
+                  background: "bg-note-full",
+                  shadowBackground: "bg-note-full-dark",
+                  border: "border-note-full-dark",
+                  text: "text-dark",
+                }}
+                offColors={{
+                  background: "bg-note-half",
+                  shadowBackground: "bg-note-half-dark",
+                  border: "border-note-half-dark",
+                  text: "text-main",
+                }}
+              />
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-note-half-dark/50" />
 
             {/* Note Width */}
             <div className="flex items-center gap-2">
-              <label className="shrink-0 min-w-20 text-sm" title="note width">
+              <label className="shrink-0 min-w-28 text-sm" title="note width">
                 {t("player.noteWidth")}:
               </label>
               <div className="flex-1 mx-2">
@@ -91,7 +153,7 @@ export default function AdvancedSettingsModal({
             {/* Latency Calibration */}
             <div className="flex items-center gap-2">
               <label
-                className="shrink-0 min-w-20 text-sm"
+                className="shrink-0 min-w-28 text-sm"
                 title="latency calibration"
               >
                 {t("player.latencyCalibration")}:

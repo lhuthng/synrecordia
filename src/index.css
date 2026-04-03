@@ -47,6 +47,40 @@ html {
   @apply w-full lg:w-7/8 max-w-360 not-lg:px-2 mx-auto;
 }
 
+/* ── Custom scrollbar ─────────────────────────────────────────────────────────
+   Usage: add class="custom-scrollbar" to any scrollable element, then set the
+   two colour variables on that same element (inline style or a parent rule):
+
+     --scrollbar-thumb        thumb colour at rest
+     --scrollbar-thumb-hover  thumb colour on hover
+
+   Example (Tailwind inline style):
+     style={{ '--scrollbar-thumb': 'var(--color-note-half)',
+              '--scrollbar-thumb-hover': 'var(--color-note-half-dark)' }}
+────────────────────────────────────────────────────────────────────────────── */
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
 @keyframes pulse {
   0%,
   100% {

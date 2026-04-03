@@ -14,14 +14,21 @@
     "instrumentController": "Điều khiển",
     "selectInstrumentHint": "Chọn nhạc cụ để cài đặt",
     "advancedSettings": "Nâng cao",
-    "latencyCalibration": "Độ trễ"
+    "latencyCalibration": "Độ trễ",
+    "particles": "Hạt",
+    "pulseEffect": "Nhịp đập",
+    "scrollToTop": "Lên đầu",
+    "close": "Đóng"
   },
   "directory": {
     "title": "Danh sách bài hát",
     "failedToLoad": "Không thể tải bài hát.",
     "noSongs": "Không có bài hát nào.",
     "ariaLabel": "Danh sách bài hát",
-    "closeAriaLabel": "Đóng danh sách"
+    "closeAriaLabel": "Đóng danh sách",
+    "searchPlaceholder": "Tìm bài hát…",
+    "noResults": "Không tìm thấy bài hát nào.",
+    "filterAll": "Tất cả"
   },
   "difficulty": {
     "beginner": "Dễ Dễ",
@@ -45,31 +52,31 @@
     "avatar": "Ảnh đại diện lập trình viên",
     "about": {
       "title": "Về SynRecordia",
-      "intro": "SynRecordia bắt đầu như một thử nghiệm cá nhân - tui muốn xem mình có thể đẩy xa đến đâu với việc trực quan hóa âm nhạc trên trình duyệt. Được lấy cảm hứng từ <synthesia>Synthesia</synthesia>, tôi đã xây dựng một ứng dụng web nhẹ nơi bạn có thể xem cách bấm nốt và nhãn nốt cập nhật theo thời gian thực khi bài hát phát."
+      "intro": "SynRecordia bắt đầu như một thử nghiệm cá nhân - tui muốn xem giới hạn của việc hiển thị âm nhạc trực quan trên trình duyệt là đến đâu. Lấy cảm hứng từ <synthesia>Synthesia</synthesia>, tui xây dựng một ứng dụng web nhẹ nơi mình có thể xem thế bấm ngón tay và tên nốt cập nhật theo thời gian thực khi bài hát đang phát."
     },
     "whereFrom": {
       "title": "Nguồn gốc",
-      "text": "Đây là phiên bản viết lại của một dự án cũ, <recorderVis>RecorderVisualization</recorderVis>, mà tui ban đầu xây dựng bằng GameMaker Studio 2. Chuyển sang web giúp tôi kiểm soát tốt hơn về độ chính xác, hiệu suất và khả năng tiếp cận người dùng."
+      "text": "Đây là phiên bản viết lại của một dự án cũ, <recorderVis>RecorderVisualization</recorderVis>, mà tui đã viết ban đầu bằng GameMaker Studio 2. Chuyển sang web giúp tui kiểm soát tốt hơn về độ chính xác, hiệu suất và tiếp cận được nhiều người hơn."
     },
     "stack": {
       "title": "Công nghệ sử dụng",
-      "text": "Bộ trực quan hóa chạy trên PIXI.js để render WebGL và Tone.js cho âm thanh chính xác theo mẫu. React xử lý toàn bộ trạng thái và logic UI."
+      "text": "Bộ visualizer chạy trên PIXI.js để render WebGL và Tone.js để xử lý âm thanh chính xác. React đảm nhận phần state và logic giao diện."
     },
     "inProgress": {
       "title": "Đang phát triển",
       "practiceMode": "Chế độ luyện tập",
-      "practiceModeText": "Nhận diện nốt nhạc theo thời gian thực để bạn chơi cùng và nhận phản hồi.",
+      "practiceModeText": "Nhận diện nốt nhạc theo thời gian thực để mình có thể chơi theo và nhận phản hồi.",
       "songLibrary": "Thư viện bài hát",
-      "songLibraryText": "Thêm nhiều bài hát, đặc biệt các bản phối phù hợp với người mới bắt đầu."
+      "songLibraryText": "Thêm nhiều bài hát hơn, đặc biệt là các bản phù hợp với người mới bắt đầu."
     },
     "knownIssues": {
       "title": "Vấn đề đã biết",
-      "mobilePerf": "Hiệu suất trên di động có thể chậm - âm Tone.js và vòng lặp render của PIXI.js không phải lúc nào cũng đồng bộ hoàn hảo trên thiết bị cấu hình thấp. Tui đang tích cực tìm hiểu.",
-      "notesOutOfRange": "Một số bài hát có nốt nằm ngoài phạm vi mẫu, nên có thể phát ra âm sai hoặc không có tiếng."
+      "mobilePerf": "Hiệu suất trên di động có thể hơi ì - audio timeline của Tone.js và vòng lặp render của PIXI.js đôi khi không khớp hoàn toàn trên thiết bị cấu hình thấp. Tui đang tìm cách xử lý.",
+      "notesOutOfRange": "Một số bài hát có nốt nằm ngoài phạm vi âm thanh, nên có thể phát ra tiếng lạ hoặc im lặng."
     },
     "aboutMe": {
       "title": "Về tui & mã nguồn",
-      "text": "Tui là một lập trình viên thích xây dựng công cụ sáng tạo. SynRecordia là cách tui học web audio và canvas rendering hiệu suất cao - và nó hoàn toàn mã nguồn mở. Nếu bạn muốn đóng góp, đặc biệt về âm thanh hoặc rendering, tui rất hoan nghênh.",
+      "text": "Tui là lập trình viên thích làm đồ ở giao điểm của kỹ thuật frontend và công cụ sáng tạo. SynRecordia là cách tui học web audio và canvas rendering hiệu suất cao - và nó hoàn toàn mã nguồn mở. Nếu mình muốn đóng góp, đặc biệt về âm thanh hoặc rendering, tui rất vui được nhận.",
       "github": "GitHub",
       "contact": "Liên hệ",
       "blog": "Blog"
@@ -77,37 +84,49 @@
     "faq": {
       "title": "Câu hỏi thường gặp",
       "q1": {
-        "question": "1. Làm thế nào để mở bài hát?",
-        "answer": "Nhấn nút thư mục ở góc trên bên trái, hoặc mở danh sách ngay tại đây:"
+        "question": "1. SynRecordia dành cho loại recorder nào?",
+        "answer": "SynRecordia được xây dựng dành cho sáo recorder soprano - cụ thể là nhạc cụ hơi kỹ thuật số. Cái tui đang dùng là recorder Carry-On Simple. Nó không còn được bán nữa, nhưng mình có thể tìm phiên bản thứ hai trên <carryOn>trang web của họ</carryOn>."
       },
       "q2": {
-        "question": "2. Tôi có thể tải bài hát của mình không?",
-        "answer": "Không, nhưng có thể trong tương lại."
+        "question": "2. Mình đang xem cái quái gì vậy?",
+        "intro": "Bộ visualizer hiển thị các lỗ sáo recorder cần bấm cho từng nốt. Các lỗ được chia làm ba nhóm:",
+        "group1": "Nhóm 1: lỗ ngón cái tay trái (lỗ phía sau).",
+        "group2": "Nhóm 2: ba lỗ cho tay trái - ngón trỏ, ngón giữa và ngón đeo nhẫn.",
+        "group3": "Nhóm 3: bốn lỗ cho tay phải - ngón trỏ, ngón giữa, ngón đeo nhẫn và ngón út.",
+        "outro": "Ngoài ra có nút \"?\" hiển thị sơ đồ nhạc cụ thực tế để mình thấy các lỗ tương ứng với nhạc cụ thật như thế nào."
       },
       "q3": {
-        "question": "3. Tôi đang xem cái quái gì vậy?",
-        "intro": "Bộ trực quan hóa hiển thị lỗ của sáo recorder được nhấn cho từng nốt. Các lỗ chia thành ba nhóm:",
-        "group1": "Nhóm 1: lỗ ngón cái tay trái (lỗ phía sau).",
-        "group2": "Nhóm 2: ba lỗ cho tay trái — ngón trỏ, ngón giữa và ngón đeo nhẫn.",
-        "group3": "Nhóm 3: bốn lỗ cho tay phải — ngón trỏ, ngón giữa, ngón đeo nhẫn và ngón út.",
-        "outro": "Còn có nút \"?\" hiển thị sơ đồ nhạc cụ thực tế để bạn thấy cách các lỗ tương ứng với nhạc cụ thật."
+        "question": "3. Làm sao để mở bài hát?",
+        "answer": "Nhấn nút thư mục ở góc trên bên trái, hoặc mở danh sách ngay tại đây:"
       },
       "q4": {
-        "question": "4. Tại sao bị lag?",
-        "answer": "Nguyên nhân phổ biến nhất là độ rộng nốt quá nhỏ — khi nốt nhỏ, sẽ có nhiều nốt hơn trên màn hình cùng lúc. Hãy thử tăng độ rộng trong cài đặt."
+        "question": "4. Tại sao âm thanh phát nhanh hơn hình ảnh?",
+        "answer": "Đây là độ lệch thời gian giữa âm thanh và hình ảnh. Mình có thể điều chỉnh trong Cài đặt nâng cao bằng thanh Latency Calibration."
       },
       "q5": {
-        "question": "5. Tìm thấy lỗi hoặc có ý tưởng?",
-        "answer": "Mở issue trên <github>GitHub</github> hoặc gửi email tại <email>huuthang.l@outlook.com</email>. Vui lòng ghi rõ trình duyệt/hệ điều hành, bạn đang làm gì và lỗi console nếu có."
+        "question": "5. Tại sao một số nốt có âm thanh nhưng không có hình ảnh?",
+        "answer": "Một số nốt nằm ngoài tầm bấm của hệ thống bấm ngón đang chọn. Mình thử chuyển sang hệ thống nhạc cụ khác trong Điều khiển xem nhé."
       },
       "q6": {
-        "question": "6. Một số mẫu bấm bị thiếu?",
-        "answer": "Bảng tra cứu bao gồm sáo recorder soprano. Một số cách bấm thay thế chưa có nhưng đã được lên kế hoạch. Bạn có thể chuyển đổi hệ thống bấm trong Điều khiển. Bảng tra cứu lấy từ <chart>tài liệu tham khảo này</chart>."
+        "question": "6. Một số thế bấm bị thiếu?",
+        "answer": "Bảng tra cứu bao gồm sáo recorder soprano. Một số cách bấm thay thế chưa có nhưng đang được lên kế hoạch. Mình có thể chuyển đổi giữa các hệ thống bấm trong Điều khiển. Bảng tra cứu lấy từ <chart>tài liệu tham khảo này</chart>."
+      },
+      "q7": {
+        "question": "7. Tại sao bị lag?",
+        "answer": "Nguyên nhân thường gặp nhất là độ rộng nốt quá nhỏ - khi nốt nhỏ thì sẽ có nhiều nốt hơn trên màn hình cùng lúc. Mình thử tăng độ rộng nốt trong cài đặt xem nhé."
+      },
+      "q8": {
+        "question": "8. Tải bài hát của mình vào được không?",
+        "answer": "Chưa có, nhưng đang trong kế hoạch. MIDI import là ưu tiên - theo dõi nhé."
+      },
+      "q9": {
+        "question": "9. Tìm thấy lỗi hoặc có ý tưởng mới?",
+        "answer": "Mở issue trên <github>GitHub</github> hoặc gửi email cho tui tại <email>huuthang.l@outlook.com</email>. Vui lòng ghi rõ trình duyệt/hệ điều hành, mình đang làm gì lúc đó và lỗi console nếu có."
       }
     },
     "footer": {
       "madeBy": "Được tạo bởi",
-      "buyMeACoffee": "Mua cho tôi một ly cà phê"
+      "buyMeACoffee": "Mua cho tui một ly cà phê"
     }
   },
   "header": {
@@ -115,7 +134,7 @@
   },
   "visualizer": {
     "pickSong": "Chọn bài hát để bắt đầu",
-    "scrollHint": "Ctrl + kéo để di chuyển",
+    "scrollHint": "Ctrl + lăn chuột để di chuyển",
     "showFingering": "Hiện hướng dẫn bấm",
     "hideFingering": "Ẩn hướng dẫn bấm",
     "legendFull": "Kín",

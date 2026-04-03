@@ -10,18 +10,41 @@
  *
  * Usage:
  *   node scripts/convert-midi.mjs <input> --list
- *   node scripts/convert-midi.mjs <input> [convert-options]
+ *   node scripts/convert-midi.mjs <input> [options]
  *
- * Convert options:
- *   --main-tracks <i,j,...>    0-based track indices to merge as main instrument.
- *                               Default: auto-detect (highest-pitched notes).
- *   --main-instrument <name>   Instrument id for the main track. Default: "recorder".
- *   --other-tracks <i,j,...>   0-based track indices to merge as secondary instrument.
- *                               Default: auto-detect (lowest-pitched notes).
- *   --other-instrument <name>  Instrument id for the secondary track. Default: "piano".
- *   --id <song-id>             Override the output song id. Default: filename stem.
- *   --title <title>            Override the song title. Default: derived from filename.
- *   --register                 Also add/update entry in public/songs/index.json.
+ * Options:
+ *   --list
+ *       List all tracks with note counts and instrument info, then exit.
+ *
+ *   --track <i,j,...>:<name>[:<semitones>]
+ *       Define an output track by merging the given 0-based MIDI track indices
+ *       and assigning them the instrument id <name>. Repeat this flag to create
+ *       multiple output tracks. An optional semitone offset (e.g. -12 to drop
+ *       an octave) is applied to every note in that track before conversion.
+ *       When no --track flags are provided the script auto-detects and splits
+ *       tracks into a recorder + piano pair.
+ *       Note: many MIDI files use C3 = middle C (Yamaha/Roland convention) while
+ *       this script uses C4 = middle C. If notes sound one octave too high,
+ *       append ':-12' to the affected track spec.
+ *
+ *   --id <song-id>
+ *       Override the output song id (default: filename stem).
+ *
+ *   --title <title>
+ *       Override the song title (default: derived from filename).
+ *
+ *   --composer <name>
+ *       Composer name written into the song JSON and index entry.
+ *
+ *   --difficulty <level>
+ *       Difficulty string written into the index entry (e.g. beginner/easy/medium/hard).
+ *
+ *   --trim
+ *       Trim the main instrument track: collapse chords to their highest pitch,
+ *       shorten notes that overlap the next, and remove zero-duration notes.
+ *
+ *   --register
+ *       Add/update an entry for the generated song in public/songs/index.json.
  */
 
 import fs from "fs";

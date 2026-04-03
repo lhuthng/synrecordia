@@ -1,0 +1,755 @@
+{
+  "id": "fuer-elise",
+  "title": "Für Elise",
+  "composer": "Ludwig van Beethoven",
+  "bpm": 100,
+  "timeSignatures": [
+    {
+      "timeSignature": "3/4",
+      "length": 66
+    }
+  ],
+  "tracks": [
+    {
+      "id": "recorder",
+      "instrument": "recorder",
+      "noteRange": {
+        "min": 60,
+        "max": 77
+      },
+      "actions": [
+        {
+          "type": "note",
+          "time": 2,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 2.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 3,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 3.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 4,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 4.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 5,
+          "duration": 0.5,
+          "pitch": "D5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 5.5,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 6,
+          "duration": 0.916667,
+          "pitch": "A4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 7.5,
+          "duration": 0.5,
+          "pitch": "C4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 8,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 8.5,
+          "duration": 0.5,
+          "pitch": "A4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 9,
+          "duration": 0.916667,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 10.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 11,
+          "duration": 0.5,
+          "pitch": "G#4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 11.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 12,
+          "duration": 0.916667,
+          "pitch": "C5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 13.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 14,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 14.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 15,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 15.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 16,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 16.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 17,
+          "duration": 0.5,
+          "pitch": "D5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 17.5,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 18,
+          "duration": 0.916667,
+          "pitch": "A4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 19.5,
+          "duration": 0.5,
+          "pitch": "C4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 20,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 20.5,
+          "duration": 0.5,
+          "pitch": "A4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 21,
+          "duration": 0.916667,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 22.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 23,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 23.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 24,
+          "duration": 0.916667,
+          "pitch": "A4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 25.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 26,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 54
+        },
+        {
+          "type": "note",
+          "time": 26.5,
+          "duration": 0.5,
+          "pitch": "D5",
+          "velocity": 58
+        },
+        {
+          "type": "note",
+          "time": 27,
+          "duration": 0.916667,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 28.5,
+          "duration": 0.5,
+          "pitch": "G4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 29,
+          "duration": 0.5,
+          "pitch": "F5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 29.5,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 30,
+          "duration": 0.916667,
+          "pitch": "D5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 31.5,
+          "duration": 0.5,
+          "pitch": "F4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 32,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 32.5,
+          "duration": 0.5,
+          "pitch": "D5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 33,
+          "duration": 0.916667,
+          "pitch": "C5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 34.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 35,
+          "duration": 0.5,
+          "pitch": "D5",
+          "velocity": 59
+        },
+        {
+          "type": "note",
+          "time": 35.5,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 55
+        },
+        {
+          "type": "note",
+          "time": 36,
+          "duration": 2.833333,
+          "pitch": "B4",
+          "velocity": 39
+        },
+        {
+          "type": "note",
+          "time": 41,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 41.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 42,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 42.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 43,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 43.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 44,
+          "duration": 0.5,
+          "pitch": "D5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 44.5,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 45,
+          "duration": 0.916667,
+          "pitch": "A4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 46.5,
+          "duration": 0.5,
+          "pitch": "C4",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 47,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 54
+        },
+        {
+          "type": "note",
+          "time": 47.5,
+          "duration": 0.5,
+          "pitch": "A4",
+          "velocity": 58
+        },
+        {
+          "type": "note",
+          "time": 48,
+          "duration": 0.916667,
+          "pitch": "B4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 49.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 50,
+          "duration": 0.5,
+          "pitch": "G#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 50.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 51,
+          "duration": 0.916667,
+          "pitch": "C5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 52.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 53,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 53.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 54,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 54.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 55,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 55.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 56,
+          "duration": 0.5,
+          "pitch": "D5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 56.5,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 57,
+          "duration": 0.916667,
+          "pitch": "A4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 58.5,
+          "duration": 0.5,
+          "pitch": "C4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 59,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 59.5,
+          "duration": 0.5,
+          "pitch": "A4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 60,
+          "duration": 0.916667,
+          "pitch": "B4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 61.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 62,
+          "duration": 0.5,
+          "pitch": "C5",
+          "velocity": 59
+        },
+        {
+          "type": "note",
+          "time": 62.5,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 55
+        },
+        {
+          "type": "note",
+          "time": 63,
+          "duration": 2.833333,
+          "pitch": "A4",
+          "velocity": 50
+        }
+      ]
+    },
+    {
+      "id": "piano",
+      "instrument": "piano",
+      "noteRange": {
+        "min": 33,
+        "max": 64
+      },
+      "actions": [
+        {
+          "type": "note",
+          "time": 6,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 9,
+          "duration": 1.916667,
+          "pitch": "E3",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 12,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 18,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 21,
+          "duration": 1.916667,
+          "pitch": "E3",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 24,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 27,
+          "duration": 1.916667,
+          "pitch": "C4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 30,
+          "duration": 1.916667,
+          "pitch": "B3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 33,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 36,
+          "duration": 2.833333,
+          "pitch": "G#3",
+          "velocity": 39
+        },
+        {
+          "type": "note",
+          "time": 45,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 48,
+          "duration": 1.916667,
+          "pitch": "E3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 51,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 57,
+          "duration": 1.916667,
+          "pitch": "A3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 60,
+          "duration": 1.916667,
+          "pitch": "E3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 63,
+          "duration": 1.916667,
+          "pitches": ["A3", "E4"],
+          "velocity": 50
+        },
+        {
+          "type": "note",
+          "time": 65,
+          "duration": 0.5,
+          "pitch": "A1",
+          "velocity": 50
+        }
+      ]
+    }
+  ]
+}

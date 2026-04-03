@@ -59,6 +59,18 @@ export default function Player() {
   const [isVisualReady, setIsVisualReady] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
+  // Visual-effect preferences
+  const [particlesEnabled, setParticlesEnabled] = useState(true);
+  const [pulseEnabled, setPulseEnabled] = useState(true);
+
+  // Floating scroll-to-top button
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 200);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   // URL-based loading state
   const [urlLoading, setUrlLoading] = useState(false);
   const [urlError, setUrlError] = useState(null);
@@ -466,7 +478,37 @@ export default function Player() {
         onNoteWidthChange={handleNoteWidthChange}
         latencyMs={latencyMs}
         onLatencyChange={setLatencyMs}
+        particlesEnabled={particlesEnabled}
+        onParticlesToggle={setParticlesEnabled}
+        pulseEnabled={pulseEnabled}
+        onPulseToggle={setPulseEnabled}
       />
+
+      {/* Floating scroll-to-top button */}
+      <AnimatePresence>
+        {showScrollTop && (
+          <Motion.div
+            key="scroll-top"
+            className="fixed bottom-6 right-6 z-50"
+            initial={{ opacity: 0, y: 12, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+          >
+            <DuoButton
+              padding="px-3 py-2"
+              background="bg-note-half"
+              shadowBackground="bg-note-half-dark"
+              border="border-note-half-dark"
+              text="text-main"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              aria-label={t("player.scrollToTop")}
+            >
+              ↑ {t("player.scrollToTop")}
+            </DuoButton>
+          </Motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Visualizer with countdown overlay */}
       <div className="relative">
@@ -477,6 +519,7 @@ export default function Player() {
           isPlaying={isPlaying}
           bpm={bpm}
           noteWidth={noteWidth}
+          particlesEnabled={particlesEnabled}
           playBarPosition={playBarPosition}
           onReady={() => {
             setIsVisualReady(true);
@@ -542,7 +585,7 @@ export default function Player() {
             controllerNode={controllerNode}
             key={`${index}-${track.instrument}`}
             slot={index}
-            flashCount={flashCounters[index] ?? 0}
+            flashCount={pulseEnabled ? (flashCounters[index] ?? 0) : 0}
             name={track.instrument}
             register={registerSampler}
             deregister={deregisterSampler}

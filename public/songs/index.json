@@ -5,7 +5,7 @@
     "composer": "Toby Fox",
     "bpm": 110,
     "file": "fallen-down-reprise.json",
-    "difficulty": "easy"
+    "difficulty": "medium"
   },
   {
     "id": "final-duet",
@@ -13,7 +13,38 @@
     "composer": "Pedro Silva",
     "bpm": 145,
     "file": "final-duet.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "fuer-elise",
+    "title": "Für Elise",
+    "composer": "Ludwig van Beethoven",
+    "bpm": 100,
+    "file": "fuer-elise.json",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "happy-birthday-to-you",
+    "title": "Happy Birthday To You",
+    "bpm": 120,
+    "file": "happy-birthday-to-you.json",
     "difficulty": "easy"
+  },
+  {
+    "id": "kein-schoener-land",
+    "title": "Keinöner Land",
+    "composer": "Zuccalmaglio",
+    "bpm": 80,
+    "file": "kein-schoener-land.json",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "marry-had-a-little-lamb",
+    "title": "Marry had a Little Lamb",
+    "composer": "Lowell Mason",
+    "bpm": 120,
+    "file": "marry-had-a-little-lamb.json",
+    "difficulty": "beginner"
   },
   {
     "id": "ode-to-joy",
@@ -40,11 +71,41 @@
     "difficulty": "medium"
   },
   {
+    "id": "twinkle-twinkle-little-star",
+    "title": "Twinkle Twkinle Little Star",
+    "bpm": 72,
+    "file": "twinkle-twinkle-little-star.json",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "twinkle-twinkle-little-star-variant",
+    "title": "Twinkle, Twinkle, Littler Star (Variant)",
+    "bpm": 90,
+    "file": "twinkle-twinkle-little-star-variant.json",
+    "difficulty": "expert"
+  },
+  {
+    "id": "von-elise",
+    "title": "Von Elise",
+    "composer": "Matyáš Maleček",
+    "bpm": 120,
+    "file": "von-elise.json",
+    "difficulty": "medium"
+  },
+  {
     "id": "yuna",
     "title": "Yuna",
     "composer": "PYKAMIA",
     "bpm": 120,
     "file": "yuna.json",
     "difficulty": "medium"
+  },
+  {
+    "id": "erika",
+    "title": "Erika",
+    "composer": "Heinz Schnaufer",
+    "bpm": 120,
+    "file": "erika.json",
+    "difficulty": "Beginner"
   }
 ]
