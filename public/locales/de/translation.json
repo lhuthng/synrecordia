@@ -12,7 +12,9 @@
     "restart": "Neustart",
     "repeat": "Wiederholen",
     "instrumentController": "Steuerung",
-    "selectInstrumentHint": "Instrument auswählen zum Bearbeiten"
+    "selectInstrumentHint": "Instrument auswählen zum Bearbeiten",
+    "advancedSettings": "Erweitert",
+    "latencyCalibration": "Latenz"
   },
   "directory": {
     "title": "Songverzeichnis",

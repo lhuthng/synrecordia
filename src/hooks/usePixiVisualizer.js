@@ -61,6 +61,7 @@ export function usePixiVisualizer({
   onPlayBarPositionChange,
   onScrollHint,
   interactionLocked = false,
+  latencyMs = 0,
 }) {
   // ─── DOM refs ────────────────────────────────────────────────────────────────
   const wrapperRef = useRef(null);
@@ -94,6 +95,7 @@ export function usePixiVisualizer({
   const currentBeatRef = useRef(currentBeat);
   const displayBeatRef = useRef(currentBeat);
   const targetBeatRef = useRef(currentBeat);
+  const latencyMsRef = useRef(latencyMs);
   const bpmRef = useRef(bpm);
   const isPlayingRef = useRef(isPlaying);
   const durationBeatsRef = useRef(durationBeats);
@@ -210,7 +212,18 @@ export function usePixiVisualizer({
 
   useEffect(() => {
     isPlayingRef.current = isPlaying;
+    if (isPlaying) {
+      // Snap the display beat immediately when playback starts so the LERP
+      // doesn't visibly pull the canvas backward to reach the latency offset.
+      const latencyBeats =
+        (latencyMsRef.current / 1000) * ((bpmRef.current || 120) / 60);
+      displayBeatRef.current = (currentBeatRef.current ?? 0) - latencyBeats;
+    }
   }, [isPlaying]);
+
+  useEffect(() => {
+    latencyMsRef.current = latencyMs;
+  }, [latencyMs]);
 
   useEffect(() => {
     canvasWidthRef.current = canvasWidth;
@@ -228,10 +241,15 @@ export function usePixiVisualizer({
 
   // ─── Beat tracking ────────────────────────────────────────────────────────────
   useEffect(() => {
+    const prev = currentBeatRef.current;
     currentBeatRef.current = currentBeat;
     targetBeatRef.current = currentBeat;
+    const latencyBeats =
+      (latencyMsRef.current / 1000) * ((bpmRef.current || 120) / 60);
     if (!isPlayingRef.current) {
-      displayBeatRef.current = currentBeat;
+      displayBeatRef.current = currentBeat - latencyBeats;
+    } else if (prev - currentBeat > 0.5) {
+      displayBeatRef.current = currentBeat - latencyBeats;
     }
     lastFrameTimeRef.current = performance.now();
   }, [currentBeat]);
@@ -747,16 +765,28 @@ export function usePixiVisualizer({
         const now = performance.now();
         const elapsed = (now - lastFrameTimeRef.current) / 1000;
 
+        // Latency compensation: displayBeat = currentBeat - latencyBeats.
+        // Positive latencyMs → visual lags behind audio (compensates for late audio).
+        const latencyBeats =
+          (latencyMsRef.current / 1000) * ((bpmRef.current ?? 120) / 60);
+
         // Project ahead when playing, otherwise hold at current beat.
         const targetBeat = isPlayingRef.current
-          ? (currentBeatRef.current ?? 0) +
+          ? (currentBeatRef.current ?? 0) -
+            latencyBeats +
             elapsed * ((bpmRef.current ?? 120) / 60)
-          : (currentBeatRef.current ?? 0);
+          : (currentBeatRef.current ?? 0) - latencyBeats;
 
         const LERP_SPEED = 8;
         const lerpAlpha = 1 - Math.exp(-LERP_SPEED * Math.max(0, elapsed));
-        const externalTarget = targetBeatRef.current ?? targetBeat;
-        const resolvedTarget = Math.max(targetBeat, externalTarget);
+        const externalTarget =
+          targetBeatRef.current !== null
+            ? targetBeatRef.current - latencyBeats
+            : null;
+        const resolvedTarget = Math.max(
+          targetBeat,
+          externalTarget ?? targetBeat,
+        );
 
         displayBeatRef.current +=
           (resolvedTarget - displayBeatRef.current) * lerpAlpha;

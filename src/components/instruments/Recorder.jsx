@@ -13,12 +13,16 @@ function fmtST(t) {
 function systemBadge(info) {
   if (!info) return undefined;
   if (info.impossible)
-    return { text: "\u2715", className: "text-accent-pink font-bold" };
+    return { text: "\u2715", className: "text-note-half-dark font-bold" };
   const range =
     info.tMin === info.tMax
       ? fmtST(info.tMin)
       : `${fmtST(info.tMin)}\u2026${fmtST(info.tMax)}`;
-  return { text: range, className: "opacity-90" };
+  return {
+    text: "\u2713",
+    className: "text-note-full-dark font-bold",
+    tooltip: range,
+  };
 }
 
 export default function Recorder({

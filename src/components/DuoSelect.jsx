@@ -11,7 +11,10 @@ function Badge({ badge }) {
     );
   }
   return (
-    <span className={cn("ml-1 text-xs font-normal", badge.className)}>
+    <span
+      className={cn("ml-1 text-xs font-normal", badge.className)}
+      title={badge.tooltip}
+    >
       {badge.text}
     </span>
   );

@@ -12,7 +12,9 @@
     "restart": "Chơi lại",
     "repeat": "Lặp lại",
     "instrumentController": "Điều khiển",
-    "selectInstrumentHint": "Chọn nhạc cụ để cài đặt"
+    "selectInstrumentHint": "Chọn nhạc cụ để cài đặt",
+    "advancedSettings": "Nâng cao",
+    "latencyCalibration": "Độ trễ"
   },
   "directory": {
     "title": "Danh sách bài hát",

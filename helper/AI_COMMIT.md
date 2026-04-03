@@ -1,11 +1,13 @@
 # AI Commit Helper
 
 ## Task
-Read the output of the following command and generate a git commit command:
+Read the output of the following command:
 ```bash
 git diff --staged
 ```
 
+Read the files and from the out put
+Generate a git commit command:
 ## Commit Message Format (Conventional Commits)
 ```
 <type>(<scope>): <short summary>

@@ -4,6 +4,7 @@ import { motion as Motion, AnimatePresence } from "motion/react";
 import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
 import DuoSlideBar from "./DuoSlideBar";
+import AdvancedSettingsModal from "./AdvancedSettingsModal";
 import Directory from "./Directory";
 import Visualizer from "./Visualizer";
 import SongTimeline from "./SongTimeline";
@@ -50,10 +51,13 @@ export default function Player() {
     handleToggleChanged,
     handleAudioReady,
     setFingeringSystem,
+    latencyMs,
+    setLatencyMs,
   } = usePlayer();
 
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
   // URL-based loading state
   const [urlLoading, setUrlLoading] = useState(false);
@@ -297,26 +301,6 @@ export default function Player() {
             </DuoButton>
           </div>
 
-          {/* Note width */}
-          <div className="mt-2 flex items-center gap-2">
-            <label title="note width">{t("player.noteWidth")}:</label>
-            <div className="flex-1 mx-4">
-              <DuoSlideBar
-                min={40}
-                max={200}
-                step={1}
-                value={noteWidth}
-                onChange={(v) => handleNoteWidthChange(v)}
-                thumbColors={{
-                  background: "bg-note-half",
-                  border: "border-note-half-dark",
-                  text: "text-main",
-                }}
-                barColor="bg-note-full"
-              />
-            </div>
-          </div>
-
           {/* Transpose */}
           <div className="mt-2 flex items-center gap-2">
             <label title="transpose semitones">{t("player.transpose")}:</label>
@@ -353,6 +337,29 @@ export default function Player() {
             >
               {t("player.reset")}
             </DuoButton>
+          </div>
+
+          {/* Advanced settings toggle */}
+          <div className="mt-2 flex items-center gap-2">
+            <DuoToggleButton
+              value={showAdvancedSettings}
+              onToggle={() => setShowAdvancedSettings(true)}
+              offToggle={() => setShowAdvancedSettings(false)}
+              onColors={{
+                background: "bg-note-full",
+                shadowBackground: "bg-note-full-dark",
+                border: "border-note-full-dark",
+                text: "text-dark",
+              }}
+              offColors={{
+                background: "bg-note-half",
+                shadowBackground: "bg-note-half-dark",
+                border: "border-note-half-dark",
+                text: "text-main",
+              }}
+            >
+              {t("player.advancedSettings")}
+            </DuoToggleButton>
           </div>
 
           {/* Start timer selector */}
@@ -452,6 +459,15 @@ export default function Player() {
         </div>
       </div>
 
+      <AdvancedSettingsModal
+        isOpen={showAdvancedSettings}
+        onClose={() => setShowAdvancedSettings(false)}
+        noteWidth={noteWidth}
+        onNoteWidthChange={handleNoteWidthChange}
+        latencyMs={latencyMs}
+        onLatencyChange={setLatencyMs}
+      />
+
       {/* Visualizer with countdown overlay */}
       <div className="relative">
         <Visualizer
@@ -476,6 +492,7 @@ export default function Player() {
           onPlayBarPositionChange={setPlayBarPosition}
           fingeringSystem={fingeringSystem}
           transpose={transposeSemitones}
+          latencyMs={latencyMs}
         />
 
         {/* Countdown number overlay — shown over the visualizer */}

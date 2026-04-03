@@ -26,6 +26,7 @@ export default function usePlayer() {
   const [currentBeat, setCurrentBeat] = useState(0);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
   const [noteWidth, setNoteWidth] = useState(70);
+  const [latencyMs, setLatencyMs] = useState(0);
   const [repeat, setRepeat] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [isAudioReady, setIsAudioReady] = useState([]);
@@ -45,6 +46,7 @@ export default function usePlayer() {
   const bpmRef = useRef(bpm);
   const repeatRef = useRef(repeat);
   const transposeSemitonesRef = useRef(0);
+  const latencyMsRef = useRef(latencyMs);
   const noteTriggerListenerRef = useRef(null);
 
   // Keep bpmRef up-to-date for the running tick
@@ -61,6 +63,10 @@ export default function usePlayer() {
   useEffect(() => {
     transposeSemitonesRef.current = transposeSemitones;
   }, [transposeSemitones]);
+
+  useEffect(() => {
+    latencyMsRef.current = latencyMs;
+  }, [latencyMs]);
 
   // Keep currentBeat and target refs in sync when external changes happen
   useEffect(() => {
@@ -136,6 +142,10 @@ export default function usePlayer() {
     );
     const maxTrackDelayMs = Math.max(0, ...trackDelayMsArray);
 
+    // For negative latency: audio starts early (pre-roll) so the visual can
+    // show notes approaching the bar before audio plays them.
+    const latencyBeats = latencyMsRef.current / 1000 / getSecondsPerBeat();
+
     const trackStates = tracks.map((track, index) => {
       const synth = samplersRef.current[index];
       const trackDelayMs = trackDelayMsArray[index];
@@ -188,9 +198,16 @@ export default function usePlayer() {
     trackStatesRef.current = trackStates;
     endBeatRef.current = maxEndBeat;
     const clampedStartBeat = Math.min(startBeat, maxEndBeat);
-    cursorBeatsRef.current = clampedStartBeat;
+    // Negative latency: shift the audio start earlier so the visual (which
+    // leads by |latencyMs|) begins exactly at the cursor position. The beat
+    // count will be negative during the pre-roll; notes only fire at beat ≥ 0.
+    const audioStartBeat =
+      latencyMsRef.current < 0
+        ? clampedStartBeat + latencyBeats // latencyBeats is negative here
+        : clampedStartBeat;
+    cursorBeatsRef.current = audioStartBeat;
     startToneTimeRef.current = Tone.now();
-    startBeatRef.current = clampedStartBeat;
+    startBeatRef.current = audioStartBeat;
     setIsPlaying(true);
 
     const getSecondsPerBeatLocalized = () => 60 / (bpmRef.current || 120);
@@ -252,7 +269,13 @@ export default function usePlayer() {
           const overshoot = Math.max(0, beat - endBeatRef.current);
 
           startToneTimeRef.current = Tone.now();
-          startBeatRef.current = overshoot;
+          // Re-apply the negative-latency pre-roll on each loop so the visual
+          // always restarts at beat 0 while the audio pre-rolls as needed.
+          const repeatLatencyBeats =
+            latencyMsRef.current < 0
+              ? latencyMsRef.current / 1000 / secondsPerBeat
+              : 0;
+          startBeatRef.current = overshoot + repeatLatencyBeats;
 
           trackStatesRef.current.forEach((state) => {
             state.index = 0;
@@ -394,6 +417,7 @@ export default function usePlayer() {
     currentBeat,
     bpm,
     noteWidth,
+    latencyMs,
     repeat,
     selectedTrack,
     fingeringSystem,
@@ -405,6 +429,7 @@ export default function usePlayer() {
 
     // setters / handlers
     setNoteWidth: setNoteWidth,
+    setLatencyMs,
     setRepeat: setRepeat,
     setNoteTriggerListener: (fn) => {
       noteTriggerListenerRef.current = fn;

@@ -12,7 +12,9 @@
     "restart": "Restart",
     "repeat": "Repeat",
     "instrumentController": "Instrument Controls",
-    "selectInstrumentHint": "Select an instrument to configure it"
+    "selectInstrumentHint": "Select an instrument to configure it",
+    "advancedSettings": "Advanced",
+    "latencyCalibration": "Latency"
   },
   "directory": {
     "title": "Song Directory",
