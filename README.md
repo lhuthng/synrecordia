@@ -4,7 +4,7 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-huuthang.le-orange?logo=buy-me-a-coffee)](https://buymeacoffee.com/huuthang.le)
 
 <p align="center">
-  <img src="demo/preview.gif" alt="Visualizer preview" />
+  <img src="demo/preview.png" alt="Visualizer preview" />
 </p>
 
 <p align="center">
