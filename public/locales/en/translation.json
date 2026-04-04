@@ -18,6 +18,7 @@
     "latencyCalibration": "Latency",
     "particles": "Particles",
     "pulseEffect": "Pulse",
+    "ambient": "Ambient Glow",
     "scrollToTop": "To Top",
     "close": "Close",
     "tips": {
@@ -27,7 +28,8 @@
       "start": "Countdown in seconds before playback begins.",
       "latency": "Audio latency compensation. Increase if the visuals appear ahead of the audio.",
       "particles": "Show or hide the particle effects that emit from active notes.",
-      "pulse": "Animate instrument buttons when they trigger a note."
+      "pulse": "Animate instrument buttons when they trigger a note.",
+      "ambient": "Shows a coloured glow behind the page that reacts to note triggers."
     },
     "rangeWarning": {
       "default": "Some notes in this track fall outside the instrument's playable range.",

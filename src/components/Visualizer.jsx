@@ -62,6 +62,20 @@ export default function Visualizer({
   const fmtRange = (tMin, tMax) =>
     tMin === tMax ? fmtST(tMin) : `${fmtST(tMin)} to ${fmtST(tMax)}`;
 
+  // ── Range-warning dismiss state ─────────────────────────────────────────────
+  // Dismissed resets automatically whenever rangeWarning becomes a new object
+  // (new song, transpose change that causes/clears range issues).
+  // Track *which* warning object was dismissed by reference identity.
+  // When rangeWarning becomes a new object (new song, transpose change, etc.)
+  // it will differ from dismissedWarning, so the overlay re-appears automatically
+  // with no useEffect needed — avoids the cascading-setState lint warning.
+  const [dismissedWarning, setDismissedWarning] = useState(null);
+
+  // Show only when paused — hides automatically during playback and can be
+  // manually dismissed with the × button.
+  const showWarning =
+    rangeWarning && song && rangeWarning !== dismissedWarning && !isPlaying;
+
   // ── Instrument overlay ──────────────────────────────────────────────────────
   const [showInstrument, setShowInstrument] = useState(false);
   const [holePoints, setHolePoints] = useState([]);
@@ -202,7 +216,7 @@ export default function Visualizer({
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
     <div
-      className="relative w-full bg-dark overflow-x-hidden"
+      className="relative w-full rounded-xl bg-transparent overflow-x-hidden"
       ref={wrapperRef}
       style={{ height }}
     >
@@ -386,17 +400,25 @@ export default function Visualizer({
 
       {/* ── Out-of-range warning overlay ─────────────────────────────────────── */}
       <AnimatePresence>
-        {rangeWarning && song && (
+        {showWarning && (
           <Motion.div
             key="range-warning"
-            className="absolute inset-x-0 bottom-0 flex items-center justify-center pointer-events-none z-50"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
             initial={{ opacity: 0, scale: 0.95, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -8 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
           >
-            <div className="flex flex-col gap-1 max-w-xs text-center rounded-xl bg-amber-950/90 border border-amber-500/60 px-5 py-3 text-amber-200 shadow-2xl backdrop-blur-sm select-none">
-              <span className="text-sm font-semibold">
+            <div className="relative flex flex-col gap-1 max-w-xs text-center rounded-xl bg-amber-950/90 border border-amber-500/60 px-5 py-3 text-amber-200 shadow-2xl backdrop-blur-sm select-none pointer-events-auto">
+              {/* Dismiss button */}
+              <button
+                className="absolute top-1.5 right-2 leading-none text-amber-400/70 hover:text-amber-200 transition-colors cursor-pointer text-base"
+                onClick={() => setDismissedWarning(rangeWarning)}
+                aria-label="Dismiss warning"
+              >
+                ×
+              </button>
+              <span className="text-sm font-semibold pr-4">
                 ⚠ {t("player.rangeWarning.default")}
               </span>
               {rangeWarning.alternatives.length > 0 ? (

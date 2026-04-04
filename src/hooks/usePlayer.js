@@ -25,7 +25,7 @@ export default function usePlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
-  const [noteWidth, setNoteWidth] = useState(160);
+  const [noteWidth, setNoteWidth] = useState(100);
   const [latencyMs, setLatencyMs] = useState(0);
   const [repeat, setRepeat] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);

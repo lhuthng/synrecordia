@@ -18,6 +18,7 @@
     "latencyCalibration": "Độ trễ",
     "particles": "Hạt",
     "pulseEffect": "Nhịp đập",
+    "ambient": "Ánh nền",
     "scrollToTop": "Lên đầu",
     "close": "Đóng",
     "tips": {
@@ -27,7 +28,8 @@
       "start": "Đếm ngược (giây) trước khi phát.",
       "latency": "Bù độ trễ âm thanh. Tăng nếu hình ảnh chạy trước âm thanh.",
       "particles": "Bật hoặc tắt hiệu ứng hạt phát ra từ các nốt đang phát.",
-      "pulse": "Tạo hiệu ứng cho nút nhạc cụ khi nó kích hoạt một nốt."
+      "pulse": "Tạo hiệu ứng cho nút nhạc cụ khi nó kích hoạt một nốt.",
+      "ambient": "Hiển thị ánh sáng màu phía sau trang, phản ứng theo các nốt nhạc."
     },
     "rangeWarning": {
       "default": "Một số nốt trong bài nằm ngoài tầm chơi của nhạc cụ.",

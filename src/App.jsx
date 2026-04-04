@@ -10,7 +10,7 @@ function App() {
       <SynthwaveBackground />
       <div className="relative z-10">
         <Header />
-        <div className="w-cap min-h-screen bg-dark/90 px-4 shadow-md">
+        <div className="w-cap min-h-screen bg-dark/70 px-4 shadow-md">
           <Routes>
             <Route path="/" element={<Player />} />
             <Route path="/songs/:songId" element={<Player />} />

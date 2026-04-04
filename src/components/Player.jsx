@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
+import AmbientLight from "./AmbientLight.jsx";
 import { useParams } from "react-router-dom";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import DuoButton from "./DuoButton";
@@ -63,6 +65,7 @@ export default function Player() {
   // Visual-effect preferences
   const [particlesEnabled, setParticlesEnabled] = useState(true);
   const [pulseEnabled, setPulseEnabled] = useState(true);
+  const [ambientEnabled, setAmbientEnabled] = useState(true);
 
   // Per-slot out-of-range status: Map<slot, { outOfRange, alternatives }>
   const rangeStatusRef = useRef({});
@@ -309,6 +312,18 @@ export default function Player() {
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="w-full min-h-[calc(100dvh-8rem)] text-main space-y-2">
+      {/* Ambient glow — portalled to document.body so it lives in the root
+          stacking context at z-[1], above the SynthwaveBackground (z-0) and
+          below the page content (z-10). This lets the glow bleed through the
+          entire viewport, not just the Player container. */}
+      {ambientEnabled &&
+        createPortal(
+          <AmbientLight
+            flashCounters={flashCounters}
+            numTracks={song?.tracks?.length ?? 0}
+          />,
+          document.body,
+        )}
       {/* Song selector row */}
       <div className="flex items-center gap-2">
         <Directory />
@@ -584,6 +599,8 @@ export default function Player() {
         onParticlesToggle={setParticlesEnabled}
         pulseEnabled={pulseEnabled}
         onPulseToggle={setPulseEnabled}
+        ambientEnabled={ambientEnabled}
+        onAmbientToggle={setAmbientEnabled}
       />
 
       {/* Floating scroll-to-top button */}

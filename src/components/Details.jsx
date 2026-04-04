@@ -102,9 +102,9 @@ export default function Details() {
           </ul>
 
           <h3 className="pt-6">{t("details.faq.title")}</h3>
-          <div className="space-y-3">
+          <div className="space-y-3 [&>div]:bg-card-bg/70">
             {/* q1 — What kind of recorder is this for? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q1.question")}</h4>
               <p className="mt-2">
                 <Trans
@@ -124,7 +124,7 @@ export default function Details() {
             </div>
 
             {/* q2 — What am I actually looking at? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q2.question")}</h4>
               <p className="mt-2">{t("details.faq.q2.intro")}</p>
               <ul className="list-disc list-inside mt-2">
@@ -136,7 +136,7 @@ export default function Details() {
             </div>
 
             {/* q3 — How do I open a song? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q3.question")}</h4>
               <div className="flex flex-wrap items-center mt-2 gap-2">
                 <p>{t("details.faq.q3.answer")}</p>
@@ -150,19 +150,19 @@ export default function Details() {
             </div>
 
             {/* q4 — Why is the audio played faster than the visualization? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q4.question")}</h4>
               <p className="mt-2">{t("details.faq.q4.answer")}</p>
             </div>
 
             {/* q5 — Why do some notes have audio but no visual? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q5.question")}</h4>
               <p className="mt-2">{t("details.faq.q5.answer")}</p>
             </div>
 
             {/* q6 — Some fingering patterns are missing? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q6.question")}</h4>
               <p className="mt-2">
                 <Trans
@@ -182,19 +182,19 @@ export default function Details() {
             </div>
 
             {/* q7 — Why is it lagging? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q7.question")}</h4>
               <p className="mt-2">{t("details.faq.q7.answer")}</p>
             </div>
 
             {/* q8 — Can I load my own songs? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q8.question")}</h4>
               <p className="mt-2">{t("details.faq.q8.answer")}</p>
             </div>
 
             {/* q9 — Found a bug or have a feature idea? */}
-            <div className="bg-card-bg p-3 rounded-lg">
+            <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q9.question")}</h4>
               <p className="mt-2">
                 <Trans

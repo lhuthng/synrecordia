@@ -359,6 +359,11 @@ export function usePixiVisualizer({
         return;
       }
 
+      // Force the canvas element itself to be CSS-transparent so that the
+      // WebGL alpha channel composites against whatever DOM layer sits behind
+      // it (the AmbientLight glow) rather than defaulting to an opaque black.
+      canvasEl.style.background = "transparent";
+
       appRef.current = app;
       if (containerRef.current) {
         containerRef.current.appendChild(canvasEl);

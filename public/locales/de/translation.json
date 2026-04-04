@@ -18,6 +18,7 @@
     "latencyCalibration": "Latenz",
     "particles": "Partikel",
     "pulseEffect": "Puls",
+    "ambient": "Ambiente",
     "scrollToTop": "Nach oben",
     "close": "Schließen",
     "tips": {
@@ -27,7 +28,8 @@
       "start": "Countdown in Sekunden vor dem Abspielen.",
       "latency": "Audio-Latenz-Ausgleich. Erhöhen, wenn die Visualisierung dem Audio voraus ist.",
       "particles": "Partikeleffekte, die von aktiven Noten ausgehen, anzeigen oder verbergen.",
-      "pulse": "Instrumenten-Buttons animieren, wenn sie eine Note auslösen."
+      "pulse": "Instrumenten-Buttons animieren, wenn sie eine Note auslösen.",
+      "ambient": "Zeigt ein farbiges Leuchten hinter der Seite, das auf Notenauslöser reagiert."
     },
     "rangeWarning": {
       "default": "Einige Noten in diesem Track liegen außerhalb des spielbaren Bereichs des Instruments.",

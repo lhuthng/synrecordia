@@ -16,6 +16,8 @@ export default function AdvancedSettingsModal({
   onParticlesToggle,
   pulseEnabled,
   onPulseToggle,
+  ambientEnabled,
+  onAmbientToggle,
 }) {
   const { t } = useTranslation();
   const panelRef = useRef(null);
@@ -111,6 +113,31 @@ export default function AdvancedSettingsModal({
                 value={pulseEnabled}
                 onToggle={() => onPulseToggle(true)}
                 offToggle={() => onPulseToggle(false)}
+                onColors={{
+                  background: "bg-note-full",
+                  shadowBackground: "bg-note-full-dark",
+                  border: "border-note-full-dark",
+                  text: "text-dark",
+                }}
+                offColors={{
+                  background: "bg-note-half",
+                  shadowBackground: "bg-note-half-dark",
+                  border: "border-note-half-dark",
+                  text: "text-main",
+                }}
+              />
+            </div>
+
+            {/* Ambient glow toggle */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 shrink-0 min-w-28">
+                <label className="text-sm">{t("player.ambient")}:</label>
+                <SettingTooltip>{t("player.tips.ambient")}</SettingTooltip>
+              </div>
+              <DuoToggleButton
+                value={ambientEnabled}
+                onToggle={() => onAmbientToggle(true)}
+                offToggle={() => onAmbientToggle(false)}
                 onColors={{
                   background: "bg-note-full",
                   shadowBackground: "bg-note-full-dark",
