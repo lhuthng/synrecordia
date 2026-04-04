@@ -9,6 +9,7 @@ import Directory from "./Directory";
 import Visualizer from "./Visualizer";
 import SongTimeline from "./SongTimeline";
 import InstrumentManager from "./instruments/InstrumentManager";
+import SettingTooltip from "./SettingTooltip";
 import usePlayer from "../hooks/usePlayer.js";
 import { useTranslation } from "react-i18next";
 import { computeNoteRangeFromActions } from "../libs/utils.js";
@@ -62,6 +63,12 @@ export default function Player() {
   // Visual-effect preferences
   const [particlesEnabled, setParticlesEnabled] = useState(true);
   const [pulseEnabled, setPulseEnabled] = useState(true);
+
+  // Per-slot out-of-range status: Map<slot, { outOfRange, alternatives }>
+  const rangeStatusRef = useRef({});
+  const [rangeWarning, setRangeWarning] = useState(null);
+  // null  → no warning
+  // { alternatives: string[] } → warning active
 
   // Floating scroll-to-top button
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -123,11 +130,65 @@ export default function Player() {
     else handlePlay();
   }, [countdown, isPlaying, cancelCountdown, pausePlayback, handlePlay]);
 
+  const handleRangeStatus = useCallback(
+    ({ outOfRange, alternatives, slot }) => {
+      rangeStatusRef.current[slot] = { outOfRange, alternatives };
+      const statuses = Object.values(rangeStatusRef.current);
+      const anyOut = statuses.some((s) => s.outOfRange);
+      if (!anyOut) {
+        setRangeWarning(null);
+        return;
+      }
+      // Merge alternatives from all out-of-range slots, deduplicate by system name.
+      const seen = new Set();
+      const merged = statuses
+        .flatMap((s) => (s.outOfRange ? (s.alternatives ?? []) : []))
+        .filter((a) => {
+          if (seen.has(a.system)) return false;
+          seen.add(a.system);
+          return true;
+        });
+      setRangeWarning({ alternatives: merged });
+    },
+    [],
+  );
+
   // Cancel any in-progress countdown when the loaded song changes
   useEffect(() => {
     cancelCountdown();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [song?.id]);
+
+  // Re-evaluate the range warning when the song changes.
+  // IMPORTANT: React runs child effects before parent effects, so by the time
+  // this runs, InstrumentManager has already filed fresh outOfRange reports into
+  // rangeStatusRef for every current slot. We only need to prune stale slots
+  // (from a previous song with more tracks) and recompute from current data.
+  useEffect(() => {
+    const numTracks = song?.tracks?.length ?? 0;
+    // Prune slots that no longer exist in the new song.
+    for (const key of Object.keys(rangeStatusRef.current)) {
+      if (Number(key) >= numTracks) {
+        delete rangeStatusRef.current[key];
+      }
+    }
+    // Recompute warning from the (now-fresh) slot data.
+    const statuses = Object.values(rangeStatusRef.current);
+    const anyOut = statuses.some((s) => s.outOfRange);
+    if (!anyOut) {
+      setRangeWarning(null);
+      return;
+    }
+    const seen = new Set();
+    const merged = statuses
+      .flatMap((s) => (s.outOfRange ? (s.alternatives ?? []) : []))
+      .filter((a) => {
+        if (seen.has(a.system)) return false;
+        seen.add(a.system);
+        return true;
+      });
+    setRangeWarning({ alternatives: merged });
+  }, [song?.id, song?.tracks?.length]);
 
   // Cleanup the timer on unmount
   useEffect(() => {
@@ -246,7 +307,6 @@ export default function Player() {
   const isReady = isVisualReady && isAudioReadyAll;
 
   // ── render ────────────────────────────────────────────────────────────────
-
   return (
     <div className="w-full min-h-[calc(100dvh-8rem)] text-main space-y-2">
       {/* Song selector row */}
@@ -283,7 +343,10 @@ export default function Player() {
         <div className="max-w-full sm:max-w-100 grow text-base">
           {/* BPM */}
           <div className="mt-2 flex items-center gap-2">
-            <label title="bpm">{t("player.bpm")}:</label>
+            <div className="flex items-center gap-1">
+              <label>{t("player.bpm")}:</label>
+              <SettingTooltip>{t("player.tips.bpm")}</SettingTooltip>
+            </div>
             <div className="flex-1 ml-4 mr-8">
               <DuoSlideBar
                 min={30}
@@ -315,7 +378,10 @@ export default function Player() {
 
           {/* Transpose */}
           <div className="mt-2 flex items-center gap-2">
-            <label title="transpose semitones">{t("player.transpose")}:</label>
+            <div className="flex items-center gap-1">
+              <label>{t("player.transpose")}:</label>
+              <SettingTooltip>{t("player.tips.transpose")}</SettingTooltip>
+            </div>
             <div className="flex-1 ml-4 mr-8">
               <DuoSlideBar
                 min={-24}
@@ -351,6 +417,41 @@ export default function Player() {
             </DuoButton>
           </div>
 
+          {/* Note Width */}
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <label title="note width">{t("player.noteWidthFull")}:</label>
+              <SettingTooltip>{t("player.tips.noteWidth")}</SettingTooltip>
+            </div>
+            <div className="flex-1 ml-4 mr-8">
+              <DuoSlideBar
+                min={40}
+                max={200}
+                step={1}
+                value={noteWidth}
+                onChange={(v) => handleNoteWidthChange(v)}
+                thumbColors={{
+                  background: "bg-note-half",
+                  border: "border-note-half-dark",
+                  text: "text-main",
+                }}
+                barColor="bg-note-full"
+              />
+            </div>
+            <DuoButton
+              className="text-sm -translate-x-4"
+              text="text-main"
+              background="bg-note-half"
+              padding="px-1.5"
+              shadowBackground="bg-note-half-dark"
+              border="border-note-half-dark"
+              onClick={() => handleNoteWidthChange(160)}
+              disabled={noteWidth === 160}
+            >
+              {t("player.reset")}
+            </DuoButton>
+          </div>
+
           {/* Advanced settings toggle */}
           <div className="mt-2 flex items-center gap-2">
             <DuoToggleButton
@@ -376,7 +477,10 @@ export default function Player() {
 
           {/* Start timer selector */}
           <div className="mt-2 flex items-center gap-2">
-            <label title="start timer">{t("player.start")}:</label>
+            <div className="flex items-center gap-1">
+              <label>{t("player.start")}:</label>
+              <SettingTooltip>{t("player.tips.start")}</SettingTooltip>
+            </div>
             <div className="flex gap-1 ml-4">
               {[0, 1, 2, 3].map((s) => (
                 <DuoButton
@@ -474,8 +578,6 @@ export default function Player() {
       <AdvancedSettingsModal
         isOpen={showAdvancedSettings}
         onClose={() => setShowAdvancedSettings(false)}
-        noteWidth={noteWidth}
-        onNoteWidthChange={handleNoteWidthChange}
         latencyMs={latencyMs}
         onLatencyChange={setLatencyMs}
         particlesEnabled={particlesEnabled}
@@ -521,6 +623,7 @@ export default function Player() {
           noteWidth={noteWidth}
           particlesEnabled={particlesEnabled}
           playBarPosition={playBarPosition}
+          rangeWarning={rangeWarning}
           onReady={() => {
             setIsVisualReady(true);
             if (pendingResetRef.current) {
@@ -600,6 +703,7 @@ export default function Player() {
             }
             transpose={transposeSemitones}
             fingeringSystem={fingeringSystem}
+            onOutOfRange={handleRangeStatus}
             callbacks={{
               pausePlayback,
               setFingeringSystem,

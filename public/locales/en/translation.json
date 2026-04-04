@@ -4,6 +4,7 @@
     "selectSong": "Select a song",
     "bpm": "BPM",
     "noteWidth": "Width",
+    "noteWidthFull": "Note Width",
     "transpose": "Transpose",
     "start": "Start",
     "reset": "Reset",
@@ -18,7 +19,21 @@
     "particles": "Particles",
     "pulseEffect": "Pulse",
     "scrollToTop": "To Top",
-    "close": "Close"
+    "close": "Close",
+    "tips": {
+      "bpm": "Playback speed in beats per minute.",
+      "transpose": "Shift all notes up or down by this many semitones.",
+      "noteWidth": "How wide each note appears in the visualizer. Smaller = more notes visible at once.",
+      "start": "Countdown in seconds before playback begins.",
+      "latency": "Audio latency compensation. Increase if the visuals appear ahead of the audio.",
+      "particles": "Show or hide the particle effects that emit from active notes.",
+      "pulse": "Animate instrument buttons when they trigger a note."
+    },
+    "rangeWarning": {
+      "default": "Some notes in this track fall outside the instrument's playable range.",
+      "trySystems": "Can be played with:",
+      "impossible": "No available fingering system can cover all notes in this track."
+    }
   },
   "directory": {
     "title": "Song Directory",
@@ -41,7 +56,13 @@
     "volume": "Volume",
     "vibrato": "Vibrato",
     "variant": "Variant",
-    "system": "System"
+    "system": "System",
+    "tips": {
+      "volume": "Adjusts the recorder playback volume.",
+      "vibrato": "Adds a vibrato effect to sustained notes.",
+      "variant": "Switches between different recorded sample sets.",
+      "system": "Selects the fingering chart system (affects which notes are playable)."
+    }
   },
   "fingeringSystem": {
     "baroque": "Baroque",
@@ -139,5 +160,13 @@
     "hideFingering": "Hide fingering guide",
     "legendFull": "Full",
     "legendHalf": "Half"
+  },
+  "piano": {
+    "volume": "Volume",
+    "variant": "Variant",
+    "tips": {
+      "volume": "Adjusts the piano playback volume.",
+      "variant": "Switches between different piano sample sets."
+    }
   }
 }

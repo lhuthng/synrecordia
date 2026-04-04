@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import DuoSlideBar from "../DuoSlideBar";
 import DuoSelect from "../DuoSelect";
 import { useTranslation } from "react-i18next";
+import SettingTooltip from "../SettingTooltip";
 
 function fmtST(t) {
   if (t === 0) return "0";
@@ -152,7 +153,10 @@ export default function Recorder({
         createPortal(
           <div className="flex flex-col gap-2 max-w-full sm:max-w-100 [&>*>label]:min-w-10">
             <div className="flex items-center gap-4">
-              <label title="volume">{t("recorder.volume")}:</label>
+              <div className="flex items-center gap-1">
+                <label>{t("recorder.volume")}:</label>
+                <SettingTooltip>{t("recorder.tips.volume")}</SettingTooltip>
+              </div>
               <div className="flex-1 mx-4">
                 <DuoSlideBar
                   min={0}
@@ -170,7 +174,10 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <label title="vibrato">{t("recorder.vibrato")}:</label>
+              <div className="flex items-center gap-1">
+                <label>{t("recorder.vibrato")}:</label>
+                <SettingTooltip>{t("recorder.tips.vibrato")}</SettingTooltip>
+              </div>
               <div className="flex-1 mx-4">
                 <DuoSlideBar
                   min={0}
@@ -188,7 +195,10 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label title="variant">{t("recorder.variant")}:</label>
+              <div className="flex items-center gap-1">
+                <label>{t("recorder.variant")}:</label>
+                <SettingTooltip>{t("recorder.tips.variant")}</SettingTooltip>
+              </div>
               <div className="flex-1 mx-4">
                 <DuoSelect
                   options={alternatives}
@@ -200,7 +210,10 @@ export default function Recorder({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label title="system">{t("recorder.system")}:</label>
+              <div className="flex items-center gap-1">
+                <label>{t("recorder.system")}:</label>
+                <SettingTooltip>{t("recorder.tips.system")}</SettingTooltip>
+              </div>
               <div className="flex-1 mx-4">
                 <DuoSelect
                   options={fingeringSystems}

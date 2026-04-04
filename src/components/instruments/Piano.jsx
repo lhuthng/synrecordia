@@ -5,6 +5,8 @@ import DuoSlideBar from "../DuoSlideBar";
 import DuoSelect from "../DuoSelect";
 import { useCallback } from "react";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import SettingTooltip from "../SettingTooltip";
 
 export default function Piano({
   packedSampler: pianoSampler,
@@ -17,6 +19,7 @@ export default function Piano({
   onSamplerChanged,
   isReady,
 }) {
+  const { t } = useTranslation();
   const [volume, setVolume] = useState(0);
   const [version, setVersion] = useState(null);
   const [alternatives, setAlternatives] = useState([]);
@@ -65,7 +68,10 @@ export default function Piano({
         createPortal(
           <div className="flex flex-col gap-2 max-w-100 [&>*>label]:w-10">
             <div className="flex items-center gap-2">
-              <label title="volume">Volume:</label>
+              <div className="flex items-center gap-1">
+                <label>{t("piano.volume")}:</label>
+                <SettingTooltip>{t("piano.tips.volume")}</SettingTooltip>
+              </div>
               <div className="flex-1 mx-4">
                 <DuoSlideBar
                   min={0}
@@ -83,7 +89,10 @@ export default function Piano({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <label title="variant">Variant:</label>
+              <div className="flex items-center gap-1">
+                <label>{t("piano.variant")}:</label>
+                <SettingTooltip>{t("piano.tips.variant")}</SettingTooltip>
+              </div>
               <div className="flex-1 mx-4">
                 <DuoSelect
                   options={alternatives}

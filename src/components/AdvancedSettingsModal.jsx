@@ -5,12 +5,11 @@ import { useTranslation } from "react-i18next";
 import DuoSlideBar from "./DuoSlideBar";
 import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
+import SettingTooltip from "./SettingTooltip";
 
 export default function AdvancedSettingsModal({
   isOpen,
   onClose,
-  noteWidth,
-  onNoteWidthChange,
   latencyMs,
   onLatencyChange,
   particlesEnabled,
@@ -79,9 +78,10 @@ export default function AdvancedSettingsModal({
 
             {/* Particles toggle */}
             <div className="flex items-center gap-3">
-              <label className="shrink-0 min-w-28 text-sm">
-                {t("player.particles")}:
-              </label>
+              <div className="flex items-center gap-1 shrink-0 min-w-28">
+                <label className="text-sm">{t("player.particles")}:</label>
+                <SettingTooltip>{t("player.tips.particles")}</SettingTooltip>
+              </div>
               <DuoToggleButton
                 value={particlesEnabled}
                 onToggle={() => onParticlesToggle(true)}
@@ -103,9 +103,10 @@ export default function AdvancedSettingsModal({
 
             {/* Pulse effect toggle */}
             <div className="flex items-center gap-3">
-              <label className="shrink-0 min-w-28 text-sm">
-                {t("player.pulseEffect")}:
-              </label>
+              <div className="flex items-center gap-1 shrink-0 min-w-28">
+                <label className="text-sm">{t("player.pulseEffect")}:</label>
+                <SettingTooltip>{t("player.tips.pulse")}</SettingTooltip>
+              </div>
               <DuoToggleButton
                 value={pulseEnabled}
                 onToggle={() => onPulseToggle(true)}
@@ -128,36 +129,14 @@ export default function AdvancedSettingsModal({
             {/* Divider */}
             <div className="border-t border-note-half-dark/50" />
 
-            {/* Note Width */}
-            <div className="flex items-center gap-2">
-              <label className="shrink-0 min-w-28 text-sm" title="note width">
-                {t("player.noteWidth")}:
-              </label>
-              <div className="flex-1 mx-2">
-                <DuoSlideBar
-                  min={40}
-                  max={200}
-                  step={1}
-                  value={noteWidth}
-                  onChange={onNoteWidthChange}
-                  thumbColors={{
-                    background: "bg-note-half",
-                    border: "border-note-half-dark",
-                    text: "text-main",
-                  }}
-                  barColor="bg-note-full"
-                />
-              </div>
-            </div>
-
             {/* Latency Calibration */}
             <div className="flex items-center gap-2">
-              <label
-                className="shrink-0 min-w-28 text-sm"
-                title="latency calibration"
-              >
-                {t("player.latencyCalibration")}:
-              </label>
+              <div className="flex items-center gap-1 shrink-0 min-w-28">
+                <label className="text-sm">
+                  {t("player.latencyCalibration")}:
+                </label>
+                <SettingTooltip>{t("player.tips.latency")}</SettingTooltip>
+              </div>
               <div className="flex flex-1 items-center gap-4 mx-2">
                 <DuoSlideBar
                   min={0}

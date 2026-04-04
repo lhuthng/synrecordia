@@ -4,6 +4,7 @@
     "selectSong": "Song auswählen",
     "bpm": "BPM",
     "noteWidth": "Breite",
+    "noteWidthFull": "Notenbreite",
     "transpose": "Transponierung",
     "start": "Start",
     "reset": "Reset",
@@ -18,7 +19,21 @@
     "particles": "Partikel",
     "pulseEffect": "Puls",
     "scrollToTop": "Nach oben",
-    "close": "Schließen"
+    "close": "Schließen",
+    "tips": {
+      "bpm": "Wiedergabegeschwindigkeit in Schlägen pro Minute.",
+      "transpose": "Alle Noten um diese Anzahl Halbtöne nach oben oder unten verschieben.",
+      "noteWidth": "Wie breit jede Note im Visualisierer angezeigt wird. Kleiner = mehr Noten gleichzeitig sichtbar.",
+      "start": "Countdown in Sekunden vor dem Abspielen.",
+      "latency": "Audio-Latenz-Ausgleich. Erhöhen, wenn die Visualisierung dem Audio voraus ist.",
+      "particles": "Partikeleffekte, die von aktiven Noten ausgehen, anzeigen oder verbergen.",
+      "pulse": "Instrumenten-Buttons animieren, wenn sie eine Note auslösen."
+    },
+    "rangeWarning": {
+      "default": "Einige Noten in diesem Track liegen außerhalb des spielbaren Bereichs des Instruments.",
+      "trySystems": "Spielbar mit:",
+      "impossible": "Kein verfügbares Griffsystem kann alle Noten in diesem Track abdecken."
+    }
   },
   "directory": {
     "title": "Songverzeichnis",
@@ -41,7 +56,13 @@
     "volume": "Lautstärke",
     "vibrato": "Vibrato",
     "variant": "Variante",
-    "system": "System"
+    "system": "System",
+    "tips": {
+      "volume": "Passt die Wiedergabelautstärke der Blockflöte an.",
+      "vibrato": "Fügt langen Noten einen Vibrato-Effekt hinzu.",
+      "variant": "Wechselt zwischen verschiedenen aufgenommenen Samplesätzen.",
+      "system": "Wählt das Griffsystem aus (beeinflusst, welche Noten spielbar sind)."
+    }
   },
   "fingeringSystem": {
     "baroque": "Barock",
@@ -139,5 +160,13 @@
     "hideFingering": "Griffdiagramm ausblenden",
     "legendFull": "Ganz",
     "legendHalf": "Halb"
+  },
+  "piano": {
+    "volume": "Lautstärke",
+    "variant": "Variante",
+    "tips": {
+      "volume": "Passt die Wiedergabelautstärke des Klaviers an.",
+      "variant": "Wechselt zwischen verschiedenen Klaviersamplesätzen."
+    }
   }
 }

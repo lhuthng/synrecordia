@@ -4,6 +4,7 @@
     "selectSong": "Chọn bài hát",
     "bpm": "BPM",
     "noteWidth": "Độ rộng",
+    "noteWidthFull": "Độ rộng nốt",
     "transpose": "Dịch giọng",
     "start": "Bắt đầu",
     "reset": "Reset",
@@ -18,7 +19,21 @@
     "particles": "Hạt",
     "pulseEffect": "Nhịp đập",
     "scrollToTop": "Lên đầu",
-    "close": "Đóng"
+    "close": "Đóng",
+    "tips": {
+      "bpm": "Tốc độ phát trong nhịp mỗi phút.",
+      "transpose": "Dịch chuyển tất cả các nốt lên hoặc xuống bấy nhiêu nửa cung.",
+      "noteWidth": "Độ rộng mỗi nốt trong bộ hiển thị. Nhỏ hơn = thấy nhiều nốt hơn cùng lúc.",
+      "start": "Đếm ngược (giây) trước khi phát.",
+      "latency": "Bù độ trễ âm thanh. Tăng nếu hình ảnh chạy trước âm thanh.",
+      "particles": "Bật hoặc tắt hiệu ứng hạt phát ra từ các nốt đang phát.",
+      "pulse": "Tạo hiệu ứng cho nút nhạc cụ khi nó kích hoạt một nốt."
+    },
+    "rangeWarning": {
+      "default": "Một số nốt trong bài nằm ngoài tầm chơi của nhạc cụ.",
+      "trySystems": "Có thể chơi được với:",
+      "impossible": "Không có hệ thống bấm ngón nào có thể bao phủ tất cả các nốt trong bài này."
+    }
   },
   "directory": {
     "title": "Danh sách bài hát",
@@ -41,7 +56,13 @@
     "volume": "Âm lượng",
     "vibrato": "Rung",
     "variant": "Phiên bản",
-    "system": "Hệ thống"
+    "system": "Hệ thống",
+    "tips": {
+      "volume": "Điều chỉnh âm lượng phát của recorder.",
+      "vibrato": "Thêm hiệu ứng rung cho các nốt dài.",
+      "variant": "Chuyển đổi giữa các bộ mẫu thu âm khác nhau.",
+      "system": "Chọn hệ thống bảng bấm ngón (ảnh hưởng đến nốt nào có thể chơi được)."
+    }
   },
   "fingeringSystem": {
     "baroque": "Baroque",
@@ -139,5 +160,13 @@
     "hideFingering": "Ẩn hướng dẫn bấm",
     "legendFull": "Kín",
     "legendHalf": "Hở/nửa"
+  },
+  "piano": {
+    "volume": "Âm lượng",
+    "variant": "Phiên bản",
+    "tips": {
+      "volume": "Điều chỉnh âm lượng phát của piano.",
+      "variant": "Chuyển đổi giữa các bộ mẫu piano khác nhau."
+    }
   }
 }

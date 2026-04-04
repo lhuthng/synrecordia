@@ -694,16 +694,19 @@ export function usePixiVisualizer({
         hoverBg.fill({ color: 0xffffff, alpha: 1 });
         hoverBg.alpha = 0;
 
+        // Scale font size: shrink for narrow sprites so the label doesn't overflow.
+        const fontSize =
+          scaledGraphicsWidth < 20 ? 8 : scaledGraphicsWidth < 36 ? 10 : 14;
         const label = new PIXI.Text({
           text: event.note,
           style: {
             fill: 0xffffff,
-            fontSize: 14,
+            fontSize,
             fontFamily: "Iosevka Charon",
           },
         });
         label.x = Math.max((scaledGraphicsWidth - label.width) / 2, 0);
-        label.y = -22;
+        label.y = -(fontSize + 8);
 
         container.addChild(hoverBg);
         container.addChild(label);
@@ -923,19 +926,28 @@ export function usePixiVisualizer({
             }
 
             // ── Allocate newly-needed sprites ────────────────────────────────
-            // Jumping backward – past/current notes now in the newly-visible range.
-            for (let i = newStart; i < Math.min(newEnd, prev.start); i++) {
-              if (!activeMap.has(i)) {
-                activeMap.set(i, createSpriteForEvent(events[i]));
+            // Helper: create a sprite and skip fade-in if it is already on screen
+            // (e.g. after a noteWidth rebuild that destroys and recreates all sprites).
+            const allocate = (idx) => {
+              if (activeMap.has(idx)) return;
+              const spr = createSpriteForEvent(events[idx]);
+              // If the note is already inside the visible viewport, snap alpha to 1
+              // so it doesn't fade in unnecessarily.
+              const sX = actualScrollX + spr.container.x;
+              if (sX + spr.width + glowPad > 0 && sX - glowPad < width) {
+                spr.fadeAlpha = 1;
+                spr.container.alpha = 1;
               }
-            }
+              activeMap.set(idx, spr);
+            };
+
+            // Jumping backward – past/current notes now in the newly-visible range.
+            for (let i = newStart; i < Math.min(newEnd, prev.start); i++)
+              allocate(i);
             // Normal forward playback or jump forward – upcoming notes enter the
             // left buffer and begin fading in before they reach the viewport.
-            for (let i = Math.max(newStart, prev.end); i < newEnd; i++) {
-              if (!activeMap.has(i)) {
-                activeMap.set(i, createSpriteForEvent(events[i]));
-              }
-            }
+            for (let i = Math.max(newStart, prev.end); i < newEnd; i++)
+              allocate(i);
 
             visWinRef.current = { start: newStart, end: newEnd };
 

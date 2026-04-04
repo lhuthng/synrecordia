@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPackedSampler } from "../../libs/packedSampler/factory";
 import { motion as Motion, AnimatePresence, useAnimate } from "motion/react";
 import { cn, midiToNoteName } from "../../libs/utils";
@@ -95,6 +95,8 @@ function NoteRangeBar({ instrumentRange, trackRange, transpose }) {
 }
 
 // ── InstrumentManager ────────────────────────────────────────────────────────
+const KNOWN_SYSTEMS = ["baroque", "german", "simple"];
+
 export default function InstrumentManager({
   slot,
   name,
@@ -110,6 +112,7 @@ export default function InstrumentManager({
   trackNoteRange = null,
   transpose = 0,
   fingeringSystem = "baroque",
+  onOutOfRange = undefined,
 }) {
   const [samplerInstance, setSamplerInstance] = useState(null);
   const [scope, animate] = useAnimate();
@@ -132,6 +135,32 @@ export default function InstrumentManager({
       effectiveMin < samplerNoteRange.min || effectiveMax > samplerNoteRange.max
     );
   })();
+
+  // For each known system, compute the semitone window [tMin, tMax] where
+  // the system's range fully covers the track. Formula:
+  //   track.min + t >= r.min  →  t >= r.min - track.min  (tMin)
+  //   track.max + t <= r.max  →  t <= r.max - track.max  (tMax)
+  // If tMin <= tMax the system is feasible; otherwise it's impossible.
+  const alternatives = useMemo(() => {
+    if (!samplerInstance || !trackNoteRange) return [];
+    return KNOWN_SYSTEMS.flatMap((sys) => {
+      const r = samplerInstance.getNoteRange?.(sys);
+      if (!r) return [];
+      const tMin = r.min - trackNoteRange.min;
+      const tMax = r.max - trackNoteRange.max;
+      if (tMin > tMax) return []; // impossible for this system at any transpose
+      return [{ system: sys, tMin, tMax }];
+    });
+  }, [samplerInstance, trackNoteRange]);
+
+  const onOutOfRangeRef = useRef(onOutOfRange);
+  useEffect(() => {
+    onOutOfRangeRef.current = onOutOfRange;
+  }, [onOutOfRange]);
+
+  useEffect(() => {
+    onOutOfRangeRef.current?.({ outOfRange, alternatives, slot });
+  }, [outOfRange, alternatives, slot]);
 
   // ── Flash animation ───────────────────────────────────────────────────────
   useEffect(() => {

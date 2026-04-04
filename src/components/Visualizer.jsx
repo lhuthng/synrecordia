@@ -46,6 +46,7 @@ export default function Visualizer({
   transpose = 0,
   latencyMs = 0,
   particlesEnabled = true,
+  rangeWarning = null,
   onReady,
   onScrubStart,
   onScrub,
@@ -54,6 +55,12 @@ export default function Visualizer({
   onPlayBarPositionChange,
 }) {
   const { t } = useTranslation();
+
+  // ── Range-warning formatting helpers ───────────────────────────────────────
+  const fmtST = (n) =>
+    n === 0 ? "0" : n > 0 ? `+${n}` : `\u2212${Math.abs(n)}`;
+  const fmtRange = (tMin, tMax) =>
+    tMin === tMax ? fmtST(tMin) : `${fmtST(tMin)} to ${fmtST(tMax)}`;
 
   // ── Instrument overlay ──────────────────────────────────────────────────────
   const [showInstrument, setShowInstrument] = useState(false);
@@ -373,6 +380,39 @@ export default function Visualizer({
             <span className="px-4 py-2 rounded-lg bg-dark/80 border border-main/20 text-main/80 text-sm font-iosevka select-none backdrop-blur-sm">
               {hintMsg}
             </span>
+          </Motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Out-of-range warning overlay ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {rangeWarning && song && (
+          <Motion.div
+            key="range-warning"
+            className="absolute inset-x-0 bottom-0 flex items-center justify-center pointer-events-none z-50"
+            initial={{ opacity: 0, scale: 0.95, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -8 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+          >
+            <div className="flex flex-col gap-1 max-w-xs text-center rounded-xl bg-amber-950/90 border border-amber-500/60 px-5 py-3 text-amber-200 shadow-2xl backdrop-blur-sm select-none">
+              <span className="text-sm font-semibold">
+                ⚠ {t("player.rangeWarning.default")}
+              </span>
+              {rangeWarning.alternatives.length > 0 ? (
+                <span className="text-xs opacity-80">
+                  {t("player.rangeWarning.trySystems")}{" "}
+                  {rangeWarning.alternatives
+                    .map((a) => `${a.system} (${fmtRange(a.tMin, a.tMax)})`)
+                    .join(", ")}
+                  .
+                </span>
+              ) : (
+                <span className="text-xs opacity-80">
+                  {t("player.rangeWarning.impossible")}
+                </span>
+              )}
+            </div>
           </Motion.div>
         )}
       </AnimatePresence>
