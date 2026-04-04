@@ -21,3 +21,10 @@ export const FINGERING_GAPS = [2, 0.25, 0.25, 2, 0.25, 0.25, 0.25];
 
 export const HOLE_PLAY_SCALE = 1.18;
 export const HOLE_SCALE_ALPHA = 0.18;
+
+// ── Lazy note-sprite allocation ───────────────────────────────────────────────
+// Extra pixels allocated beyond each viewport edge so fade-in finishes offscreen
+// during normal playback; on a timeline jump the fade is intentionally visible.
+export const NOTE_LAZY_BUFFER_PX = 400;
+// Per-frame linear alpha increment for the spawn fade-in (at 60 fps → ~0.42 s).
+export const NOTE_FADE_SPEED = 0.04;

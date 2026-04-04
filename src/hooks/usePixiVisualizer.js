@@ -16,6 +16,8 @@ import {
   HOLE_SIZE,
   HOLE_PLAY_SCALE,
   HOLE_SCALE_ALPHA,
+  NOTE_LAZY_BUFFER_PX,
+  NOTE_FADE_SPEED,
 } from "../components/utils/constants.js";
 import {
   cssColorToPixiHex,
@@ -75,7 +77,10 @@ export function usePixiVisualizer({
 
   // ─── PIXI refs ───────────────────────────────────────────────────────────────
   const appRef = useRef(null);
-  const noteSpritesRef = useRef([]);
+  // noteEventsRef: sorted raw event data (no PIXI objects).
+  // activeSpriteMapRef: Map<index, sprite> – only the currently-allocated PIXI containers.
+  const noteEventsRef = useRef([]);
+  const activeSpriteMapRef = useRef(new Map());
   const guideLayerRef = useRef(null);
   const holesLayerRef = useRef(null);
   const notesLayerRef = useRef(null);
@@ -125,9 +130,9 @@ export function usePixiVisualizer({
   // ─── Particles enabled ref ───────────────────────────────────────────────────
   const particlesEnabledRef = useRef(particlesEnabled);
 
-  // ─── Sliding-window culling refs ──────────────────────────────────────────────
+  // ─── Lazy allocation refs ────────────────────────────────────────────────────
   // maxSpriteWidthRef: widest note sprite (px) – used as conservative left-boundary buffer.
-  // visWinRef: [start, end) index range into noteSpritesRef that was visible last frame.
+  // visWinRef: [start, end) index range into noteEventsRef that is currently allocated.
   const maxSpriteWidthRef = useRef(0);
   const visWinRef = useRef({ start: 0, end: 0 });
 
@@ -301,7 +306,7 @@ export function usePixiVisualizer({
     durationBeatsRef.current = lastBarBeat;
     buildGuidesRef.current?.();
     buildZonesRef.current?.();
-  }, [durationBeats, effectiveTimeSignature, displaySong?.timeSignatures]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [durationBeats, effectiveTimeSignature, displaySong?.timeSignatures]);
 
   // ─── Note width changes → full scene rebuild + scroll correction ──────────────
   useEffect(() => {
@@ -329,6 +334,10 @@ export function usePixiVisualizer({
   // ─── PIXI init / teardown ────────────────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current) return;
+
+    // Capture the map reference now so the cleanup closure uses the value
+    // at effect-run time, satisfying the react-hooks/exhaustive-deps rule.
+    const activeMap = activeSpriteMapRef.current;
 
     let cancelled = false;
     let ticker = null;
@@ -638,125 +647,138 @@ export function usePixiVisualizer({
         playBarLayerRef.current.addChild(pb);
       };
 
-      // ── Builder: note sprites ────────────────────────────────────────────────
-      const buildSprites = () => {
-        notesLayer.removeChildren();
-        noteSpritesRef.current = [];
-
+      // ── Factory: build one PIXI container for a single note event ─────────────
+      // Called lazily by the ticker as notes enter the buffered viewport. The
+      // container starts at alpha=0 and is lerped to 1 each frame so the fade-in
+      // completes offscreen during normal playback; on a timeline jump the fade is
+      // intentionally visible to the user.
+      const createSpriteForEvent = (event) => {
         const fingeringColors = getFingeringColors();
+        const ppb = pixelsPerBeatRef.current || 1;
+        const graphics = new PIXI.Container();
+        const durationForWidth = Math.max(event.duration ?? 0, 0);
+        const targetWidth = Math.max(durationForWidth * ppb, 6);
 
-        noteEvents.forEach((event) => {
-          const graphics = new PIXI.Container();
-          const durationForWidth = Math.max(event.duration ?? 0, 0);
-          const targetWidth = Math.max(
-            durationForWidth * (pixelsPerBeatRef.current || 1),
-            6,
-          );
+        const dims = drawFingering(
+          graphics,
+          event.fingering,
+          { x: targetWidth / 1.2, y: HOLE_SIZE.y },
+          2,
+          fingeringColors,
+        );
 
-          const dims = drawFingering(
-            graphics,
-            event.fingering,
-            { x: targetWidth / 1.2, y: HOLE_SIZE.y },
-            2,
-            fingeringColors,
-          );
-
-          const noteHolePositions = getHolePositions(HOLE_SIZE.y);
-          const containerY = (height - dims.height) / 2;
-          const activeHoles = [];
-          for (let i = 0; i < NUM_HOLES; i += 1) {
-            const state = event.fingering[i];
-            if (!state || state === "0") continue;
-            const color = fingeringColors[state];
-            if (!color) continue;
-            activeHoles.push({
-              y: containerY + noteHolePositions[i] + HOLE_SIZE.y / 2,
-              color: brightenColor(color, 1.2),
-            });
-          }
-
-          const container = new PIXI.Container();
-          const brightnessFilter = new ColorMatrixFilter();
-          graphics.filters = [brightnessFilter];
-          const brightnessState = { current: 1.0, target: 1.0 };
-
-          const scaledGraphicsWidth = dims.width;
-          const containerOffsetY = (height - dims.height) / 2;
-
-          const hoverBg = new PIXI.Graphics();
-          hoverBg.rect(0, -containerOffsetY, scaledGraphicsWidth, height);
-          hoverBg.fill({ color: 0xffffff, alpha: 1 });
-          hoverBg.alpha = 0;
-
-          const label = new PIXI.Text({
-            text: event.note,
-            style: {
-              fill: 0xffffff,
-              fontSize: 14,
-              fontFamily: "Iosevka Charon",
-            },
+        const noteHolePositions = getHolePositions(HOLE_SIZE.y);
+        const containerY = (height - dims.height) / 2;
+        const activeHoles = [];
+        for (let i = 0; i < NUM_HOLES; i += 1) {
+          const state = event.fingering[i];
+          if (!state || state === "0") continue;
+          const color = fingeringColors[state];
+          if (!color) continue;
+          activeHoles.push({
+            y: containerY + noteHolePositions[i] + HOLE_SIZE.y / 2,
+            color: brightenColor(color, 1.2),
           });
-          label.x = Math.max((scaledGraphicsWidth - label.width) / 2, 0);
-          label.y = -22;
+        }
 
-          container.addChild(hoverBg);
-          container.addChild(label);
-          container.addChild(graphics);
+        const container = new PIXI.Container();
+        const brightnessFilter = new ColorMatrixFilter();
+        graphics.filters = [brightnessFilter];
+        const brightnessState = { current: 1.0, target: 1.0 };
 
-          const hoverState = { targetAlpha: 0 };
-          container.eventMode = "static";
-          container.hitArea = new PIXI.Rectangle(0, 0, dims.width, dims.height);
-          container.on("pointerover", () => {
-            if (isPlayingRef.current) return;
-            hoverState.targetAlpha = 0.07;
-            setIsHoveringNote(true);
-          });
-          container.on("pointerout", () => {
-            hoverState.targetAlpha = 0;
-            setIsHoveringNote(false);
-          });
-          container.on("pointerup", () => {
-            if (hasDraggedRef.current || isPlayingRef.current) return;
-            onNoteClickRef.current?.({
-              note: event.note,
-              duration: event.duration,
-            });
-          });
+        const scaledGraphicsWidth = dims.width;
+        const containerOffsetY = (height - dims.height) / 2;
 
-          container.x =
-            -scaledGraphicsWidth - event.time * (pixelsPerBeatRef.current || 1);
-          container.y = containerY;
-          // Start hidden; the ticker's sliding window will reveal on first frame.
-          container.visible = false;
-          notesLayer.addChild(container);
-          noteSpritesRef.current.push({
-            container,
-            time: event.time,
-            width: scaledGraphicsWidth,
-            duration: durationForWidth,
-            baseWidth: durationForWidth,
-            graphics,
-            brightnessFilter,
-            brightnessState,
-            label,
-            hoverBg,
-            hoverState,
-            activeHoles,
-            holeSprites: graphics.holeSprites || [],
-            glowPadding: NOTE_GLOW_PADDING,
+        const hoverBg = new PIXI.Graphics();
+        hoverBg.rect(0, -containerOffsetY, scaledGraphicsWidth, height);
+        hoverBg.fill({ color: 0xffffff, alpha: 1 });
+        hoverBg.alpha = 0;
+
+        const label = new PIXI.Text({
+          text: event.note,
+          style: {
+            fill: 0xffffff,
+            fontSize: 14,
+            fontFamily: "Iosevka Charon",
+          },
+        });
+        label.x = Math.max((scaledGraphicsWidth - label.width) / 2, 0);
+        label.y = -22;
+
+        container.addChild(hoverBg);
+        container.addChild(label);
+        container.addChild(graphics);
+
+        const hoverState = { targetAlpha: 0 };
+        container.eventMode = "static";
+        container.hitArea = new PIXI.Rectangle(0, 0, dims.width, dims.height);
+        container.on("pointerover", () => {
+          if (isPlayingRef.current) return;
+          hoverState.targetAlpha = 0.07;
+          setIsHoveringNote(true);
+        });
+        container.on("pointerout", () => {
+          hoverState.targetAlpha = 0;
+          setIsHoveringNote(false);
+        });
+        container.on("pointerup", () => {
+          if (hasDraggedRef.current || isPlayingRef.current) return;
+          onNoteClickRef.current?.({
+            note: event.note,
+            duration: event.duration,
           });
         });
 
-        // Sort by start time so binary search in the ticker is valid.
-        noteSpritesRef.current.sort((a, b) => a.time - b.time);
+        container.x = -scaledGraphicsWidth - event.time * ppb;
+        container.y = containerY;
+        // Start fully transparent; the ticker lerps alpha to 1 each frame.
+        container.alpha = 0;
+        container.visible = true;
+        notesLayer.addChild(container);
 
-        // Widest sprite (px) – conservative buffer for the left time boundary.
-        maxSpriteWidthRef.current = noteSpritesRef.current.reduce(
-          (m, s) => Math.max(m, s.width),
+        return {
+          container,
+          time: event.time,
+          width: scaledGraphicsWidth,
+          duration: durationForWidth,
+          graphics,
+          brightnessFilter,
+          brightnessState,
+          label,
+          hoverBg,
+          hoverState,
+          activeHoles,
+          holeSprites: graphics.holeSprites || [],
+          glowPadding: NOTE_GLOW_PADDING,
+          fadeAlpha: 0, // tracks alpha independent of container.alpha for lerp math
+        };
+      };
+
+      // ── Builder: lazy note allocation ─────────────────────────────────────────
+      // Replaces the old eager build. Stores sorted raw event data so the ticker
+      // can create PIXI containers on demand as notes enter the buffered viewport.
+      const buildSprites = () => {
+        // Destroy every currently-allocated sprite.
+        for (const spr of activeSpriteMapRef.current.values()) {
+          notesLayer.removeChild(spr.container);
+          spr.container.destroy({ children: true });
+        }
+        activeSpriteMapRef.current.clear();
+
+        // Store sorted raw events — PIXI containers are built lazily by the ticker.
+        const sorted = [...noteEvents].sort((a, b) => a.time - b.time);
+        noteEventsRef.current = sorted;
+
+        // Estimate the widest possible sprite from max note duration so the ticker's
+        // conservative left-boundary formula stays correct without real sprite widths.
+        const ppb = pixelsPerBeatRef.current || 1;
+        const maxDuration = sorted.reduce(
+          (m, e) => Math.max(m, e.duration ?? 0),
           0,
         );
+        maxSpriteWidthRef.current = Math.max(maxDuration * ppb, 6);
 
-        // Reset window so the ticker doesn't try to clean up stale indices.
+        // Reset the allocation window so the ticker starts fresh.
         visWinRef.current = { start: 0, end: 0 };
 
         requestAnimationFrame(() => {
@@ -828,70 +850,121 @@ export function usePixiVisualizer({
           child.visible = screenX > -2 && screenX < width;
         });
 
-        // ── Note sprite updates (sliding-window culling) ───────────────────────
-        // Sprites are sorted by `time`. We compute beat-time bounds for the
-        // visible screen and binary-search into the array instead of scanning
-        // every note.
+        // ── Lazy note-sprite allocation (sliding-window) ───────────────────────
+        // noteEventsRef holds sorted raw event data; activeSpriteMapRef holds only
+        // the PIXI containers that are currently allocated. Sprites are created as
+        // notes enter the buffered viewport and destroyed when they leave.
         //
         // Derivation (container.x = -sprWidth - time * ppb):
-        //   screenX            = actualScrollX + container.x
-        //                      = actualScrollX - sprWidth - time * ppb
-        //   right edge on screen → screenX + sprWidth + glowPad > 0
-        //                        → time < (actualScrollX + glowPad) / ppb   [timeMax]
-        //   left  edge on screen → screenX - glowPad < width
-        //                        → time > (actualScrollX - maxW - glowPad - width) / ppb  [timeMin, conservative]
+        //   screenX = actualScrollX - sprWidth - time * ppb
+        //   Right edge visible → time < (actualScrollX + glowPad + BUFFER) / ppb  [timeMaxBuf]
+        //   Left  edge visible → time > (actualScrollX - maxW - glowPad - width - BUFFER) / ppb  [timeMinBuf]
+        //
+        // Higher time values = notes further ahead = LEFT side of the screen.
+        // As the song plays forward, newStart and newEnd both increase:
+        //   newStart increases → old past-notes are destroyed (right buffer expired).
+        //   newEnd   increases → new future-notes are allocated (left buffer entered).
         {
-          const sprites = noteSpritesRef.current;
-          const n = sprites.length;
+          const events = noteEventsRef.current;
+          const activeMap = activeSpriteMapRef.current;
+          const n = events.length;
           if (n > 0) {
             const ppb = pixelsPerBeatRef.current || 1;
             const glowPad = NOTE_GLOW_PADDING;
             const maxW = maxSpriteWidthRef.current;
+            const BUFFER_PX = NOTE_LAZY_BUFFER_PX;
 
-            const timeMax = (actualScrollX + glowPad) / ppb;
-            const timeMin = (actualScrollX - maxW - glowPad - width) / ppb;
+            // Allocation bounds – extend the visible area by BUFFER_PX on each side
+            // so fade-in completes before notes reach the viewport edge.
+            const timeMaxBuf = (actualScrollX + glowPad + BUFFER_PX) / ppb;
+            const timeMinBuf =
+              (actualScrollX - maxW - glowPad - width - BUFFER_PX) / ppb;
 
-            // Binary search: first index where time >= timeMin
+            // Binary search: first index where time >= timeMinBuf
             let lo = 0;
             let hi = n;
             while (lo < hi) {
               const mid = (lo + hi) >>> 1;
-              if (sprites[mid].time < timeMin) lo = mid + 1;
+              if (events[mid].time < timeMinBuf) lo = mid + 1;
               else hi = mid;
             }
             const newStart = lo;
 
-            // Binary search: first index where time > timeMax
+            // Binary search: first index where time > timeMaxBuf
             lo = 0;
             hi = n;
             while (lo < hi) {
               const mid = (lo + hi) >>> 1;
-              if (sprites[mid].time <= timeMax) lo = mid + 1;
+              if (events[mid].time <= timeMaxBuf) lo = mid + 1;
               else hi = mid;
             }
             const newEnd = lo;
 
-            // Hide sprites that slid out of the window on the left
             const prev = visWinRef.current;
+
+            // ── Destroy sprites that slid out of the window ──────────────────
+            // Past notes whose time is now below timeMinBuf (exited right buffer).
             for (let i = prev.start; i < Math.min(prev.end, newStart); i++) {
-              sprites[i].container.visible = false;
+              const spr = activeMap.get(i);
+              if (spr) {
+                notesLayer.removeChild(spr.container);
+                spr.container.destroy({ children: true });
+                activeMap.delete(i);
+              }
             }
-            // Hide sprites that slid out of the window on the right
+            // Future notes whose time exceeded timeMaxBuf (jump backward cleared them).
             for (let i = Math.max(prev.start, newEnd); i < prev.end; i++) {
-              sprites[i].container.visible = false;
+              const spr = activeMap.get(i);
+              if (spr) {
+                notesLayer.removeChild(spr.container);
+                spr.container.destroy({ children: true });
+                activeMap.delete(i);
+              }
+            }
+
+            // ── Allocate newly-needed sprites ────────────────────────────────
+            // Jumping backward – past/current notes now in the newly-visible range.
+            for (let i = newStart; i < Math.min(newEnd, prev.start); i++) {
+              if (!activeMap.has(i)) {
+                activeMap.set(i, createSpriteForEvent(events[i]));
+              }
+            }
+            // Normal forward playback or jump forward – upcoming notes enter the
+            // left buffer and begin fading in before they reach the viewport.
+            for (let i = Math.max(newStart, prev.end); i < newEnd; i++) {
+              if (!activeMap.has(i)) {
+                activeMap.set(i, createSpriteForEvent(events[i]));
+              }
             }
 
             visWinRef.current = { start: newStart, end: newEnd };
 
-            // Process only the candidate window; fine-cull each sprite exactly.
+            // ── Per-frame update for every allocated sprite ──────────────────
             for (let i = newStart; i < newEnd; i++) {
-              const sprite = sprites[i];
+              const sprite = activeMap.get(i);
+              if (!sprite) continue;
+
+              // Fade-in: progress alpha every frame even when the sprite is in the
+              // buffer zone (off-screen) so the animation completes before the note
+              // enters the visible area during normal playback. On a timeline jump
+              // the fade plays out visibly for notes inside the viewport.
+              if (sprite.fadeAlpha < 1) {
+                sprite.fadeAlpha = Math.min(
+                  1,
+                  sprite.fadeAlpha + NOTE_FADE_SPEED,
+                );
+                sprite.container.alpha = sprite.fadeAlpha;
+              }
+
               const screenX = actualScrollX + sprite.container.x;
-              const isVisible =
+              const isOnScreen =
                 screenX + sprite.width + glowPad > 0 &&
                 screenX - glowPad < width;
-              sprite.container.visible = isVisible;
-              if (!isVisible) continue;
+
+              // Keep visible while fading (even if off-screen) so alpha progresses.
+              // Once fully faded, cull sprites outside the viewport for GPU savings.
+              sprite.container.visible = sprite.fadeAlpha < 1 || isOnScreen;
+              if (!isOnScreen) continue;
 
               const isActive =
                 beat >= sprite.time && beat < sprite.time + sprite.duration;
@@ -997,7 +1070,10 @@ export function usePixiVisualizer({
       if (scrollLayerRef.current) scrollLayerRef.current = null;
       appRef.current?.destroy(true, { children: true });
       appRef.current = null;
-      noteSpritesRef.current = [];
+      // activeSpriteMapRef entries are already destroyed by app.destroy above;
+      // just clear the map so stale refs don't linger.
+      activeMap.clear();
+      noteEventsRef.current = [];
       particlesRef.current = [];
       particleTextureRef.current = null;
     };
