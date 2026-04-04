@@ -8,87 +8,221 @@
 </p>
 
 <p align="center">
-  You can view the SynRecordia live <a href="https://synrecordia.netlify.app/">demo</a> online.
+  Try the live <a href="https://synrecordia.netlify.app/">demo</a> right in your browser.
 </p>
 
-SynRecordia is an interactive browser-based piano/recorder visualizer and sampler built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png)Synthesia](https://synthesiagame.com/), it focuses on presenting clear note visualizations alongside sampled audio playback so you can see fingering while listening. The app runs fully in the browser using Tone.js for audio and PIXI.js for visuals.
+SynRecordia is an interactive browser-based **soprano recorder** visualizer and sampler built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png) Synthesia](https://synthesiagame.com/), it pairs a scrolling note timeline with real fingering diagrams and sampled audio playback so you can see exactly which holes to cover while you listen. Everything runs client-side — no server required — using Tone.js for audio and PIXI.js for visuals.
 
+The architecture is instrument-agnostic by design: adding support for another fingered instrument (ocarina, tin whistle, guitar — you name it) is a matter of dropping in a new sample set and a sampler implementation.
 
 <p align="center">
-  <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-18.x-blue?logo=react&logoColor=white" alt="React" /></a>
+  <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-19.x-blue?logo=react&logoColor=white" alt="React" /></a>
   <a href="https://tonejs.github.io/"><img src="https://img.shields.io/badge/Tone.js-15.x-9cf?logo=tonal&logoColor=white" alt="Tone.js" /></a>
   <a href="https://pixijs.com/"><img src="https://img.shields.io/badge/PIXI.js-8.x-ff66cc?logo=pixijs&logoColor=white" alt="PIXI.js" /></a>
 </p>
 
-Core ideas
-- Visual learning + listening: timeline with fingering graphics and note labels.
-- Sampled instruments: load instrument sample sets and switch variants.
-- Lightweight, web-first: client-side playback, visualization, and instrument configuration.
+---
 
-Accomplished
-- Note Visualization (prepared)
-  - Timeline visualizer that draws per-note fingering graphics and labels.
-  - Smooth scrolling and beat interpolation to follow playback without snapping.
-  - Visual highlights (glow/particles) for active notes.
-  - Implemented in `src/components/Visualizer.jsx`.
+## Core ideas
 
-- Real-time Interactions
-  - Play / Pause / Restart controls and tempo (BPM) control per song.
-  - Mouse/touch scrubbing and wheel-to-scrub support.
-  - Repeat/loop playback and per-track selection for instrument control.
-  - Playback scheduling using `Tone.js` to trigger sampled notes in real-time.
-  - Implemented in `src/components/Player.jsx`.
+- **Visual learning + listening** — a scrolling timeline draws per-note fingering diagrams and labels in sync with playback, so you always know which holes to cover.
+- **Sampled recorder** — real Philharmonia flute samples across five dynamics (pianissimo → forte), switchable on the fly.
+- **Extensible instrument layer** — the sampler abstraction is generic; new instruments slot in without touching the visualizer or player.
+- **Lightweight, web-first** — pure client-side: no backend, no plugins, just a browser.
 
-- Instrument Configuration
-  - Per-instrument controller UI (volume, variant/version selection).
-  - Packed sampler abstraction in `src/libs/packedSampler/` with instrument-specific implementations (`piano.js`, `recorder.js`).
-  - Samples and versions hosted under `public/samples/<instrument>/<version>/index.json`.
+---
 
-Planned / Goals
-- Read and load MIDI files in the browser
-  - Let users import standard MIDI files and convert them to the internal song format (tracks/actions).
+## What's done
 
-- Play Mode / Interactive Scoring
-  - Real-time play mode that reads user input from a MIDI keyboard (Web MIDI API) or from microphone pitch detection and scores performance vs. the song.
-  - Provide hit/miss feedback and a scoring summary to support practice sessions.
+- **Note visualizer** — timeline renders fingering graphics, note labels, glow effects, and particles for active notes. Smooth scrolling with beat interpolation keeps the view locked to playback without snapping. (`src/components/Visualizer.jsx`)
+- **Real-time playback** — play / pause / restart, BPM control, mouse and touch scrubbing, repeat/loop, and per-track instrument selection. Tone.js handles sample scheduling. (`src/components/Player.jsx`)
+- **Instrument configuration** — per-instrument volume and variant/version controls. A packed sampler abstraction in `src/libs/packedSampler/` drives instrument-specific implementations (`piano.js`, `recorder.js`). Samples live under `public/samples/<instrument>/<version>/index.json`.
 
-Quick Start
+---
 
-1. Install dependencies (from project root):
+## What's planned
+
+- **MIDI import** — load standard MIDI files in the browser and convert them to the internal song format.
+- **Play mode / scoring** — real-time input via Web MIDI API or microphone pitch detection, with hit/miss feedback and a practice summary.
+- **More instruments** — ocarina, tin whistle, guitar, and other instruments the author loves. The sample pipeline scripts already support any instrument folder.
+
+---
+
+## Quick start
+
 ```bash
+# Install dependencies
 npm install
-```
 
-2. Start development server:
-```bash
+# Start the development server
 npm run dev
-```
 
-3. Build for production:
-```bash
+# Build for production
 npm run build
 ```
 
-Samples & attribution
-- Salamander Grand Piano V2 — Alexander Holm. Licensed CC BY 3.0. http://creativecommons.org/licenses/by/3.0/
-- Philharmonia samples — sourced from Philharmonia (https://philharmonia.co.uk/resources/sound-samples/). These samples are free to use but MUST NOT be redistributed "as-is" from this repository. Please download them from the official site and place them locally into `public/samples/...` as described in SAMPLES.md.
+---
 
-Installing recorder (flute) samples
-- Obtain the samples:
-  1. Visit the Philharmonia samples page: https://philharmonia.co.uk/resources/sound-samples/
-  2. Download the woodwind / flute pack from that site (follow their instructions and licensing).
-- Prepare the sample zip:
-  1. Inside the downloaded pack find (or create) `flute.zip` that contains the flute audio files.
-  2. Copy `flute.zip` into this project's recorder samples folder:
-     - Place the zip at `public/samples/recorder/flute.zip`
-     - Example (from project root):
-       - `cp /path/to/downloaded/flute.zip public/samples/recorder/`
-- Run the organizer script:
-  1. From the project root execute:
-     - `node scripts/prepare-recorder.mjs`
-  2. The script will:
-     - Extract `flute.zip` to a temporary location.
-     - Keep only files whose filename contains an underscore-delimited numeric index equal to 1 (for example: `flute_A4_1_mezzo-forte_normal.mp3`). Files with other numeric indices or without the index will be discarded.
-     - Detect dynamics from the filename and move kept files into dynamic folders under `public/samples/recorder/`:
-       - `forte`, `mezzo-forte`, `mezzo-piano`, `pianissimo`, `piano`
-     - Example resulting path: `public/samples/recorder/mezzo-forte/flute_A4_1_mezzo-forte_normal.mp3`
+## Samples & attribution
+
+- **Salamander Grand Piano V2** — Alexander Holm. Licensed [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/).
+- **Philharmonia samples** — sourced from [Philharmonia](https://philharmonia.co.uk/resources/sound-samples/). Free to use but **must not be redistributed as-is** from this repository. Please download them from the official site and place them locally as described below.
+
+---
+
+## Installing recorder (flute) samples
+
+The recorder instrument uses flute samples from Philharmonia. Because of their redistribution policy the audio files are not committed to this repo — you download them once and run a small pipeline of scripts to get them ready. The whole process takes just a few minutes.
+
+> **Requirements:** [Node.js](https://nodejs.org/) 18+ and [FFmpeg](https://ffmpeg.org/download.html) must be installed and available on your `PATH`.
+
+---
+
+### Step 1 — Download and place the samples
+
+1. Visit the Philharmonia sound samples page:
+   **https://philharmonia.co.uk/resources/sound-samples/**
+2. Find the **flute** pack under Woodwinds and download it.
+3. Locate (or create) a `flute.zip` from the downloaded contents and copy it into the project:
+
+```bash
+cp /path/to/downloaded/flute.zip public/samples/recorder/
+```
+
+---
+
+### Step 2 — Organise the files
+
+Run the organiser script from the project root:
+
+```bash
+node scripts/prepare-recorder.mjs
+```
+
+This script will:
+
+- Extract `flute.zip` into a temporary directory.
+- Keep only files whose name contains an underscore-delimited numeric index equal to `1` (e.g. `flute_A4_1_forte_normal.mp3`). Other index variants are discarded.
+- Read the dynamic token from the filename (`forte`, `mezzo-forte`, `mezzo-piano`, `pianissimo`, `piano`) and move each file into the matching sub-folder under `public/samples/recorder/`.
+- Run a reclassification pass to catch any misfiled samples.
+
+After this step your folder should look like:
+
+```
+public/samples/recorder/
+  forte/
+    flute_A4_1_forte_normal.mp3
+    flute_A#4_1_forte_normal.mp3
+    ...
+  mezzo-forte/
+    ...
+  piano/
+    ...
+  index.json
+```
+
+---
+
+### Step 3 — Tame the loudness
+
+Raw flute samples — especially in the upper register — can be genuinely ear-splitting. Before extending them it is worth normalising their peak level so everything sits at a comfortable, consistent volume.
+
+**First, have a look at what you're dealing with:**
+
+```bash
+node scripts/audio-loudness-helper.mjs public/samples/recorder --list
+```
+
+This prints the true-peak level (dBFS) of every file, colour-coded by severity. You will likely see the high notes glowing red.
+
+**Then fix them all in one pass:**
+
+```bash
+node scripts/audio-loudness-helper.mjs public/samples/recorder --fix --target -20
+```
+
+`--target -20` sets every file's peak to −20 dBFS — loud enough to be present in the mix but with plenty of headroom. Feel free to adjust to taste; anywhere between −18 and −24 is a reasonable range.
+
+> **Tip:** add `--dry-run` to preview what would change without touching any files.
+
+---
+
+### Step 4 — Extend the sample duration
+
+Philharmonia samples are short — typically around one second per note. That is fine for staccato passages, but sustained notes will cut off awkwardly. The `extend-samples` script finds the stable sustain body of each note, phase-matches a seamless loop point, and repeats it with equal-power crossfades until the sample reaches your target duration.
+
+**Recommended invocation:**
+
+```bash
+# Safe option — writes extended files to a separate folder
+node scripts/extend-samples.mjs public/samples/recorder \
+  --min-duration 6 \
+  --fade-out 2 \
+  --quality 5 \
+  --output-dir public/samples/recorder-extended
+```
+
+| Option | Recommended | Why |
+|---|---|---|
+| `--min-duration 6` | 6 s | Covers most held notes without wasting space |
+| `--fade-out 2` | 2 s | Long, gentle fade avoids an abrupt cutoff |
+| `--quality 5` | 5 | A good balance between file size and audio quality (MP3 VBR ~130 kbps) |
+| `--output-dir` | separate folder | Non-destructive — originals are untouched |
+
+Once you are happy with the results, you can point the app at the extended folder or swap it in for the originals:
+
+```bash
+# ⚠️  In-place mode overwrites the originals — make a backup first!
+node scripts/extend-samples.mjs public/samples/recorder \
+  --min-duration 6 \
+  --fade-out 2 \
+  --quality 5 \
+  --in-place
+```
+
+> Use `--dry-run` at any time to preview what the script would do without writing any audio.
+
+**Other useful options:**
+
+```bash
+# Process only specific dynamics
+--versions forte,mezzo-forte
+
+# Widen the phase-matching search window (helps with unusual samples)
+--phase-window 0.06
+
+# Adjust the loop crossfade length
+--crossfade 0.08
+```
+
+---
+
+### Full pipeline — quick reference
+
+Here is the complete sequence from a fresh download to a ready-to-use sample set:
+
+```bash
+# 1. Place the zip
+cp /path/to/flute.zip public/samples/recorder/
+
+# 2. Organise into dynamic folders
+node scripts/prepare-recorder.mjs
+
+# 3. Normalise peak loudness to a comfortable level
+node scripts/audio-loudness-helper.mjs public/samples/recorder --fix --target -20
+
+# 4. Extend short samples (writing to a separate folder for safety)
+node scripts/extend-samples.mjs public/samples/recorder \
+  --min-duration 6 \
+  --fade-out 2 \
+  --quality 5 \
+  --output-dir public/samples/recorder-extended
+
+# 5. If you are happy, promote the extended folder to replace the originals
+#    (skip this if you prefer to keep both)
+rm -rf public/samples/recorder-extended-backup   # clean up any old backup
+mv public/samples/recorder public/samples/recorder-backup
+mv public/samples/recorder-extended public/samples/recorder
+```
+
+That's it — fire up the dev server and enjoy smooth, full-length recorder playback across all dynamics and registers.

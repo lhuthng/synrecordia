@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "audio-decode": "^3.6.0",
     "clsx": "^2.1.1",
     "i18next": "^26.0.3",
     "i18next-browser-languagedetector": "^8.2.1",
