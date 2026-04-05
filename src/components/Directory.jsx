@@ -220,6 +220,7 @@ export default function Directory({
   className,
   display = "block",
   position = "left-0",
+  basePath = "/songs",
   onSelected,
 }) {
   const [open, setOpen] = useState(false);
@@ -320,7 +321,7 @@ export default function Directory({
   };
 
   const handleSelect = (meta) => {
-    navigate(`/songs/${meta.id}`);
+    navigate(`${basePath}/${meta.id}`);
     setOpen(false);
   };
 

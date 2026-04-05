@@ -94,8 +94,9 @@
     },
     "knownIssues": {
       "title": "Bekannte Probleme",
-      "mobilePerf": "Die Mobilperformance kann träge sein - die Tone.js-Audiotimeline und der PIXI.js-Render-Loop synchronisieren sich auf schwächeren Geräten nicht immer perfekt. Ich arbeite aktiv daran.",
-      "notesOutOfRange": "Bei einigen Songs liegen Noten außerhalb des Sample-Bereichs, sodass sie schief oder stumm klingen können."
+      "mobilePerf": "Audio kann auf Mobilgeräten aufgrund der Geräteleistung verzerrt sein, ich versuche es zu beheben.",
+      "notesOutOfRange": "Bei einigen Songs liegen Noten außerhalb des Sample-Bereichs, sodass sie schief oder stumm klingen können.",
+      "playmodeInput": "Die Eingabereaktionsfähigkeit im Spielmodus ist schrecklich, ich arbeite daran."
     },
     "aboutMe": {
       "title": "Über mich & Quellcode",
@@ -169,6 +170,30 @@
     "tips": {
       "volume": "Passt die Wiedergabelautstärke des Klaviers an.",
       "variant": "Wechselt zwischen verschiedenen Klaviersamplesätzen."
+    }
+  },
+  "playMode": {
+    "title": "Spielmodus",
+    "selectDevice": "Gerät auswählen",
+    "tip": "Verbinde einen MIDI-Controller oder aktiviere den Mikrofonzugang, um den Spielmodus zu nutzen. Das Lied wartet, bis du jede Note spielst.",
+    "deviceStatus": {
+      "microphone": "Mikrofon",
+      "midi": "MIDI",
+      "connected": "verbunden",
+      "none": "keines"
+    },
+    "modal": {
+      "title": "Gerät auswählen",
+      "experimental": "(Experimentell)",
+      "microphone": "Mikrofon",
+      "requestPermission": "Zugriff anfragen",
+      "requesting": "Wird angefragt…",
+      "disconnect": "Trennen",
+      "micDenied": "Zugriff verweigert. Aktiviere den Mikrofonzugang in deinen Browsereinstellungen.",
+      "midiController": "MIDI-Controller",
+      "requestMidi": "MIDI-Zugriff anfragen",
+      "midiDenied": "MIDI-Zugriff verweigert.",
+      "noDevices": "Keine MIDI-Geräte gefunden. Gerät anschließen und erneut öffnen."
     }
   }
 }

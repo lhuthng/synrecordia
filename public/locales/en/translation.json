@@ -94,8 +94,9 @@
     },
     "knownIssues": {
       "title": "Known issues",
-      "mobilePerf": "Mobile performance can be sluggish - the Tone.js audio timeline and the PIXI.js render loop don't always sync up perfectly on lower-end devices. It's something I'm actively looking into.",
-      "notesOutOfRange": "A few songs have notes that fall outside the sample range, so they may sound off or silent."
+      "mobilePerf": "Audio might be distorted on mobile devices due to phone performance, I'm trying to fix.",
+      "notesOutOfRange": "A few songs have notes that fall outside the sample range, so they may sound off or silent.",
+      "playmodeInput": "Playmode input responsiveness is terrible, I'm improving it."
     },
     "aboutMe": {
       "title": "About me & source",
@@ -169,6 +170,30 @@
     "tips": {
       "volume": "Adjusts the piano playback volume.",
       "variant": "Switches between different piano sample sets."
+    }
+  },
+  "playMode": {
+    "title": "Play Mode",
+    "selectDevice": "Select Device",
+    "tip": "Connect a MIDI controller or enable microphone access to use Play Mode. The song will wait for you to play each note.",
+    "deviceStatus": {
+      "microphone": "microphone",
+      "midi": "midi",
+      "connected": "connected",
+      "none": "none"
+    },
+    "modal": {
+      "title": "Select Device",
+      "experimental": "(Experimental)",
+      "microphone": "Microphone",
+      "requestPermission": "Request Permission",
+      "requesting": "Requesting…",
+      "disconnect": "Disconnect",
+      "micDenied": "Permission denied. Enable microphone access in your browser settings.",
+      "midiController": "MIDI Controller",
+      "requestMidi": "Request MIDI Access",
+      "midiDenied": "MIDI access denied.",
+      "noDevices": "No MIDI devices found. Plug in a device and reopen."
     }
   }
 }

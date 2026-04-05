@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { createPortal } from "react-dom";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import DuoButton from "./DuoButton";
@@ -27,10 +28,8 @@ function StatusText({ children, variant = "dim" }) {
   return <p className={`text-sm ${colorMap[variant]}`}>{children}</p>;
 }
 
-function RequestingSpinner() {
-  return (
-    <span className="text-sm text-main/60 animate-pulse">Requesting…</span>
-  );
+function RequestingSpinner({ label }) {
+  return <span className="text-sm text-main/60 animate-pulse">{label}</span>;
 }
 
 // ---------------------------------------------------------------------------
@@ -67,6 +66,7 @@ export default function SelectDeviceModal({
   onSelectMidiInput,
   onRequestMidi,
 }) {
+  const { t } = useTranslation();
   // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -104,7 +104,7 @@ export default function SelectDeviceModal({
             {/* ── Header ─────────────────────────────────────────────── */}
             <div className="flex items-center justify-between">
               <h2 className="font-bold uppercase text-main text-sm tracking-wide">
-                Select Device (Experimental)
+                {t("playMode.modal.title")} {t("playMode.modal.experimental")}
               </h2>
               <DuoButton
                 padding="px-2 py-0.5"
@@ -113,7 +113,7 @@ export default function SelectDeviceModal({
                 border="border-note-half-dark"
                 text="text-main"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={t("player.close")}
               >
                 ✕
               </DuoButton>
@@ -132,9 +132,8 @@ export default function SelectDeviceModal({
                   >
                     <path d="M11.665 7.915v1.31a5.257 5.257 0 0 1-1.514 3.694 5.174 5.174 0 0 1-1.641 1.126 5.04 5.04 0 0 1-1.456.384v1.899h2.312a.554.554 0 0 1 0 1.108H3.634a.554.554 0 0 1 0-1.108h2.312v-1.899a5.045 5.045 0 0 1-1.456-.384 5.174 5.174 0 0 1-1.641-1.126 5.257 5.257 0 0 1-1.514-3.695v-1.31a.554.554 0 1 1 1.109 0v1.31a4.131 4.131 0 0 0 1.195 2.917 3.989 3.989 0 0 0 5.722 0 4.133 4.133 0 0 0 1.195-2.917v-1.31a.554.554 0 1 1 1.109 0zM3.77 10.37a2.875 2.875 0 0 1-.233-1.146V4.738A2.905 2.905 0 0 1 3.77 3.58a3 3 0 0 1 1.59-1.59 2.902 2.902 0 0 1 1.158-.233 2.865 2.865 0 0 1 1.152.233 2.977 2.977 0 0 1 1.793 2.748l-.012 4.487a2.958 2.958 0 0 1-.856 2.09 3.025 3.025 0 0 1-.937.634 2.865 2.865 0 0 1-1.152.233 2.905 2.905 0 0 1-1.158-.233A2.957 2.957 0 0 1 3.77 10.37z"></path>
                   </svg>{" "}
-                  Microphone
+                  {t("playMode.modal.microphone")}
                 </SectionLabel>
-                <span className="text-xs opacity-50"></span>
               </div>
 
               {/* Status / action */}
@@ -149,16 +148,18 @@ export default function SelectDeviceModal({
                     text="text-main"
                     onClick={onRequestMicrophone}
                   >
-                    Request Permission
+                    {t("playMode.modal.requestPermission")}
                   </DuoButton>
                 )}
 
-                {micStatus === "requesting" && <RequestingSpinner />}
+                {micStatus === "requesting" && (
+                  <RequestingSpinner label={t("playMode.modal.requesting")} />
+                )}
 
                 {micStatus === "granted" && (
                   <div className="flex items-center gap-3">
                     <StatusText variant="green">
-                      ✓&nbsp;{micName ?? "Microphone"}
+                      ✓&nbsp;{micName ?? t("playMode.modal.microphone")}
                     </StatusText>
                     <DuoButton
                       padding="px-2 py-1"
@@ -169,15 +170,14 @@ export default function SelectDeviceModal({
                       text="text-main"
                       onClick={onStopMicrophone}
                     >
-                      Disconnect
+                      {t("playMode.modal.disconnect")}
                     </DuoButton>
                   </div>
                 )}
 
                 {micStatus === "denied" && (
                   <StatusText variant="red">
-                    Permission denied. Enable microphone access in your browser
-                    settings.
+                    {t("playMode.modal.micDenied")}
                   </StatusText>
                 )}
               </div>
@@ -195,7 +195,7 @@ export default function SelectDeviceModal({
                 >
                   <path d="m276.729,99.273l-87.916-99.273-87.917,99.273 72.917,53.03v74.206h-43.041v151.116h116.082v-151.116h-43.041v-74.206l72.916-53.03zm-59.875,248.352h-56.082v-91.116h56.082v91.116zm-28.041-302.375l43.562,49.188-43.562,31.681-43.562-31.681 43.562-49.188z"></path>
                 </svg>{" "}
-                MIDI Controller
+                {t("playMode.modal.midiController")}
               </SectionLabel>
 
               {/* Status / action */}
@@ -210,21 +210,25 @@ export default function SelectDeviceModal({
                     text="text-main"
                     onClick={onRequestMidi}
                   >
-                    Request MIDI Access
+                    {t("playMode.modal.requestMidi")}
                   </DuoButton>
                 )}
 
-                {midiStatus === "requesting" && <RequestingSpinner />}
+                {midiStatus === "requesting" && (
+                  <RequestingSpinner label={t("playMode.modal.requesting")} />
+                )}
 
                 {midiStatus === "denied" && (
-                  <StatusText variant="red">MIDI access denied.</StatusText>
+                  <StatusText variant="red">
+                    {t("playMode.modal.midiDenied")}
+                  </StatusText>
                 )}
 
                 {midiStatus === "granted" && (
                   <>
                     {midiInputs.length === 0 ? (
                       <StatusText variant="dim">
-                        No MIDI devices found. Plug in a device and reopen.
+                        {t("playMode.modal.noDevices")}
                       </StatusText>
                     ) : (
                       <div className="flex flex-col gap-2">

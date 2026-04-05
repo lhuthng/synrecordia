@@ -70,6 +70,7 @@ export default function Details() {
           <ul className="list-disc list-inside text-sm opacity-80 space-y-1">
             <li>{t("details.knownIssues.mobilePerf")}</li>
             <li>{t("details.knownIssues.notesOutOfRange")}</li>
+            <li>{t("details.knownIssues.playmodeInput")}</li>
           </ul>
 
           <h3>{t("details.aboutMe.title")}</h3>

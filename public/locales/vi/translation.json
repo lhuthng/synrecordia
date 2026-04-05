@@ -13,7 +13,7 @@
     "restart": "Chơi lại",
     "repeat": "Lặp lại",
     "instrumentController": "Điều khiển",
-    "selectInstrumentHint": "Chọn nhạc cụ để cài đặt",
+    "selectInstrumentHint": "Chọn nhạc cụ để chỉnh",
     "advancedSettings": "Nâng cao",
     "latencyCalibration": "Độ trễ",
     "particles": "Hạt",
@@ -94,8 +94,9 @@
     },
     "knownIssues": {
       "title": "Vấn đề đã biết",
-      "mobilePerf": "Hiệu suất trên di động có thể hơi ì - audio timeline của Tone.js và vòng lặp render của PIXI.js đôi khi không khớp hoàn toàn trên thiết bị cấu hình thấp. Tui đang tìm cách xử lý.",
-      "notesOutOfRange": "Một số bài hát có nốt nằm ngoài phạm vi âm thanh, nên có thể phát ra tiếng lạ hoặc im lặng."
+      "mobilePerf": "Âm thanh có thể bị méo trên di động do hiệu suất điện thoại, tui đang cố sửa.",
+      "notesOutOfRange": "Một số bài hát có nốt nằm ngoài phạm vi âm thanh, nên có thể phát ra tiếng lạ hoặc im lặng.",
+      "playmodeInput": "Điều khiển chế độ chơi phản hồi rất tệ, tui đang cải thiện."
     },
     "aboutMe": {
       "title": "Về tui & mã nguồn",
@@ -169,6 +170,30 @@
     "tips": {
       "volume": "Điều chỉnh âm lượng phát của piano.",
       "variant": "Chuyển đổi giữa các bộ mẫu piano khác nhau."
+    }
+  },
+  "playMode": {
+    "title": "Chế độ chơi",
+    "selectDevice": "Chọn thiết bị",
+    "tip": "Kết nối MIDI controller hoặc bật quyền truy cập microphone để dùng chế độ chơi. Bài hát sẽ chờ bạn chơi từng nốt nhạc.",
+    "deviceStatus": {
+      "microphone": "microphone",
+      "midi": "MIDI",
+      "connected": "đã kết nối",
+      "none": "không có"
+    },
+    "modal": {
+      "title": "Chọn thiết bị",
+      "experimental": "(Thử nghiệm)",
+      "microphone": "Microphone",
+      "requestPermission": "Cấp quyền truy cập",
+      "requesting": "Đang yêu cầu…",
+      "disconnect": "Ngắt kết nối",
+      "micDenied": "Quyền truy cập bị từ chối. Hãy bật quyền microphone trong cài đặt trình duyệt.",
+      "midiController": "MIDI Controller",
+      "requestMidi": "Cấp quyền MIDI",
+      "midiDenied": "Quyền truy cập MIDI bị từ chối.",
+      "noDevices": "Không tìm thấy thiết bị MIDI. Hãy cắm thiết bị và mở lại."
     }
   }
 }

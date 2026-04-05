@@ -440,7 +440,7 @@ export default function Visualizer({
       </AnimatePresence>
 
       {/* ── Legend ─────────────────────────────────────────────────────────── */}
-      <div className="absolute p-4 bottom-0 select-none pointer-events-none">
+      <div className="absolute p-4 bottom-0 text-main select-none pointer-events-none">
         <p>
           <span className="inline-block rounded-sm w-4 h-4 bg-note-full"></span>{" "}
           {t("visualizer.legendFull")}

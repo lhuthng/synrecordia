@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import AmbientLight from "./AmbientLight.jsx";
-import { useParams } from "react-router-dom";
+import { useMatch } from "react-router-dom";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import DuoButton from "./DuoButton";
 import DuoToggleButton from "./DuoToggleButton";
@@ -21,7 +21,8 @@ import SelectDeviceModal from "./SelectDeviceModal";
 
 export default function Player() {
   // URL param — present when route is /songs/:songId
-  const { songId: urlSongId } = useParams();
+  const songMatch = useMatch("/songs/:songId");
+  const urlSongId = songMatch?.params?.songId;
   const { t } = useTranslation();
 
   // player hook encapsulates audio/playback logic
@@ -616,7 +617,7 @@ export default function Player() {
               text="text-main"
               onClick={() => setShowSelectDevice(true)}
             >
-              Select Device
+              {t("playMode.selectDevice")}
             </DuoButton>
 
             <DuoToggleButton
@@ -637,25 +638,25 @@ export default function Player() {
               }}
               disabled={!canEnablePlayMode && !playModeEnabled}
             >
-              Play Mode
+              {t("playMode.title")}
             </DuoToggleButton>
 
-            <SettingTooltip>
-              Connect a MIDI controller or enable microphone access to use Play
-              Mode. The song will wait for you to play each note.
-            </SettingTooltip>
+            <SettingTooltip>{t("playMode.tip")}</SettingTooltip>
           </div>
 
           {/* Device status text */}
           <div className="flex justify-end gap-3 text-xs opacity-50 not-md:ml-auto">
             <span>
-              microphone:{" "}
+              {t("playMode.deviceStatus.microphone")}:{" "}
               {micStatus === "granted"
-                ? (micName ?? "connected")
-                : (micStatus ?? "none")}
+                ? (micName ?? t("playMode.deviceStatus.connected"))
+                : (micStatus ?? t("playMode.deviceStatus.none"))}
             </span>
             <span>
-              midi: {selectedMidiInput ? selectedMidiInput.name : "none"}
+              {t("playMode.deviceStatus.midi")}:{" "}
+              {selectedMidiInput
+                ? selectedMidiInput.name
+                : t("playMode.deviceStatus.none")}
             </span>
           </div>
 
