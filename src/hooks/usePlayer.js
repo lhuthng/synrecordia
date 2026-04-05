@@ -90,6 +90,31 @@ export default function usePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // postMessage bridge — lets a parent page pause playback when this app is
+  // embedded in an iframe (e.g. via IntersectionObserver on the iframe element).
+  //
+  // Parent-page usage:
+  //
+  //   const observer = new IntersectionObserver(([entry]) => {
+  //     if (!entry.isIntersecting)
+  //       iframe.contentWindow.postMessage({ type: "synrecordia:pause" }, "*");
+  //   }, { threshold: 0.1 });
+  //   observer.observe(iframeElement);
+  //
+  // "pause" is intentionally the only supported command — starting playback
+  // from a parent page without a user gesture would be blocked by browsers.
+  useEffect(() => {
+    const onMessage = (event) => {
+      if (event.data?.type === "synrecordia:pause") {
+        pausePlayback();
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+    // pausePlayback is stable (no deps in its useCallback)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const registerSampler = useCallback((slot, sampler) => {
     samplersRef.current[slot] = sampler;
   }, []);

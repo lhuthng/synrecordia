@@ -85,8 +85,8 @@ export default function CompactPlayer() {
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
 
   // ── URL-based song loading ───────────────────────────────────────────────
-  const [urlLoading, setUrlLoading] = useState(false);
-  const [urlError, setUrlError] = useState(null);
+  const [, setUrlLoading] = useState(false);
+  const [, setUrlError] = useState(null);
   const songCacheRef = useRef({});
 
   useEffect(() => {
@@ -193,28 +193,6 @@ export default function CompactPlayer() {
         {/* Directory — navigates to /compact/songs/:id */}
         <div className="flex items-center gap-2">
           <Directory basePath="/compact/songs" position="left-0" />
-
-          {/* Song title / loading / error */}
-          <span className="text-sm text-main">
-            {urlLoading ? (
-              <span className="opacity-60 italic">
-                {t("player.loadingSong")}
-              </span>
-            ) : urlError ? (
-              <span className="inline-block rounded-lg bg-red-900/60 border border-red-500 px-3 py-1 text-red-200 text-xs">
-                ⚠ {urlError}
-              </span>
-            ) : song ? (
-              <>
-                {song.title}
-                {song.composer && (
-                  <span className="opacity-60 text-xs"> — {song.composer}</span>
-                )}
-              </>
-            ) : (
-              <span className="opacity-50">{t("player.selectSong")}</span>
-            )}
-          </span>
         </div>
 
         {/* Playback buttons */}
