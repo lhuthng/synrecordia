@@ -72,12 +72,11 @@ function detectMidiFromAudio(buffer, sampleRate) {
 export default function usePlayMode({
   song,
   transpose,
-  currentBeat, // number — updated every animation frame by usePlayer
   currentBeatRef, // MutableRefObject<number> — always-fresh, avoids stale closures
   isPlaying,
-  pausePlayback,
   startPlayback,
   handleScrub,
+  setPauseGate,
 }) {
   // ── Device state ──────────────────────────────────────────────────────────
   const [micStatus, setMicStatus] = useState(null); // null | 'requesting' | 'granted' | 'denied'
@@ -104,7 +103,6 @@ export default function usePlayMode({
   // ── Beat-tracking refs ────────────────────────────────────────────────────
   const nextNoteIdxRef = useRef(0); // index into noteEvents of the next note to check
   const waitTargetRef = useRef(null); // the note event we are currently waiting on
-  const lastBeatRef = useRef(0); // used to detect backward scrubs
 
   // Queue of user inputs.  Each entry { midi, beat } is consumed by at most
   // one note event — this is the key to correct same-note repetition handling.
@@ -127,15 +125,28 @@ export default function usePlayMode({
       .sort((a, b) => a.time - b.time);
   }, [song, transpose]);
 
+  // Stable ref so gate callbacks (which live outside React renders) can
+  // access the current noteEvents without capturing a stale closure.
+  const noteEventsRef = useRef(noteEvents);
+  useEffect(() => {
+    noteEventsRef.current = noteEvents;
+  }, [noteEvents]);
+
   // ── Tracking reset ────────────────────────────────────────────────────────
+  // Stable ref so onNoteInput can call handleScrub without a stale closure.
+  const handleScrubRef = useRef(handleScrub);
+  useEffect(() => {
+    handleScrubRef.current = handleScrub;
+  }, [handleScrub]);
+
   const resetTracking = useCallback(() => {
     nextNoteIdxRef.current = 0;
     waitTargetRef.current = null;
-    lastBeatRef.current = 0;
     inputQueueRef.current = [];
     isWaitingRef.current = false;
+    setPauseGate?.(null);
     queueMicrotask(() => setIsWaiting(false));
-  }, []);
+  }, [setPauseGate]);
 
   // Reset whenever the song or transpose changes.
   useEffect(() => {
@@ -158,18 +169,24 @@ export default function usePlayMode({
       // While waiting the user must replay the exact missed note.
       if (isWaitingRef.current) {
         if (waitTargetRef.current?.midi === midi) {
-          // Synchronously update the ref so a rapid second event can't re-fire.
+          // Synchronously clear waiting state so a rapid second event can't re-fire.
           isWaitingRef.current = false;
+          // Scrub 1ms past the exact note beat.  The gate already prevented
+          // the piano from pre-firing; resuming from e.time+0.001 lets the
+          // piano's scheduled note (at e.time + pianoDelayBeats) play naturally
+          // on resume — correct musical behaviour.
+          const resumeBeat = (waitTargetRef.current?.time ?? 0) + 0.001;
           waitTargetRef.current = null;
-          nextNoteIdxRef.current += 1; // skip past the note we just satisfied
+          nextNoteIdxRef.current += 1;
           setIsWaiting(false);
+          handleScrubRef.current?.(resumeBeat);
           startPlayback();
         }
         // Wrong note while waiting — ignore.
         return;
       }
 
-      // Normal play: enqueue the onset.  The beat-tracking effect will
+      // Normal play: enqueue the onset.  The gate callback will
       // match and consume it when the note's check window arrives.
       const beat = currentBeatRef?.current ?? 0;
       inputQueueRef.current.push({ midi, beat });
@@ -181,75 +198,82 @@ export default function usePlayMode({
     onNoteInputRef.current = onNoteInput;
   }, [onNoteInput]);
 
-  // ── Beat-tracking ─────────────────────────────────────────────────────────
-  // Runs every animation frame (piggybacks on currentBeat updates from usePlayer).
+  // ── Gate setup ────────────────────────────────────────────────────────────
+  // setNextGateImplRef.current() installs a pauseGate in usePlayer for the
+  // next required note.  Stored as a ref so it can recursively reference itself
+  // without stale closure issues.
+  const setNextGateImplRef = useRef(null);
   useEffect(() => {
-    if (!playModeEnabled || !isPlaying || isWaiting) return;
-
-    const beat = currentBeat;
-    const events = noteEvents;
-
-    // ── Backward scrub detection ──────────────────────────────────────────
-    // If the cursor jumped back, flush stale inputs and reposition nextNoteIdx.
-    if (beat < lastBeatRef.current - 0.5) {
-      inputQueueRef.current = [];
-      const idx = events.findIndex((e) => e.time >= beat - ACCEPT_EARLY_BEATS);
-      nextNoteIdxRef.current = idx === -1 ? events.length : Math.max(0, idx);
-    }
-    lastBeatRef.current = beat;
-
-    // Drop inputs that are too old to possibly match any upcoming note.
-    inputQueueRef.current = inputQueueRef.current.filter(
-      (inp) => inp.beat >= beat - ACCEPT_EARLY_BEATS - 0.1,
-    );
-
-    // Walk through notes whose check window has now passed.
-    while (nextNoteIdxRef.current < events.length) {
-      const e = events[nextNoteIdxRef.current];
-
-      // Not time to check this note yet.
-      if (beat < e.time + GRACE_BEATS) break;
-
-      // Search the queue for an input that matches this note.
-      // "Matches" means: correct pitch AND played inside the acceptance window.
-      const qIdx = inputQueueRef.current.findIndex(
-        (inp) =>
-          inp.midi === e.midi &&
-          inp.beat >= e.time - ACCEPT_EARLY_BEATS &&
-          inp.beat <= e.time + GRACE_BEATS,
-      );
-
-      if (qIdx !== -1) {
-        // Accepted — consume the input (it cannot satisfy any other note).
-        inputQueueRef.current.splice(qIdx, 1);
-        nextNoteIdxRef.current += 1;
-      } else {
-        // Missed — pause at the note's position and wait.
-        waitTargetRef.current = e;
-        queueMicrotask(() => {
-          pausePlayback();
-          handleScrub?.(e.time);
-          setIsWaiting(true);
-        });
+    setNextGateImplRef.current = () => {
+      if (!setPauseGate) return;
+      const events = noteEventsRef.current;
+      const idx = nextNoteIdxRef.current;
+      if (idx >= events.length) {
+        setPauseGate(null); // no more notes to gate
         return;
       }
+      const e = events[idx];
+      setPauseGate({
+        atBeat: e.time,
+        onGate: () => {
+          // Check whether the user has played this note.
+          const qIdx = inputQueueRef.current.findIndex(
+            (inp) =>
+              inp.midi === e.midi && inp.beat >= e.time - ACCEPT_EARLY_BEATS,
+          );
+          if (qIdx !== -1) {
+            // Accepted — consume the input and advance to the next note.
+            inputQueueRef.current.splice(qIdx, 1);
+            nextNoteIdxRef.current += 1;
+            setNextGateImplRef.current?.(); // install gate for the next note
+            return false; // don't pause
+          }
+          // Missed — pause BEFORE any notes fire at this beat.
+          waitTargetRef.current = e;
+          isWaitingRef.current = true;
+          queueMicrotask(() => {
+            handleScrubRef.current?.(e.time);
+            setIsWaiting(true);
+          });
+          return true; // pause
+        },
+      });
+    };
+  }, [setPauseGate]);
+
+  // ── Gate activation ───────────────────────────────────────────────────────
+  // When play starts in play-mode, reposition nextNoteIdx to the current beat
+  // and install a gate for the next required note so the RAF tick pauses
+  // BEFORE firing any accompaniment note at that beat.
+  useEffect(() => {
+    if (playModeEnabled && isPlaying && !isWaiting) {
+      // Reposition nextNoteIdx to match the current playback cursor.
+      const beat = currentBeatRef?.current ?? 0;
+      const events = noteEventsRef.current;
+      const idx = events.findIndex((e) => e.time >= beat);
+      nextNoteIdxRef.current = idx === -1 ? events.length : Math.max(0, idx);
+      inputQueueRef.current = [];
+      setNextGateImplRef.current?.();
+    } else if (!isPlaying) {
+      setPauseGate?.(null);
     }
-  }, [
-    currentBeat,
-    playModeEnabled,
-    isPlaying,
-    isWaiting,
-    noteEvents,
-    pausePlayback,
-    handleScrub,
-  ]);
+  }, [isPlaying, playModeEnabled, isWaiting, setPauseGate, currentBeatRef]);
 
   // ── cancelWait ────────────────────────────────────────────────────────────
+  // Advances past the missed note so pressing Play after cancelling doesn't
+  // immediately re-trigger the same wait.
   const cancelWait = useCallback(() => {
     isWaitingRef.current = false;
+    const e = waitTargetRef.current;
     waitTargetRef.current = null;
+    setPauseGate?.(null);
+    // Scrub 1ms past the missed note so that when play resumes the gate-
+    // activation effect repositions nextNoteIdx to the note AFTER this one.
+    if (e !== null) {
+      handleScrubRef.current?.(e.time + 0.001);
+    }
     setIsWaiting(false);
-  }, []);
+  }, [setPauseGate]);
 
   // ── Microphone pitch detection ─────────────────────────────────────────────
   const startMicPitchDetection = useCallback((stream) => {
@@ -310,6 +334,16 @@ export default function usePlayMode({
     requestAnimationFrame(tick);
   }, []); // only uses refs — stable forever
 
+  // ── stopMicrophone ────────────────────────────────────────────────────────
+  const stopMicrophone = useCallback(() => {
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
+    micContextRef.current?.close().catch(() => {});
+    micContextRef.current = null;
+    setMicStatus(null);
+    setMicName(null);
+  }, []);
+
   // ── requestMicrophone ─────────────────────────────────────────────────────
   const requestMicrophone = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -332,11 +366,28 @@ export default function usePlayMode({
       const track = stream.getAudioTracks()[0];
       setMicName(track?.label || "Microphone");
       setMicStatus("granted");
+      // Mutual exclusion: deselect any active MIDI input when mic is activated.
+      setSelectedMidiInput(null);
       startMicPitchDetection(stream);
     } catch {
       setMicStatus("denied");
     }
   }, [startMicPitchDetection]);
+
+  // ── selectMidiInput ───────────────────────────────────────────────────────
+  // Wrapper around setSelectedMidiInput that enforces mic/MIDI mutual exclusion.
+  const selectMidiInput = useCallback((input) => {
+    if (input !== null) {
+      // Mutual exclusion: stop mic when a MIDI input is activated.
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
+      micContextRef.current?.close().catch(() => {});
+      micContextRef.current = null;
+      setMicStatus(null);
+      setMicName(null);
+    }
+    setSelectedMidiInput(input);
+  }, []);
 
   // ── requestMidi ───────────────────────────────────────────────────────────
   const requestMidi = useCallback(async () => {
@@ -386,6 +437,17 @@ export default function usePlayMode({
     }
   }, [midiInputs, selectedMidiInput]);
 
+  // Auto-disable play mode when no input device is active.
+  useEffect(() => {
+    if (
+      micStatus !== "granted" &&
+      selectedMidiInput === null &&
+      playModeEnabled
+    ) {
+      setPlayModeEnabled(false);
+    }
+  }, [micStatus, selectedMidiInput, playModeEnabled]);
+
   // Cleanup on unmount.
   useEffect(() => {
     return () => {
@@ -405,12 +467,13 @@ export default function usePlayMode({
     micStatus,
     micName,
     requestMicrophone,
+    stopMicrophone,
 
     // MIDI
     midiStatus,
     midiInputs,
     selectedMidiInput,
-    setSelectedMidiInput,
+    selectMidiInput,
     requestMidi,
 
     // Play mode

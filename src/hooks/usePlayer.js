@@ -41,6 +41,7 @@ export default function usePlayer() {
   // Checked every tick so it works even after startPlayback has already
   // captured state.synth by value.
   const suppressAudioRef = useRef(new Set());
+  const pauseGateRef = useRef(null); // { atBeat: number, onGate: (beat: number) => boolean } | null
   const rafIdRef = useRef(null);
   const startToneTimeRef = useRef(0);
   const startBeatRef = useRef(0);
@@ -98,11 +99,16 @@ export default function usePlayer() {
     if (typeof onCallback === "function") onCallback();
   }, []);
 
+  const setPauseGate = useCallback((gate) => {
+    pauseGateRef.current = gate;
+  }, []);
+
   const pausePlayback = useCallback(() => {
     if (rafIdRef.current) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
     }
+    pauseGateRef.current = null;
     setIsPlaying(false);
   }, []);
 
@@ -113,6 +119,7 @@ export default function usePlayer() {
     }
     cursorBeatsRef.current = 0;
     setCurrentBeat(0);
+    pauseGateRef.current = null;
     setIsPlaying(false);
   }, []);
 
@@ -223,6 +230,27 @@ export default function usePlayer() {
         (Tone.now() - startToneTimeRef.current) / secondsPerBeat;
       cursorBeatsRef.current = beat;
       setCurrentBeat(beat);
+
+      // ── Play-mode gate: pause BEFORE firing notes at this beat ───────────
+      // Checked every tick so play-mode can halt the scheduler before any
+      // accompaniment note fires at a beat that requires user input.
+      if (
+        pauseGateRef.current !== null &&
+        beat >= pauseGateRef.current.atBeat
+      ) {
+        const gate = pauseGateRef.current;
+        pauseGateRef.current = null; // clear first so onGate can install a new gate
+        if (gate.onGate(beat)) {
+          // onGate says "pause" — stop the RAF without firing any notes
+          if (rafIdRef.current) {
+            cancelAnimationFrame(rafIdRef.current);
+            rafIdRef.current = null;
+          }
+          setIsPlaying(false);
+          return;
+        }
+        // onGate returned false → user already played; continue tick normally
+      }
 
       // advance each track state
       const triggerGroups = new Map(); // notifyDelayMs -> trackIndex[]
@@ -469,6 +497,7 @@ export default function usePlayer() {
       if (suppress) suppressAudioRef.current.add(trackIndex);
       else suppressAudioRef.current.delete(trackIndex);
     },
+    setPauseGate,
 
     // low-level refs (if a consumer component needs them)
     _internal: {

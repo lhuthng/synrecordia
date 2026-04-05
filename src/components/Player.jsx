@@ -61,6 +61,7 @@ export default function Player() {
     latencyMs,
     setLatencyMs,
     suppressAudioTrack,
+    setPauseGate,
   } = usePlayer();
 
   // Always-fresh beat ref — passed to usePlayMode so the onNoteInput callback
@@ -77,8 +78,9 @@ export default function Player() {
     midiStatus,
     midiInputs,
     selectedMidiInput,
-    setSelectedMidiInput,
+    selectMidiInput,
     requestMicrophone,
+    stopMicrophone,
     requestMidi,
     playModeEnabled,
     setPlayModeEnabled,
@@ -96,16 +98,23 @@ export default function Player() {
     pausePlayback,
     startPlayback,
     handleScrub,
+    setPauseGate,
   });
 
-  // MIDI play mode: silence the song scheduler for track 0 and route
-  // MIDI note-on/off directly to the sampler instead.
-  // suppressAudioTrack works at tick time, so it mutes the live scheduler
-  // even when startPlayback already captured state.synth by value.
+  // Play mode (mic OR MIDI): silence the song scheduler for track 0 so the
+  // note at the waited beat never auto-plays before the user triggers it.
+  // suppressAudioTrack is checked every tick, so it works even when
+  // startPlayback has already captured state.synth by value.
+  useEffect(() => {
+    if (!playModeEnabled) return;
+    suppressAudioTrack(0, true);
+    return () => suppressAudioTrack(0, false);
+  }, [playModeEnabled, suppressAudioTrack]);
+
+  // MIDI play mode only: route MIDI note-on/off directly to the sampler so
+  // the controller drives audio instead of the (now-silenced) scheduler.
   useEffect(() => {
     if (!playModeEnabled || !selectedMidiInput) return;
-
-    suppressAudioTrack(0, true);
 
     const handler = async (msg) => {
       const sampler = internalSamplersRef.current[0];
@@ -128,16 +137,8 @@ export default function Player() {
     };
 
     selectedMidiInput.addEventListener("midimessage", handler);
-    return () => {
-      selectedMidiInput.removeEventListener("midimessage", handler);
-      suppressAudioTrack(0, false);
-    };
-  }, [
-    playModeEnabled,
-    selectedMidiInput,
-    suppressAudioTrack,
-    internalSamplersRef,
-  ]);
+    return () => selectedMidiInput.removeEventListener("midimessage", handler);
+  }, [playModeEnabled, selectedMidiInput, internalSamplersRef]);
 
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
@@ -662,7 +663,7 @@ export default function Player() {
           <div className="flex gap-2 justify-end not-md:ml-auto items-center *:h-8">
             <DuoToggleButton
               value={isPlaying || countdown !== null || isWaiting}
-              onToggle={isWaiting ? undefined : handlePlay}
+              onToggle={handlePlay}
               offToggle={() => {
                 if (isWaiting) cancelWait();
                 else if (countdown !== null) cancelCountdown();
@@ -684,11 +685,9 @@ export default function Player() {
             >
               {countdown !== null
                 ? countdown
-                : isWaiting
-                  ? "Waiting\u2026"
-                  : isPlaying
-                    ? t("player.pause")
-                    : t("player.play")}
+                : isPlaying || isWaiting
+                  ? t("player.pause")
+                  : t("player.play")}
             </DuoToggleButton>
 
             <DuoButton
@@ -698,6 +697,7 @@ export default function Player() {
               border="border-note-half-dark"
               onClick={() => {
                 cancelCountdown();
+                if (isWaiting) cancelWait();
                 handleRestart();
               }}
               disabled={!isReady}
@@ -738,7 +738,8 @@ export default function Player() {
         midiStatus={midiStatus}
         midiInputs={midiInputs}
         selectedMidiInput={selectedMidiInput}
-        onSelectMidiInput={setSelectedMidiInput}
+        onSelectMidiInput={selectMidiInput}
+        onStopMicrophone={stopMicrophone}
         onRequestMidi={requestMidi}
       />
 
@@ -800,7 +801,10 @@ export default function Player() {
               pendingResetRef.current = false;
             }
           }}
-          onScrubStart={handleScrubStart}
+          onScrubStart={() => {
+            if (isWaiting) cancelWait();
+            handleScrubStart();
+          }}
           onScrub={handleScrub}
           onNoteClick={handleNoteClick}
           onPlayPause={handleTogglePlayback}
@@ -845,7 +849,10 @@ export default function Player() {
           durationBeats={durationBeats}
           noteWidth={noteWidth}
           playBarPosition={playBarPosition}
-          onScrubStart={handleScrubStart}
+          onScrubStart={() => {
+            if (isWaiting) cancelWait();
+            handleScrubStart();
+          }}
           onScrub={handleScrub}
           onNoteWidthChange={handleNoteWidthChange}
         />
@@ -857,7 +864,12 @@ export default function Player() {
             controllerNode={controllerNode}
             key={`${index}-${track.instrument}`}
             slot={index}
-            muted={index === 0 && micStatus === "granted" && !selectedMidiInput}
+            muted={
+              index === 0 &&
+              playModeEnabled &&
+              micStatus === "granted" &&
+              selectedMidiInput === null
+            }
             flashCount={pulseEnabled ? (flashCounters[index] ?? 0) : 0}
             name={track.instrument}
             register={registerSampler}
