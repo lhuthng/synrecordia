@@ -37,6 +37,10 @@ export default function usePlayer() {
 
   // mutable refs for playback machinery
   const samplersRef = useRef({});
+  // Set of track indices whose scheduled audio should be silenced at runtime.
+  // Checked every tick so it works even after startPlayback has already
+  // captured state.synth by value.
+  const suppressAudioRef = useRef(new Set());
   const rafIdRef = useRef(null);
   const startToneTimeRef = useRef(0);
   const startBeatRef = useRef(0);
@@ -232,7 +236,11 @@ export default function usePlayer() {
           const durationSeconds = action.duration * secondsPerBeat;
           const startTime = Tone.now();
 
-          if (durationSeconds > 0 && state.synth) {
+          if (
+            durationSeconds > 0 &&
+            state.synth &&
+            !suppressAudioRef.current.has(trackIndex)
+          ) {
             try {
               state.synth.triggerAttackRelease(
                 transposeNotes(action.notes, transposeSemitonesRef.current),
@@ -455,6 +463,12 @@ export default function usePlayer() {
     registerSampler,
     deregisterSampler,
     handleAudioReady,
+
+    // Suppress / restore scheduled audio for a track without restarting playback.
+    suppressAudioTrack: (trackIndex, suppress) => {
+      if (suppress) suppressAudioRef.current.add(trackIndex);
+      else suppressAudioRef.current.delete(trackIndex);
+    },
 
     // low-level refs (if a consumer component needs them)
     _internal: {

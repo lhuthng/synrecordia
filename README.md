@@ -37,14 +37,29 @@ The architecture is instrument-agnostic by design: adding support for another fi
 - **Note visualizer** — timeline renders fingering graphics, note labels, glow effects, and particles for active notes. Smooth scrolling with beat interpolation keeps the view locked to playback without snapping. (`src/components/Visualizer.jsx`)
 - **Real-time playback** — play / pause / restart, BPM control, mouse and touch scrubbing, repeat/loop, and per-track instrument selection. Tone.js handles sample scheduling. (`src/components/Player.jsx`)
 - **Instrument configuration** — per-instrument volume and variant/version controls. A packed sampler abstraction in `src/libs/packedSampler/` drives instrument-specific implementations (`piano.js`, `recorder.js`). Samples live under `public/samples/<instrument>/<version>/index.json`.
+- **Play mode** — real-time practice mode via microphone (autocorrelation pitch detection) or Web MIDI API. For each note in the score, the system checks whether the correct pitch was played within a rolling acceptance window; if not, playback pauses at that note's position and waits. Works with any instrument that exposes a MIDI note number (recorder fingering chart, MIDI keyboard, etc.).
 
 ---
 
 ## What's planned
 
 - **MIDI import** — load standard MIDI files in the browser and convert them to the internal song format.
-- **Play mode / scoring** — real-time input via Web MIDI API or microphone pitch detection, with hit/miss feedback and a practice summary.
+- **Play mode scoring / feedback** — visual hit/miss overlay, per-note accuracy stats, and an end-of-song practice summary.
 - **More instruments** — ocarina, tin whistle, guitar, and other instruments the author loves. The sample pipeline scripts already support any instrument folder.
+
+---
+
+## Known limitations
+
+### Play mode acceptance window
+
+Play mode uses a simple time-based check: when the song reaches a note's beat position, it looks back up to **1 beat** (`ACCEPT_WINDOW_BEATS`) to see whether the correct MIDI pitch was played. This approach is intentionally minimal and has one practical consequence:
+
+- **The window is beat-relative, not tempo-relative.** At slow tempos 1 beat is a long time (e.g. 2 s at 30 BPM); at fast tempos it is short (e.g. 0.3 s at 200 BPM). If a piece is very fast you may need to play slightly ahead of the beat to stay inside the window.
+- **Mic detection adds ~33 ms of onset latency** (2 consecutive frames at 60 fps must agree on the same pitch before the onset is recorded). Playing clearly and without hesitation keeps this imperceptible in practice.
+- **Same adjacent notes share the same onset.** If the score has two identical pitches back-to-back and you hold through both, both are accepted from the single onset as long as the gap between them is ≤ 1 beat. For wider gaps the note must be replayed.
+
+The constant `ACCEPT_WINDOW_BEATS` in `src/hooks/usePlayMode.js` can be increased if you find the window too tight.
 
 ---
 

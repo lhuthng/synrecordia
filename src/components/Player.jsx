@@ -15,7 +15,8 @@ import SettingTooltip from "./SettingTooltip";
 import usePlayer from "../hooks/usePlayer.js";
 import usePlayMode from "../hooks/usePlayMode.js";
 import { useTranslation } from "react-i18next";
-import { computeNoteRangeFromActions } from "../libs/utils.js";
+import { computeNoteRangeFromActions, midiToNoteName } from "../libs/utils.js";
+import * as Tone from "tone";
 import SelectDeviceModal from "./SelectDeviceModal";
 
 export default function Player() {
@@ -44,6 +45,7 @@ export default function Player() {
     // handlers
     registerSampler,
     deregisterSampler,
+    _internal: { samplersRef: internalSamplersRef },
     startPlayback,
     pausePlayback,
     stopPlayback,
@@ -58,6 +60,7 @@ export default function Player() {
     setFingeringSystem,
     latencyMs,
     setLatencyMs,
+    suppressAudioTrack,
   } = usePlayer();
 
   // Always-fresh beat ref — passed to usePlayMode so the onNoteInput callback
@@ -94,6 +97,47 @@ export default function Player() {
     startPlayback,
     handleScrub,
   });
+
+  // MIDI play mode: silence the song scheduler for track 0 and route
+  // MIDI note-on/off directly to the sampler instead.
+  // suppressAudioTrack works at tick time, so it mutes the live scheduler
+  // even when startPlayback already captured state.synth by value.
+  useEffect(() => {
+    if (!playModeEnabled || !selectedMidiInput) return;
+
+    suppressAudioTrack(0, true);
+
+    const handler = async (msg) => {
+      const sampler = internalSamplersRef.current[0];
+      if (!sampler) return;
+      try {
+        await Tone.start();
+      } catch {
+        return;
+      }
+      const [status, note, velocity] = msg.data;
+      const noteName = midiToNoteName(note);
+      if ((status & 0xf0) === 0x90 && velocity > 0) {
+        sampler.triggerAttack(noteName, Tone.now(), velocity / 127);
+      } else if (
+        (status & 0xf0) === 0x80 ||
+        ((status & 0xf0) === 0x90 && velocity === 0)
+      ) {
+        sampler.triggerRelease(noteName, Tone.now());
+      }
+    };
+
+    selectedMidiInput.addEventListener("midimessage", handler);
+    return () => {
+      selectedMidiInput.removeEventListener("midimessage", handler);
+      suppressAudioTrack(0, false);
+    };
+  }, [
+    playModeEnabled,
+    selectedMidiInput,
+    suppressAudioTrack,
+    internalSamplersRef,
+  ]);
 
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
@@ -590,7 +634,7 @@ export default function Player() {
                 border: "border-note-half-dark",
                 text: "text-main",
               }}
-              disabled={!canEnablePlayMode}
+              disabled={!canEnablePlayMode && !playModeEnabled}
             >
               Play Mode
             </DuoToggleButton>
@@ -813,7 +857,7 @@ export default function Player() {
             controllerNode={controllerNode}
             key={`${index}-${track.instrument}`}
             slot={index}
-            muted={index === 0 && micStatus === "granted"}
+            muted={index === 0 && micStatus === "granted" && !selectedMidiInput}
             flashCount={pulseEnabled ? (flashCounters[index] ?? 0) : 0}
             name={track.instrument}
             register={registerSampler}
