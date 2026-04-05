@@ -135,6 +135,10 @@ export function usePixiVisualizer({
   // visWinRef: [start, end) index range into noteEventsRef that is currently allocated.
   const maxSpriteWidthRef = useRef(0);
   const visWinRef = useRef({ start: 0, end: 0 });
+  // guideVisWinRef: inclusive [left, right] index range into guideLayer.children
+  // that is currently visible. Children are sorted by .x descending (0, -ppb, -2ppb…)
+  // so the visible slice is always contiguous — we only touch edges each frame.
+  const guideVisWinRef = useRef({ left: 0, right: -1 });
 
   // ─── React state ─────────────────────────────────────────────────────────────
   const [isDragging, setIsDragging] = useState(false);
@@ -588,6 +592,11 @@ export function usePixiVisualizer({
             }
           }
         }
+
+        // Reset the visibility window and hide every child so the ticker
+        // reveals only the on-screen slice on the very next frame.
+        guideVisWinRef.current = { left: 0, right: -1 };
+        for (const c of guideLayer.children) c.visible = false;
       };
 
       // ── Builder: play-bar line + gradient vignette ───────────────────────────
@@ -852,11 +861,48 @@ export function usePixiVisualizer({
         }
         const actualScrollX = scrollLayer.x;
 
-        // ── Guide visibility culling ───────────────────────────────────────────
-        guideLayer.children.forEach((child) => {
-          const screenX = actualScrollX + child.x;
-          child.visible = screenX > -2 && screenX < width;
-        });
+        // ── Guide visibility culling (neighbor-walk sliding window) ──────────
+        // guideLayer.children are in monotonically non-increasing .x order
+        // (0, -ppb, -2·ppb, …) so the visible slice [left, right] is always
+        // contiguous. We store the two boundary indices and only peek at their
+        // immediate neighbors each frame — pure O(Δ), no log-n search at all.
+        {
+          const gc = guideLayer.children;
+          const gn = gc.length;
+          if (gn > 0) {
+            const xMin = -2 - actualScrollX; // child.x must be > xMin  (left screen edge)
+            const xMax = width - actualScrollX; // child.x must be < xMax  (right screen edge)
+
+            let { left, right } = guideVisWinRef.current;
+
+            // Expand right – children entering from the left as the song advances
+            while (right < gn - 1 && gc[right + 1].x > xMin) {
+              right++;
+              gc[right].visible = true;
+            }
+
+            // Shrink right – children that have scrolled off the left edge
+            while (right >= left && gc[right].x <= xMin) {
+              gc[right].visible = false;
+              right--;
+            }
+
+            // Shrink left – children that have scrolled off the right edge
+            // (also corrects left on the first frame after buildGuides)
+            while (left <= right && gc[left].x >= xMax) {
+              gc[left].visible = false;
+              left++;
+            }
+
+            // Expand left – children re-entering from the right (scrubbing backward)
+            while (left > 0 && gc[left - 1].x < xMax && gc[left - 1].x > xMin) {
+              left--;
+              gc[left].visible = true;
+            }
+
+            guideVisWinRef.current = { left, right };
+          }
+        }
 
         // ── Lazy note-sprite allocation (sliding-window) ───────────────────────
         // noteEventsRef holds sorted raw event data; activeSpriteMapRef holds only
