@@ -113,6 +113,7 @@ export default function InstrumentManager({
   transpose = 0,
   fingeringSystem = "baroque",
   onOutOfRange = undefined,
+  muted = false,
 }) {
   const [samplerInstance, setSamplerInstance] = useState(null);
   const [scope, animate] = useAnimate();
@@ -122,6 +123,27 @@ export default function InstrumentManager({
   const registeredSamplerRef = useRef(null);
 
   const [Presentation, setPresentation] = useState(null);
+
+  const prevVolumeRef = useRef(null);
+
+  // ── Mute / unmute the sampler when the `muted` prop changes ──────────────
+  useEffect(() => {
+    if (!samplerInstance?.setVolume || !samplerInstance?.getVolume) return;
+
+    if (muted) {
+      // Save the original volume the first time we mute (don't overwrite on sampler reload)
+      if (prevVolumeRef.current === null) {
+        prevVolumeRef.current = samplerInstance.getVolume();
+      }
+      samplerInstance.setVolume(0);
+    } else {
+      // Restore the saved volume when unmuting
+      if (prevVolumeRef.current !== null) {
+        samplerInstance.setVolume(prevVolumeRef.current);
+        prevVolumeRef.current = null;
+      }
+    }
+  }, [muted, samplerInstance]);
 
   // ── Out-of-range detection ────────────────────────────────────────────────
   const samplerNoteRange =
@@ -309,6 +331,8 @@ export default function InstrumentManager({
                 controllerNode={controllerNode}
                 trackNoteRange={trackNoteRange}
                 transpose={transpose}
+                fingeringSystem={fingeringSystem}
+                muted={muted}
               />
               {outOfRange && (
                 <span

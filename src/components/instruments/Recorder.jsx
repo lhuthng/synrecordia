@@ -37,6 +37,8 @@ export default function Recorder({
   onSamplerChanged,
   isReady = true,
   trackNoteRange = null,
+  fingeringSystem = "german",
+  muted = false,
 }) {
   const [volume, setVolume] = useState(0);
   const [vibrato, setVibrato] = useState(0);
@@ -45,8 +47,6 @@ export default function Recorder({
   const [alternatives, setAlternatives] = useState([]);
 
   const { t } = useTranslation();
-
-  const [fingeringSystem, setFingeringSystem] = useState("german");
 
   const systemRangeInfo = useMemo(() => {
     const compute = (system) => {
@@ -122,7 +122,6 @@ export default function Recorder({
 
   const handleFingeringSystemChanged = useCallback(
     (value) => {
-      setFingeringSystem(value);
       callbacks?.setFingeringSystem?.(value);
     },
     [callbacks],
@@ -162,8 +161,9 @@ export default function Recorder({
                   min={0}
                   max={100}
                   step={1}
-                  value={volume}
+                  value={muted ? 0 : volume}
                   onChange={handleVolumeChanged}
+                  disabled={muted}
                   thumbColors={{
                     background: "bg-note-half",
                     border: "border-note-half-dark",

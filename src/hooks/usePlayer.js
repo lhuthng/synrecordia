@@ -30,7 +30,7 @@ export default function usePlayer() {
   const [repeat, setRepeat] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [isAudioReady, setIsAudioReady] = useState([]);
-  const [fingeringSystem, setFingeringSystem] = useState("baroque");
+  const [fingeringSystem, setFingeringSystem] = useState("german");
   const [transposeSemitones, setTransposeSemitones] = useState(0);
 
   const durationBeats = computeSongEndBeat(song);

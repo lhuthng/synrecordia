@@ -1,40 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as PIXI from "pixi.js";
-import { ColorMatrixFilter } from "pixi.js";
 import { GlowFilter } from "pixi-filters";
 import {
   DEFAULT_WIDTH,
   FADE_MS,
   ZONE_COLOR,
-  MAX_PARTICLES,
   PARTICLE_RADIUS,
-  PARTICLE_LIFETIME_MIN,
-  PARTICLE_LIFETIME_MAX,
-  PARTICLE_SPAWN_CHANCE,
-  NUM_HOLES,
   NOTE_GLOW_PADDING,
-  HOLE_SIZE,
-  HOLE_PLAY_SCALE,
-  HOLE_SCALE_ALPHA,
   NOTE_LAZY_BUFFER_PX,
   NOTE_FADE_SPEED,
 } from "../components/utils/constants.js";
 import {
   cssColorToPixiHex,
-  brightenColor,
   lerpColor,
-  getFingeringColors,
 } from "../components/utils/colorUtils.js";
-import {
-  getHighestNote,
-  getBeatsPerBar,
-} from "../components/utils/fingeringUtils.js";
-import { createFingeringResolver } from "../libs/fingering/FingeringResolverFactory.js";
-import { transposeNote } from "../libs/utils.js";
-import {
-  getHolePositions,
-  drawFingering,
-} from "../components/utils/geometryUtils.js";
+import { getBeatsPerBar } from "../components/utils/fingeringUtils.js";
+import { createVisualizerInstrument } from "../libs/visualizer/VisualizerInstrumentFactory.js";
 
 /**
  * Encapsulates all PixiJS initialisation, the animation ticker, and pointer/wheel
@@ -81,6 +69,8 @@ export function usePixiVisualizer({
   // activeSpriteMapRef: Map<index, sprite> – only the currently-allocated PIXI containers.
   const noteEventsRef = useRef([]);
   const activeSpriteMapRef = useRef(new Map());
+  // ─── Instrument visualizer (set in noteEvents useMemo, used in init) ─────────
+  const instrumentRef = useRef(null);
   const guideLayerRef = useRef(null);
   const holesLayerRef = useRef(null);
   const notesLayerRef = useRef(null);
@@ -182,33 +172,43 @@ export function usePixiVisualizer({
     return null;
   }, [displaySong, song]);
 
-  const noteEvents = useMemo(() => {
-    if (!displaySong || !Array.isArray(displaySong.tracks)) return [];
-    const recorderTrack =
-      displaySong.tracks.find((track) => track.instrument === "recorder") ??
-      displaySong.tracks[0];
+  // ─── Instrument visualizer factory ────────────────────────────────────────────
+  // Always visualize tracks[0].  A fresh instrument instance is created whenever
+  // the song or the active instrument changes so that buildStaticLayer / createSprite
+  // / onTickSprite use the correct renderer for the track type.
+  //
+  // instrumentMemo bundles the instrument instance and its note events in one pass.
+  // instrumentRef is kept in sync via useLayoutEffect (outside render) so the init
+  // effect and the ticker can access the current instrument without appearing in
+  // their dependency arrays.
+  const instrumentMemo = useMemo(() => {
+    if (
+      !displaySong ||
+      !Array.isArray(displaySong.tracks) ||
+      displaySong.tracks.length === 0
+    )
+      return { events: [], instrument: null };
 
-    if (!recorderTrack || !Array.isArray(recorderTrack.actions)) return [];
-
-    const resolver = createFingeringResolver(fingeringSystem);
-
-    return recorderTrack.actions
-      .filter((action) => action.type === "note")
-      .map((action) => {
-        const rawNote = getHighestNote(action.pitches ?? action.pitch);
-        if (!rawNote) return null;
-        const noteName = transposeNote(rawNote, transpose);
-        const fingering = resolver.getPattern(noteName);
-        if (!fingering) return null;
-        return {
-          time: action.time ?? 0,
-          duration: action.duration ?? 0,
-          note: noteName,
-          fingering,
-        };
-      })
-      .filter(Boolean);
+    const track = displaySong.tracks[0];
+    const instrument = createVisualizerInstrument(
+      track.instrument ?? "recorder",
+    );
+    return {
+      events: instrument.computeNoteEvents(track, fingeringSystem, transpose),
+      instrument,
+    };
   }, [displaySong, fingeringSystem, transpose]);
+
+  // Extract the events array used as an effect dependency and captured by the
+  // init closure.  Changing this reference is what triggers a scene rebuild.
+  const noteEvents = instrumentMemo.events;
+
+  // Sync instrumentRef outside of render so the async init() and the ticker
+  // always read the correct instrument instance.  useLayoutEffect fires before
+  // useEffect, guaranteeing the ref is updated before init() runs.
+  useLayoutEffect(() => {
+    instrumentRef.current = instrumentMemo.instrument;
+  }, [instrumentMemo]);
 
   // ─── Sync simple props into refs ─────────────────────────────────────────────
   useEffect(() => {
@@ -421,19 +421,8 @@ export function usePixiVisualizer({
       app.stage.addChild(particleLayer);
       app.stage.addChild(playBarLayer);
 
-      // ── Static hole guide lines ──────────────────────────────────────────────
-      const holePositions = getHolePositions(HOLE_SIZE.y);
-      const holesTop =
-        (height - (holePositions[NUM_HOLES - 1] + HOLE_SIZE.y)) / 2;
-      for (let i = 0; i < NUM_HOLES; i += 1) {
-        const cy = holesTop + holePositions[i] + HOLE_SIZE.y / 2;
-        const holeLine = new PIXI.Graphics();
-        holeLine.setStrokeStyle({ width: 1, color: 0xffffff, alpha: 0.5 });
-        holeLine.moveTo(0, cy);
-        holeLine.lineTo(width, cy);
-        holeLine.stroke();
-        holesLayer.addChild(holeLine);
-      }
+      // ── Static layer (instrument-specific guide decorations) ─────────────────
+      instrumentRef.current?.buildStaticLayer(holesLayer, { width, height });
 
       // ── Builder: zones ───────────────────────────────────────────────────────
       const buildZones = () => {
@@ -662,114 +651,19 @@ export function usePixiVisualizer({
       };
 
       // ── Factory: build one PIXI container for a single note event ─────────────
-      // Called lazily by the ticker as notes enter the buffered viewport. The
-      // container starts at alpha=0 and is lerped to 1 each frame so the fade-in
-      // completes offscreen during normal playback; on a timeline jump the fade is
-      // intentionally visible to the user.
-      const createSpriteForEvent = (event) => {
-        const fingeringColors = getFingeringColors();
-        const ppb = pixelsPerBeatRef.current || 1;
-        const graphics = new PIXI.Container();
-        const durationForWidth = Math.max(event.duration ?? 0, 0);
-        const targetWidth = Math.max(durationForWidth * ppb, 6);
-
-        const dims = drawFingering(
-          graphics,
-          event.fingering,
-          { x: targetWidth / 1.2, y: HOLE_SIZE.y },
-          2,
-          fingeringColors,
-        );
-
-        const noteHolePositions = getHolePositions(HOLE_SIZE.y);
-        const containerY = (height - dims.height) / 2;
-        const activeHoles = [];
-        for (let i = 0; i < NUM_HOLES; i += 1) {
-          const state = event.fingering[i];
-          if (!state || state === "0") continue;
-          const color = fingeringColors[state];
-          if (!color) continue;
-          activeHoles.push({
-            y: containerY + noteHolePositions[i] + HOLE_SIZE.y / 2,
-            color: brightenColor(color, 1.2),
-          });
-        }
-
-        const container = new PIXI.Container();
-        const brightnessFilter = new ColorMatrixFilter();
-        graphics.filters = [brightnessFilter];
-        const brightnessState = { current: 1.0, target: 1.0 };
-
-        const scaledGraphicsWidth = dims.width;
-        const containerOffsetY = (height - dims.height) / 2;
-
-        const hoverBg = new PIXI.Graphics();
-        hoverBg.rect(0, -containerOffsetY, scaledGraphicsWidth, height);
-        hoverBg.fill({ color: 0xffffff, alpha: 1 });
-        hoverBg.alpha = 0;
-
-        // Scale font size: shrink for narrow sprites so the label doesn't overflow.
-        const fontSize =
-          scaledGraphicsWidth < 20 ? 8 : scaledGraphicsWidth < 36 ? 10 : 14;
-        const label = new PIXI.Text({
-          text: event.note,
-          style: {
-            fill: 0xffffff,
-            fontSize,
-            fontFamily: "Iosevka Charon",
-          },
-        });
-        label.x = Math.max((scaledGraphicsWidth - label.width) / 2, 0);
-        label.y = -(fontSize + 8);
-
-        container.addChild(hoverBg);
-        container.addChild(label);
-        container.addChild(graphics);
-
-        const hoverState = { targetAlpha: 0 };
-        container.eventMode = "static";
-        container.hitArea = new PIXI.Rectangle(0, 0, dims.width, dims.height);
-        container.on("pointerover", () => {
-          if (isPlayingRef.current) return;
-          hoverState.targetAlpha = 0.07;
-          setIsHoveringNote(true);
-        });
-        container.on("pointerout", () => {
-          hoverState.targetAlpha = 0;
-          setIsHoveringNote(false);
-        });
-        container.on("pointerup", () => {
-          if (hasDraggedRef.current || isPlayingRef.current) return;
-          onNoteClickRef.current?.({
-            note: event.note,
-            duration: event.duration,
-          });
-        });
-
-        container.x = -scaledGraphicsWidth - event.time * ppb;
-        container.y = containerY;
-        // Start fully transparent; the ticker lerps alpha to 1 each frame.
-        container.alpha = 0;
-        container.visible = true;
-        notesLayer.addChild(container);
-
-        return {
-          container,
-          time: event.time,
-          width: scaledGraphicsWidth,
-          duration: durationForWidth,
-          graphics,
-          brightnessFilter,
-          brightnessState,
-          label,
-          hoverBg,
-          hoverState,
-          activeHoles,
-          holeSprites: graphics.holeSprites || [],
-          glowPadding: NOTE_GLOW_PADDING,
-          fadeAlpha: 0, // tracks alpha independent of container.alpha for lerp math
-        };
-      };
+      // Delegates all instrument-specific rendering to the active instrument class.
+      // The container starts at alpha=0; the ticker lerps it to 1 each frame so
+      // the fade-in completes offscreen during normal playback.
+      const createSpriteForEvent = (event) =>
+        instrumentRef.current?.createSprite(event, {
+          ppb: pixelsPerBeatRef.current || 1,
+          height,
+          notesLayer,
+          isPlayingRef,
+          hasDraggedRef,
+          onNoteClickRef,
+          setIsHoveringNote,
+        }) ?? null;
 
       // ── Builder: lazy note allocation ─────────────────────────────────────────
       // Replaces the old eager build. Stores sorted raw event data so the ticker
@@ -1038,7 +932,7 @@ export function usePixiVisualizer({
                   (sprite.hoverState.targetAlpha - sprite.hoverBg.alpha) * 0.2;
               }
 
-              // Brightness pulse on active note
+              // Brightness pulse on active note (generic — works for any instrument)
               if (sprite.brightnessFilter && sprite.brightnessState) {
                 sprite.brightnessState.target = isActive ? 1.2 : 1.0;
                 sprite.brightnessState.current +=
@@ -1051,50 +945,15 @@ export function usePixiVisualizer({
                 );
               }
 
-              // Hole scale bounce on active note
-              if (sprite.holeSprites?.length) {
-                sprite.holeSprites.forEach((hole) => {
-                  const target = isActive ? HOLE_PLAY_SCALE : 1.0;
-                  hole.scale.y += (target - hole.scale.y) * HOLE_SCALE_ALPHA;
-                });
-              }
-
-              // Particle emission from active holes while playing
-              if (
-                sprite.activeHoles?.length &&
-                particleLayerRef.current &&
-                particleTextureRef.current &&
-                isActive &&
-                isPlayingRef.current &&
-                particlesEnabledRef.current &&
-                particlesRef.current.length < MAX_PARTICLES
-              ) {
-                sprite.activeHoles.forEach(({ y, color }) => {
-                  if (Math.random() > PARTICLE_SPAWN_CHANCE) return;
-                  if (particlesRef.current.length >= MAX_PARTICLES) return;
-                  const spr = new PIXI.Sprite(particleTextureRef.current);
-                  spr.anchor.set(0.5);
-                  spr.tint = 0xffffff;
-                  const spawnX = barXRef.current + (Math.random() - 0.5) * 10;
-                  const spawnY = y + (Math.random() - 0.5) * 5;
-                  spr.x = spawnX;
-                  spr.y = spawnY;
-                  particleLayerRef.current.addChild(spr);
-                  particlesRef.current.push({
-                    spr,
-                    x: spawnX,
-                    y: spawnY,
-                    vx: -(Math.random() * 3 + 1),
-                    vy: (Math.random() - 0.5) * 2,
-                    age: 0,
-                    lifetime:
-                      PARTICLE_LIFETIME_MIN +
-                      Math.random() *
-                        (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN),
-                    targetColor: color,
-                  });
-                });
-              }
+              // Instrument-specific per-sprite tick (hole bounce, particles, etc.)
+              instrumentRef.current?.onTickSprite(sprite, {
+                isActive,
+                particleRefs: { particleLayerRef, particlesRef },
+                particleTextureRef,
+                isPlayingRef,
+                particlesEnabledRef,
+                barXRef,
+              });
             }
           }
         }

@@ -13,8 +13,10 @@ import SongTimeline from "./SongTimeline";
 import InstrumentManager from "./instruments/InstrumentManager";
 import SettingTooltip from "./SettingTooltip";
 import usePlayer from "../hooks/usePlayer.js";
+import usePlayMode from "../hooks/usePlayMode.js";
 import { useTranslation } from "react-i18next";
 import { computeNoteRangeFromActions } from "../libs/utils.js";
+import SelectDeviceModal from "./SelectDeviceModal";
 
 export default function Player() {
   // URL param — present when route is /songs/:songId
@@ -57,6 +59,41 @@ export default function Player() {
     latencyMs,
     setLatencyMs,
   } = usePlayer();
+
+  // Always-fresh beat ref — passed to usePlayMode so the onNoteInput callback
+  // can read the current beat without being in a stale closure.
+  const currentBeatRef = useRef(currentBeat);
+  useEffect(() => {
+    currentBeatRef.current = currentBeat;
+  }, [currentBeat]);
+
+  // ── Play Mode ────────────────────────────────────────────────────────────────
+  const {
+    micStatus,
+    micName,
+    midiStatus,
+    midiInputs,
+    selectedMidiInput,
+    setSelectedMidiInput,
+    requestMicrophone,
+    requestMidi,
+    playModeEnabled,
+    setPlayModeEnabled,
+    isWaiting,
+    cancelWait,
+    canEnablePlayMode,
+    showSelectDevice,
+    setShowSelectDevice,
+  } = usePlayMode({
+    song,
+    transpose: transposeSemitones,
+    currentBeat,
+    currentBeatRef,
+    isPlaying,
+    pausePlayback,
+    startPlayback,
+    handleScrub,
+  });
 
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
@@ -524,71 +561,142 @@ export default function Player() {
           </div>
         </div>
 
-        {/* Playback buttons */}
-        <div className="flex gap-2 not-md:ml-auto items-center *:h-8">
-          <DuoToggleButton
-            value={isPlaying || countdown !== null}
-            onToggle={handlePlay}
-            offToggle={() =>
-              countdown !== null ? cancelCountdown() : pausePlayback()
-            }
-            onColors={{
-              background: "bg-note-full",
-              shadowBackground: "bg-note-full-dark",
-              border: "border-note-full-dark",
-              text: "text-dark",
-            }}
-            offColors={{
-              background: "bg-note-half",
-              shadowBackground: "bg-note-half-dark",
-              border: "border-note-half-dark",
-              text: "text-main",
-            }}
-            disabled={!isReady}
-          >
-            {countdown !== null
-              ? countdown
-              : isPlaying
-                ? t("player.pause")
-                : t("player.play")}
-          </DuoToggleButton>
+        <div className="flex flex-col gap-2 justify-end">
+          {/* Select Device + Play Mode row */}
+          <div className="flex gap-2 justify-end items-center not-md:ml-auto">
+            <DuoButton
+              background="bg-note-half"
+              shadowBackground="bg-note-half-dark"
+              border="border-note-half-dark"
+              text="text-main"
+              onClick={() => setShowSelectDevice(true)}
+            >
+              Select Device
+            </DuoButton>
 
-          <DuoButton
-            text="text-main"
-            background="bg-note-half"
-            shadowBackground="bg-note-half-dark"
-            border="border-note-half-dark"
-            onClick={() => {
-              cancelCountdown();
-              handleRestart();
-            }}
-            disabled={!isReady}
-          >
-            {t("player.restart")}
-          </DuoButton>
+            <DuoToggleButton
+              value={playModeEnabled}
+              onToggle={() => setPlayModeEnabled(true)}
+              offToggle={() => setPlayModeEnabled(false)}
+              onColors={{
+                background: "bg-note-full",
+                shadowBackground: "bg-note-full-dark",
+                border: "border-note-full-dark",
+                text: "text-dark",
+              }}
+              offColors={{
+                background: "bg-note-half",
+                shadowBackground: "bg-note-half-dark",
+                border: "border-note-half-dark",
+                text: "text-main",
+              }}
+              disabled={!canEnablePlayMode}
+            >
+              Play Mode
+            </DuoToggleButton>
 
-          <DuoToggleButton
-            onColors={{
-              background: "bg-note-full",
-              shadowBackground: "bg-note-full-dark",
-              border: "border-note-full-dark",
-              text: "text-dark",
-            }}
-            offColors={{
-              background: "bg-note-half",
-              shadowBackground: "bg-note-half-dark",
-              border: "border-note-half-dark",
-              text: "text-main",
-            }}
-            value={repeat}
-            onToggle={() => setRepeat(true)}
-            offToggle={() => setRepeat(false)}
-            aria-label="Repeat song"
-          >
-            {t("player.repeat")}
-          </DuoToggleButton>
+            <SettingTooltip>
+              Connect a MIDI controller or enable microphone access to use Play
+              Mode. The song will wait for you to play each note.
+            </SettingTooltip>
+          </div>
+
+          {/* Device status text */}
+          <div className="flex justify-end gap-3 text-xs opacity-50 not-md:ml-auto">
+            <span>
+              microphone:{" "}
+              {micStatus === "granted"
+                ? (micName ?? "connected")
+                : (micStatus ?? "none")}
+            </span>
+            <span>
+              midi: {selectedMidiInput ? selectedMidiInput.name : "none"}
+            </span>
+          </div>
+
+          {/* Playback buttons */}
+          <div className="flex gap-2 justify-end not-md:ml-auto items-center *:h-8">
+            <DuoToggleButton
+              value={isPlaying || countdown !== null || isWaiting}
+              onToggle={isWaiting ? undefined : handlePlay}
+              offToggle={() => {
+                if (isWaiting) cancelWait();
+                else if (countdown !== null) cancelCountdown();
+                else pausePlayback();
+              }}
+              onColors={{
+                background: "bg-note-full",
+                shadowBackground: "bg-note-full-dark",
+                border: "border-note-full-dark",
+                text: "text-dark",
+              }}
+              offColors={{
+                background: "bg-note-half",
+                shadowBackground: "bg-note-half-dark",
+                border: "border-note-half-dark",
+                text: "text-main",
+              }}
+              disabled={!isReady}
+            >
+              {countdown !== null
+                ? countdown
+                : isWaiting
+                  ? "Waiting\u2026"
+                  : isPlaying
+                    ? t("player.pause")
+                    : t("player.play")}
+            </DuoToggleButton>
+
+            <DuoButton
+              text="text-main"
+              background="bg-note-half"
+              shadowBackground="bg-note-half-dark"
+              border="border-note-half-dark"
+              onClick={() => {
+                cancelCountdown();
+                handleRestart();
+              }}
+              disabled={!isReady}
+            >
+              {t("player.restart")}
+            </DuoButton>
+
+            <DuoToggleButton
+              onColors={{
+                background: "bg-note-full",
+                shadowBackground: "bg-note-full-dark",
+                border: "border-note-full-dark",
+                text: "text-dark",
+              }}
+              offColors={{
+                background: "bg-note-half",
+                shadowBackground: "bg-note-half-dark",
+                border: "border-note-half-dark",
+                text: "text-main",
+              }}
+              value={repeat}
+              onToggle={() => setRepeat(true)}
+              offToggle={() => setRepeat(false)}
+              aria-label="Repeat song"
+            >
+              {t("player.repeat")}
+            </DuoToggleButton>
+          </div>
         </div>
       </div>
+
+      <SelectDeviceModal
+        isOpen={showSelectDevice}
+        onClose={() => setShowSelectDevice(false)}
+        micStatus={micStatus}
+        micName={micName}
+        onRequestMicrophone={requestMicrophone}
+        midiStatus={midiStatus}
+        midiInputs={midiInputs}
+        selectedMidiInput={selectedMidiInput}
+        onSelectMidiInput={setSelectedMidiInput}
+        onRequestMidi={requestMidi}
+      />
 
       <AdvancedSettingsModal
         isOpen={showAdvancedSettings}
@@ -705,6 +813,7 @@ export default function Player() {
             controllerNode={controllerNode}
             key={`${index}-${track.instrument}`}
             slot={index}
+            muted={index === 0 && micStatus === "granted"}
             flashCount={pulseEnabled ? (flashCounters[index] ?? 0) : 0}
             name={track.instrument}
             register={registerSampler}
