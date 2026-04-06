@@ -218,9 +218,18 @@
       "sawtooth": "Sägezahn"
     }
   },
+  "guitar": {
+    "volume": "Lautstärke",
+    "variant": "Variante",
+    "tips": {
+      "volume": "Passt die Wiedergabelautstärke der Gitarre an.",
+      "variant": "Wechselt zwischen verschiedenen Gitarrensamplesätzen."
+    }
+  },
   "instruments": {
     "recorder": "Blockflöte",
     "piano": "Klavier",
+    "guitar": "Gitarre",
     "waveform": "Wellenform",
     "swap": "Wechseln"
   }

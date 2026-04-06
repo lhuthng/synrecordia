@@ -218,9 +218,18 @@
       "sawtooth": "Răng cưa"
     }
   },
+  "guitar": {
+    "volume": "Âm lượng",
+    "variant": "Phiên bản",
+    "tips": {
+      "volume": "Điều chỉnh âm lượng phát của guitar.",
+      "variant": "Chuyển đổi giữa các bộ mẫu guitar khác nhau."
+    }
+  },
   "instruments": {
     "recorder": "Sáo Recorder",
     "piano": "Piano",
+    "guitar": "Guitar",
     "waveform": "Sóng tổng hợp",
     "swap": "Đổi nhạc cụ"
   }

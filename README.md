@@ -1,6 +1,6 @@
 # SynRecordia
 
-[![Progress](https://img.shields.io/badge/Progress-60%25-yellow?style=flat-square)](#)
+[![Progress](https://img.shields.io/badge/Progress-65%25-yellow?style=flat-square)](#)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-huuthang.le-orange?logo=buy-me-a-coffee)](https://buymeacoffee.com/huuthang.le)
 
 <p align="center">
@@ -11,9 +11,9 @@
   Try the live <a href="https://synrecordia.netlify.app/">demo</a> right in your browser.
 </p>
 
-SynRecordia is an interactive browser-based **soprano recorder** visualizer and sampler built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png) Synthesia](https://synthesiagame.com/), it pairs a scrolling note timeline with real fingering diagrams and sampled audio playback so you can see exactly which holes to cover while you listen. Everything runs client-side — no server required — using Tone.js for audio and PIXI.js for visuals.
+SynRecordia is an interactive browser-based **music visualizer and sampler** built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png) Synthesia](https://synthesiagame.com/), it pairs a scrolling note timeline with fingering diagrams, note labels, and sampled audio playback so you can see and hear each note as it plays. Everything runs client-side — no server required — using Tone.js for audio and PIXI.js for visuals.
 
-The architecture is instrument-agnostic by design: adding support for another fingered instrument (ocarina, tin whistle, guitar — you name it) is a matter of dropping in a new sample set and a sampler implementation.
+The project started as a recorder visualizer and retains full support for it, but the architecture is instrument-agnostic by design: adding another instrument is a matter of dropping in a new sample set and a small sampler implementation.
 
 <p align="center">
   <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-19.x-blue?logo=react&logoColor=white" alt="React" /></a>
@@ -25,8 +25,8 @@ The architecture is instrument-agnostic by design: adding support for another fi
 
 ## Core ideas
 
-- **Visual learning + listening** — a scrolling timeline draws per-note fingering diagrams and labels in sync with playback, so you always know which holes to cover.
-- **Sampled recorder** — real Philharmonia flute samples across five dynamics (pianissimo → forte), switchable on the fly.
+- **Visual learning + listening** — a scrolling timeline draws per-note fingering diagrams and labels in sync with playback, so you always know which holes to cover (recorder) or which note is next.
+- **Sampled instruments** — real Philharmonia flute samples for the recorder, Salamander Grand Piano for piano, and custom 12-string guitar samples; all switchable on the fly.
 - **Extensible instrument layer** — the sampler abstraction is generic; new instruments slot in without touching the visualizer or player.
 - **Lightweight, web-first** — pure client-side: no backend, no plugins, just a browser.
 
@@ -36,8 +36,9 @@ The architecture is instrument-agnostic by design: adding support for another fi
 
 - **Note visualizer** — timeline renders fingering graphics, note labels, glow effects, and particles for active notes. Smooth scrolling with beat interpolation keeps the view locked to playback without snapping. (`src/components/Visualizer.jsx`)
 - **Real-time playback** — play / pause / restart, BPM control, mouse and touch scrubbing, repeat/loop, and per-track instrument selection. Tone.js handles sample scheduling. (`src/components/Player.jsx`)
-- **Instrument configuration** — per-instrument volume and variant/version controls. A packed sampler abstraction in `src/libs/packedSampler/` drives instrument-specific implementations (`piano.js`, `recorder.js`). Samples live under `public/samples/<instrument>/<version>/index.json`.
-- **Play mode** — real-time practice mode via microphone (autocorrelation pitch detection) or Web MIDI API. For each note in the score, the system checks whether the correct pitch was played within a rolling acceptance window; if not, playback pauses at that note's position and waits. Works with any instrument that exposes a MIDI note number (recorder fingering chart, MIDI keyboard, etc.).
+- **Instrument configuration** — per-instrument volume and variant/version controls. A packed sampler abstraction in `src/libs/packedSampler/` drives instrument-specific implementations (`piano.js`, `recorder.js`, `guitar.js`). Samples live under `public/samples/<instrument>/<version>/index.json`.
+- **Play mode** *(experimental)* — real-time practice mode via microphone (autocorrelation pitch detection) or Web MIDI API. For each note in the score, the system checks whether the correct pitch was played within a rolling acceptance window; if not, playback pauses at that note's position and waits. Works with any instrument that exposes a MIDI note number (recorder fingering chart, MIDI keyboard, etc.).
+- **Guitar** — 12-string acoustic guitar sample pack recorded and packaged using the custom FL Studio sample pipeline. Selectable as an instrument on any track.
 
 ---
 
@@ -45,11 +46,15 @@ The architecture is instrument-agnostic by design: adding support for another fi
 
 - **MIDI import** — load standard MIDI files in the browser and convert them to the internal song format.
 - **Play mode scoring / feedback** — visual hit/miss overlay, per-note accuracy stats, and an end-of-song practice summary.
-- **More instruments** — ocarina, tin whistle, guitar, and other instruments the author loves. The sample pipeline scripts already support any instrument folder.
+- **More instruments** — ocarina, tin whistle, and other instruments the author loves. The sample pipeline scripts already support any instrument folder.
 
 ---
 
 ## Known limitations
+
+### Play mode is experimental
+
+Play mode is functional but still considered experimental. Expect rough edges — particularly around device latency, pitch detection accuracy on certain microphones, and edge cases in the acceptance window logic. Use it for casual practice; don't rely on it for precise timing assessment yet.
 
 ### Play mode acceptance window
 
@@ -241,3 +246,37 @@ mv public/samples/recorder-extended public/samples/recorder
 ```
 
 That's it — fire up the dev server and enjoy smooth, full-length recorder playback across all dynamics and registers.
+
+---
+
+### ⚠️ Structure change — migration note
+
+The folder layout under `public/samples/recorder/` has changed. The app now expects samples in a single flat version folder (`philharmonia-flute/`) rather than one subfolder per dynamic.
+
+**If you ran the pipeline previously**, migrate your existing files with these steps:
+
+```bash
+# 1. Keep only the forte samples — delete all other dynamic subfolders
+rm -rf public/samples/recorder/mezzo-forte
+rm -rf public/samples/recorder/mezzo-piano
+rm -rf public/samples/recorder/pianissimo
+rm -rf public/samples/recorder/piano
+
+# 2. Move the forte files into the philharmonia-flute version folder
+mkdir -p public/samples/recorder/philharmonia-flute
+cp public/samples/recorder/forte/* public/samples/recorder/philharmonia-flute/
+
+# 3. Remove the now-redundant forte subfolder
+rm -rf public/samples/recorder/forte
+```
+
+The `index.json` at `public/samples/recorder/index.json` should already read:
+
+```json
+{
+  "versions": ["philharmonia-flute"],
+  "default": "philharmonia-flute"
+}
+```
+
+And `public/samples/recorder/philharmonia-flute/index.json` maps note names to filenames (this file is generated by the pipeline scripts — check that it exists after migrating).

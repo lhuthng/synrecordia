@@ -28,3 +28,5 @@ src/assets/midis/
 src/assets/samples/
 public/samples/recorder/**/*.mp3
 public/samples/recorder/*.zip
+
+tmp/*

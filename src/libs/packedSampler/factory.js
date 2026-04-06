@@ -1,10 +1,11 @@
 import PianoSampler from "./piano";
 import RecorderSampler from "./recorder";
+import GuitarSampler from "./guitar";
 import WaveformSynth from "./waveform";
 
 export const SYNTH_INSTRUMENTS = ["waveform"];
 export const VISUALIZABLE_INSTRUMENTS = ["recorder"];
-export const ALL_INSTRUMENTS = ["recorder", "piano", "waveform"];
+export const ALL_INSTRUMENTS = ["recorder", "piano", "guitar", "waveform"];
 
 export function isSynthInstrument(name) {
   return SYNTH_INSTRUMENTS.includes(name);
@@ -25,6 +26,8 @@ export function createPackedSampler(name, urls, baseUrl, callback, addition) {
       return new RecorderSampler(urls, baseUrl, callback, addition);
     case "piano":
       return new PianoSampler(urls, baseUrl, callback, addition);
+    case "guitar":
+      return new GuitarSampler(urls, baseUrl, callback, addition);
     default:
       return new RecorderSampler(urls, baseUrl, callback, addition);
   }

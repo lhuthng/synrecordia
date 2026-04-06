@@ -380,8 +380,8 @@ export default function InstrumentManager({
                 muted={muted}
               >
                 {toggle && canSwap && (
-                  <div className="flex items-center gap-1">
-                    <label>
+                  <div className="flex items-center">
+                    <label className="whitespace-nowrap w-auto!">
                       {t("instruments.swap")}
                       {"->"}
                     </label>

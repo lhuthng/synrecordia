@@ -218,9 +218,18 @@
       "sawtooth": "Sawtooth"
     }
   },
+  "guitar": {
+    "volume": "Volume",
+    "variant": "Variant",
+    "tips": {
+      "volume": "Adjusts the guitar playback volume.",
+      "variant": "Switches between different guitar sample sets."
+    }
+  },
   "instruments": {
     "recorder": "Recorder",
     "piano": "Piano",
+    "guitar": "Guitar",
     "waveform": "Waveform",
     "swap": "Swap"
   }
