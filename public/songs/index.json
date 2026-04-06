@@ -1,5 +1,21 @@
 [
   {
+    "id": "ashokan-farewell",
+    "title": "Ashokan Farewell",
+    "composer": "Jay Ungar",
+    "bpm": 100,
+    "file": "ashokan-farewell.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "erika",
+    "title": "Erika",
+    "composer": "Heinz Schnaufer",
+    "bpm": 120,
+    "file": "erika.json",
+    "difficulty": "Beginner"
+  },
+  {
     "id": "fallen-down-reprise",
     "title": "Fallen Down (Reprise)",
     "composer": "Toby Fox",
@@ -55,6 +71,14 @@
     "difficulty": "beginner"
   },
   {
+    "id": "river-flows-in-you",
+    "title": "River flows in you",
+    "composer": "Yiruma",
+    "bpm": 70,
+    "file": "river-flows-in-you.json",
+    "difficulty": "hard"
+  },
+  {
     "id": "song-of-storm",
     "title": "Song Of Storm",
     "composer": "Koji Kondo",
@@ -99,13 +123,5 @@
     "bpm": 120,
     "file": "yuna.json",
     "difficulty": "medium"
-  },
-  {
-    "id": "erika",
-    "title": "Erika",
-    "composer": "Heinz Schnaufer",
-    "bpm": 120,
-    "file": "erika.json",
-    "difficulty": "Beginner"
   }
 ]

@@ -64,8 +64,8 @@
       "volume": "Passt die Wiedergabelautstärke der Blockflöte an.",
       "vibrato": "Fügt langen Noten einen Vibrato-Effekt hinzu.",
       "variant": "Wechselt zwischen verschiedenen aufgenommenen Samplesätzen.",
-      "type": "Wählt den Blockflötentyp (Sopran, Alt, Tenor, Bass). Jeder Typ hat einen anderen Tonumfang.",
-      "system": "Wählt das Griffsystem aus (Barock oder Deutsch). Tenor unterstützt auch Einfach."
+      "type": "Wählt den Blockflötentyp (Sopran, Alt, Tenor, Bass). Jeder Typ hat einen anderen Tonumfang - die meisten elektronischen Blasinstrumente nutzen standardmäßig Tenor.",
+      "system": "Wählt das Griffsystem aus. 'Einfach' ist das Layout der meisten elektronischen Blasinstrumente und deckt zusammen mit Tenor den größten spielbaren Bereich ab."
     }
   },
   "fingeringSystem": {
@@ -116,8 +116,12 @@
     "faq": {
       "title": "FAQ",
       "q1": {
-        "question": "1. Für welche Art von Recorder ist das?",
-        "answer": "SynRecordia ist auf die Sopranblockflöte ausgelegt - genauer gesagt auf ein digitales Blasinstrument. Das während der Entwicklung verwendete Gerät ist die Carry-On Simple Recorder. Sie ist nicht mehr erhältlich, aber du findest die zweite Edition auf ihrer <carryOn>Website</carryOn>."
+        "question": "1. Mit welcher Art von Recorder funktioniert das?",
+        "answer": "SynRecordia funktioniert mit jeder Blockflöte - Sopran, Alt, Tenor oder Bass. Es wurde mit elektronischen Blasinstrumenten im Blick entwickelt: Das während der Entwicklung verwendete Gerät ist die Carry-On Simple Recorder, ein digitales EWI-ähnliches Instrument. Sie ist nicht mehr erhältlich, aber die zweite Edition findest du auf ihrer <carryOn>Website</carryOn>."
+      },
+      "qTenor": {
+        "question": "Was bedeuten die Einstellungen 'Blockflötentyp' und 'Einfach'?",
+        "answer": "Der Blockflötentyp (Sopran, Alt, Tenor, Bass) teilt dem Visualisierer mit, welchen Tonumfang dein Instrument abdeckt. Das Griffsystem wechselt das Lochdiagramm zu einem anderen Layout - Barock und Deutsch sind die klassischen Stile, während 'Einfach' das Schema ist, das die meisten elektronischen Blasinstrumente standardmäßig verwenden. Tenor + Einfach hat den größten spielbaren Bereich aller Kombinationen - wenn die App warnt, dass Noten außerhalb des Bereichs liegen, ist das meistens die erste Einstellung zum Ausprobieren."
       },
       "q2": {
         "question": "2. Was sehe ich da eigentlich?",
@@ -141,7 +145,7 @@
       },
       "q6": {
         "question": "6. Einige Griffmuster fehlen?",
-        "answer": "Das Chart deckt die Sopranblockflöte ab. Einige alternative Griffe sind noch nicht enthalten, aber geplant. Du kannst zwischen den Griffsystemen in der Steuerung wechseln. Das Chart stammt von <chart>dieser Sopran-Blockflöten-Griffreferenz</chart>."
+        "answer": "Einige alternative Griffe aus Referenzmaterialien sind noch nicht enthalten, aber geplant. Du kannst zwischen den verfügbaren Griffsystemen in der Steuerung wechseln. Das Chart stammt von <chart>dieser Blockflöten-Griffreferenz</chart>."
       },
       "q7": {
         "question": "7. Warum ruckelt es?",

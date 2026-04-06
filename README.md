@@ -11,7 +11,7 @@
   Try the live <a href="https://synrecordia.netlify.app/">demo</a> right in your browser.
 </p>
 
-SynRecordia is an interactive browser-based **music visualizer and sampler** built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png) Synthesia](https://synthesiagame.com/), it pairs a scrolling note timeline with fingering diagrams, note labels, and sampled audio playback so you can see and hear each note as it plays. Everything runs client-side — no server required — using Tone.js for audio and PIXI.js for visuals.
+SynRecordia is an interactive browser-based **music visualizer and sampler** built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png) Synthesia](https://synthesiagame.com/), it pairs a scrolling note timeline with fingering diagrams, note labels, and sampled audio playback so you can see and hear each note as it plays. Everything runs client-side - no server required - using Tone.js for audio and PIXI.js for visuals.
 
 The project started as a recorder visualizer and retains full support for it, but the architecture is instrument-agnostic by design: adding another instrument is a matter of dropping in a new sample set and a small sampler implementation.
 
@@ -25,28 +25,28 @@ The project started as a recorder visualizer and retains full support for it, bu
 
 ## Core ideas
 
-- **Visual learning + listening** — a scrolling timeline draws per-note fingering diagrams and labels in sync with playback, so you always know which holes to cover (recorder) or which note is next.
-- **Sampled instruments** — real Philharmonia flute samples for the recorder, Salamander Grand Piano for piano, and custom 12-string guitar samples; all switchable on the fly.
-- **Extensible instrument layer** — the sampler abstraction is generic; new instruments slot in without touching the visualizer or player.
-- **Lightweight, web-first** — pure client-side: no backend, no plugins, just a browser.
+- **Visual learning + listening** - a scrolling timeline draws per-note fingering diagrams and labels in sync with playback, so you always know which holes to cover (recorder) or which note is next.
+- **Sampled instruments** - real Philharmonia flute samples for the recorder, Salamander Grand Piano for piano, and custom 12-string guitar samples; all switchable on the fly.
+- **Extensible instrument layer** - the sampler abstraction is generic; new instruments slot in without touching the visualizer or player.
+- **Lightweight, web-first** - pure client-side: no backend, no plugins, just a browser.
 
 ---
 
 ## What's done
 
-- **Note visualizer** — timeline renders fingering graphics, note labels, glow effects, and particles for active notes. Smooth scrolling with beat interpolation keeps the view locked to playback without snapping. (`src/components/Visualizer.jsx`)
-- **Real-time playback** — play / pause / restart, BPM control, mouse and touch scrubbing, repeat/loop, and per-track instrument selection. Tone.js handles sample scheduling. (`src/components/Player.jsx`)
-- **Instrument configuration** — per-instrument volume and variant/version controls. A packed sampler abstraction in `src/libs/packedSampler/` drives instrument-specific implementations (`piano.js`, `recorder.js`, `guitar.js`). Samples live under `public/samples/<instrument>/<version>/index.json`.
-- **Play mode** *(experimental)* — real-time practice mode via microphone (autocorrelation pitch detection) or Web MIDI API. For each note in the score, the system checks whether the correct pitch was played within a rolling acceptance window; if not, playback pauses at that note's position and waits. Works with any instrument that exposes a MIDI note number (recorder fingering chart, MIDI keyboard, etc.).
-- **Guitar** — 12-string acoustic guitar sample pack recorded and packaged using the custom FL Studio sample pipeline. Selectable as an instrument on any track.
+- **Note visualizer** - timeline renders fingering graphics, note labels, glow effects, and particles for active notes. Smooth scrolling with beat interpolation keeps the view locked to playback without snapping. (`src/components/Visualizer.jsx`)
+- **Real-time playback** - play / pause / restart, BPM control, mouse and touch scrubbing, repeat/loop, and per-track instrument selection. Tone.js handles sample scheduling. (`src/components/Player.jsx`)
+- **Instrument configuration** - per-instrument volume and variant/version controls. A packed sampler abstraction in `src/libs/packedSampler/` drives instrument-specific implementations (`piano.js`, `recorder.js`, `guitar.js`). Samples live under `public/samples/<instrument>/<version>/index.json`.
+- **Play mode** *(experimental)* - real-time practice mode via microphone (autocorrelation pitch detection) or Web MIDI API. For each note in the score, the system checks whether the correct pitch was played within a rolling acceptance window; if not, playback pauses at that note's position and waits. Works with any instrument that exposes a MIDI note number (recorder fingering chart, MIDI keyboard, etc.).
+- **Guitar** - 12-string acoustic guitar sample pack recorded and packaged using the custom FL Studio sample pipeline. Selectable as an instrument on any track.
 
 ---
 
 ## What's planned
 
-- **MIDI import** — load standard MIDI files in the browser and convert them to the internal song format.
-- **Play mode scoring / feedback** — visual hit/miss overlay, per-note accuracy stats, and an end-of-song practice summary.
-- **More instruments** — ocarina, tin whistle, and other instruments the author loves. The sample pipeline scripts already support any instrument folder.
+- **MIDI import** - load standard MIDI files in the browser and convert them to the internal song format.
+- **Play mode scoring / feedback** - visual hit/miss overlay, per-note accuracy stats, and an end-of-song practice summary.
+- **More instruments** - ocarina, tin whistle, and other instruments the author loves. The sample pipeline scripts already support any instrument folder.
 
 ---
 
@@ -54,7 +54,7 @@ The project started as a recorder visualizer and retains full support for it, bu
 
 ### Play mode is experimental
 
-Play mode is functional but still considered experimental. Expect rough edges — particularly around device latency, pitch detection accuracy on certain microphones, and edge cases in the acceptance window logic. Use it for casual practice; don't rely on it for precise timing assessment yet.
+Play mode is functional but still considered experimental. Expect rough edges - particularly around device latency, pitch detection accuracy on certain microphones, and edge cases in the acceptance window logic. Use it for casual practice; don't rely on it for precise timing assessment yet.
 
 ### Play mode acceptance window
 
@@ -85,20 +85,20 @@ npm run build
 
 ## Samples & attribution
 
-- **Salamander Grand Piano V2** — Alexander Holm. Licensed [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/).
-- **Philharmonia samples** — sourced from [Philharmonia](https://philharmonia.co.uk/resources/sound-samples/). Free to use but **must not be redistributed as-is** from this repository. Please download them from the official site and place them locally as described below.
+- **Salamander Grand Piano V2** - Alexander Holm. Licensed [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/).
+- **Philharmonia samples** - sourced from [Philharmonia](https://philharmonia.co.uk/resources/sound-samples/). Free to use but **must not be redistributed as-is** from this repository. Please download them from the official site and place them locally as described below.
 
 ---
 
 ## Installing recorder (flute) samples
 
-The recorder instrument uses flute samples from Philharmonia. Because of their redistribution policy the audio files are not committed to this repo — you download them once and run a small pipeline of scripts to get them ready. The whole process takes just a few minutes.
+The recorder instrument uses flute samples from Philharmonia. Because of their redistribution policy the audio files are not committed to this repo - you download them once and run a small pipeline of scripts to get them ready. The whole process takes just a few minutes.
 
 > **Requirements:** [Node.js](https://nodejs.org/) 18+ and [FFmpeg](https://ffmpeg.org/download.html) must be installed and available on your `PATH`.
 
 ---
 
-### Step 1 — Download and place the samples
+### Step 1 - Download and place the samples
 
 1. Visit the Philharmonia sound samples page:
    **https://philharmonia.co.uk/resources/sound-samples/**
@@ -111,7 +111,7 @@ cp /path/to/downloaded/flute.zip public/samples/recorder/
 
 ---
 
-### Step 2 — Organise the files
+### Step 2 - Organise the files
 
 Run the organiser script from the project root:
 
@@ -143,9 +143,9 @@ public/samples/recorder/
 
 ---
 
-### Step 3 — Tame the loudness
+### Step 3 - Tame the loudness
 
-Raw flute samples — especially in the upper register — can be genuinely ear-splitting. Before extending them it is worth normalising their peak level so everything sits at a comfortable, consistent volume.
+Raw flute samples - especially in the upper register - can be genuinely ear-splitting. Before extending them it is worth normalising their peak level so everything sits at a comfortable, consistent volume.
 
 **First, have a look at what you're dealing with:**
 
@@ -161,20 +161,20 @@ This prints the true-peak level (dBFS) of every file, colour-coded by severity. 
 node scripts/audio-loudness-helper.mjs public/samples/recorder --fix --target -20
 ```
 
-`--target -20` sets every file's peak to −20 dBFS — loud enough to be present in the mix but with plenty of headroom. Feel free to adjust to taste; anywhere between −18 and −24 is a reasonable range.
+`--target -20` sets every file's peak to −20 dBFS - loud enough to be present in the mix but with plenty of headroom. Feel free to adjust to taste; anywhere between −18 and −24 is a reasonable range.
 
 > **Tip:** add `--dry-run` to preview what would change without touching any files.
 
 ---
 
-### Step 4 — Extend the sample duration
+### Step 4 - Extend the sample duration
 
 Philharmonia samples are short — typically around one second per note. That is fine for staccato passages, but sustained notes will cut off awkwardly. The `extend-samples` script finds the stable sustain body of each note, phase-matches a seamless loop point, and repeats it with equal-power crossfades until the sample reaches your target duration.
 
 **Recommended invocation:**
 
 ```bash
-# Safe option — writes extended files to a separate folder
+# Safe option - writes extended files to a separate folder
 node scripts/extend-samples.mjs public/samples/recorder \
   --min-duration 6 \
   --fade-out 2 \
@@ -192,7 +192,7 @@ node scripts/extend-samples.mjs public/samples/recorder \
 Once you are happy with the results, you can point the app at the extended folder or swap it in for the originals:
 
 ```bash
-# ⚠️  In-place mode overwrites the originals — make a backup first!
+# ⚠️  In-place mode overwrites the originals - make a backup first!
 node scripts/extend-samples.mjs public/samples/recorder \
   --min-duration 6 \
   --fade-out 2 \
@@ -217,7 +217,7 @@ node scripts/extend-samples.mjs public/samples/recorder \
 
 ---
 
-### Full pipeline — quick reference
+### Full pipeline - quick reference
 
 Here is the complete sequence from a fresh download to a ready-to-use sample set:
 
@@ -249,7 +249,7 @@ That's it — fire up the dev server and enjoy smooth, full-length recorder play
 
 ---
 
-### ⚠️ Structure change — migration note
+### ⚠️ Structure change - migration note
 
 The folder layout under `public/samples/recorder/` has changed. The app now expects samples in a single flat version folder (`philharmonia-flute/`) rather than one subfolder per dynamic.
 

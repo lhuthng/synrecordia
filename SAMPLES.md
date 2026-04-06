@@ -2,7 +2,7 @@
 
 This file documents the provenance, license terms, and recommended handling for the sampled audio assets used (or referenced) by this project.
 
-IMPORTANT: sample WAVs and other audio assets are third-party content and may have licensing restrictions that differ from the code in this repository. Treat samples separately from source code — check each pack's license before redistributing or publishing the repository publicly.
+IMPORTANT: sample WAVs and other audio assets are third-party content and may have licensing restrictions that differ from the code in this repository. Treat samples separately from source code - check each pack's license before redistributing or publishing the repository publicly.
 
 ---
 

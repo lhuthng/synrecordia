@@ -64,8 +64,8 @@
       "volume": "Điều chỉnh âm lượng phát của recorder.",
       "vibrato": "Thêm hiệu ứng rung cho các nốt dài.",
       "variant": "Chuyển đổi giữa các bộ mẫu thu âm khác nhau.",
-      "type": "Chọn loại recorder (soprano, alto, tenor, bass). Mỗi loại có tầm âm khác nhau.",
-      "system": "Chọn hệ thống bảng bấm ngón (baroque hoặc đức). Tenor cũng hỗ trợ đơn giản."
+      "type": "Chọn loại recorder (soprano, alto, tenor, bass). Mỗi loại có tầm âm khác nhau - hầu hết các nhạc cụ hơi điện tử mặc định dùng tenor.",
+      "system": "Chọn hệ thống bảng bấm ngón. 'Đơn giản' là bố cục mà hầu hết các nhạc cụ hơi điện tử sử dụng mặc định và, cùng với tenor, có tầm âm rộng nhất có thể chơi được."
     }
   },
   "fingeringSystem": {
@@ -116,8 +116,12 @@
     "faq": {
       "title": "Câu hỏi thường gặp",
       "q1": {
-        "question": "1. SynRecordia dành cho loại recorder nào?",
-        "answer": "SynRecordia được xây dựng dành cho sáo recorder soprano - cụ thể là nhạc cụ hơi kỹ thuật số. Cái tui đang dùng là recorder Carry-On Simple. Nó không còn được bán nữa, nhưng mình có thể tìm phiên bản thứ hai trên <carryOn>trang web của họ</carryOn>."
+        "question": "1. SynRecordia hoạt động với loại recorder nào?",
+        "answer": "SynRecordia hoạt động với mọi loại recorder - soprano, alto, tenor hoặc bass. Nó được xây dựng với các nhạc cụ hơi điện tử trong đầu: nhạc cụ được dùng trong quá trình phát triển là recorder Carry-On Simple, một nhạc cụ EWI kỹ thuật số. Nó không còn được bán nữa, nhưng phiên bản thứ hai có trên <carryOn>trang web của họ</carryOn>."
+      },
+      "qTenor": {
+        "question": "Các cài đặt 'loại recorder' và 'đơn giản' có nghĩa là gì?",
+        "answer": "Loại recorder (soprano, alto, tenor, bass) cho bộ visualizer biết nhạc cụ của mình có tầm âm như thế nào. Hệ thống bấm ngón chuyển đổi sơ đồ lỗ sang bố cục khác - baroque và đức là hai phong cách cổ điển, còn 'đơn giản' là sơ đồ mà hầu hết các nhạc cụ hơi điện tử sử dụng mặc định. Tenor + đơn giản có tầm âm rộng nhất trong tất cả các kết hợp - nếu ứng dụng cảnh báo rằng một số nốt nằm ngoài tầm, đây thường là điều đầu tiên nên thử."
       },
       "q2": {
         "question": "2. Mình đang xem cái quái gì vậy?",
@@ -141,7 +145,7 @@
       },
       "q6": {
         "question": "6. Một số thế bấm bị thiếu?",
-        "answer": "Bảng tra cứu bao gồm sáo recorder soprano. Một số cách bấm thay thế chưa có nhưng đang được lên kế hoạch. Mình có thể chuyển đổi giữa các hệ thống bấm trong Điều khiển. Bảng tra cứu lấy từ <chart>tài liệu tham khảo này</chart>."
+        "answer": "Một số cách bấm thay thế từ tài liệu tham khảo chưa có nhưng đang được lên kế hoạch. Mình có thể chuyển đổi giữa các hệ thống bấm trong Điều khiển. Bảng tra cứu lấy từ <chart>tài liệu tham khảo bấm ngón này</chart>."
       },
       "q7": {
         "question": "7. Tại sao bị lag?",

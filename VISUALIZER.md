@@ -1,6 +1,6 @@
-# Visualizer — How It Works
+# Visualizer - How It Works
 
-The visualizer is a PIXI.js canvas that sits alongside Tone.js audio playback. The two systems are deliberately decoupled: Tone.js owns the clock; the canvas owns the pixels. Understanding how they talk to each other — and how the canvas keeps memory flat — is the core of the design.
+The visualizer is a PIXI.js canvas that sits alongside Tone.js audio playback. The two systems are deliberately decoupled: Tone.js owns the clock; the canvas owns the pixels. Understanding how they talk to each other - and how the canvas keeps memory flat - is the core of the design.
 
 ---
 
@@ -63,22 +63,22 @@ Latency compensation is subtracted from `displayBeat` before scrolling, so a pos
 
 The scene has two types of scrolling content handled differently, for good reason.
 
-### Guide lines — keep everything, cull visibility
+### Guide lines - keep everything, cull visibility
 
 Bar lines and beat lines are pre-built once in `buildGuides` as plain `PIXI.Graphics` objects and added to `guideLayer`. They are cheap: no textures, no filters, no event listeners. The full set lives in memory for the entire song, but PIXI still pays a per-object cost during the render pass even for off-screen containers.
 
-The fix is **visibility culling**. Objects with `visible = false` are completely skipped by the renderer. We track which children are currently on screen with a `{ left, right }` index pair — `guideVisWinRef` — and only flip visibility at the edges.
+The fix is **visibility culling**. Objects with `visible = false` are completely skipped by the renderer. We track which children are currently on screen with a `{ left, right }` index pair - `guideVisWinRef` - and only flip visibility at the edges.
 
 This works because `guideLayer.children` is sorted by `.x` in non-increasing order (beat 0 at index 0, then increasingly negative x values). The visible children are always a **contiguous slice** `[left, right]` of the array. Each frame, four short loops walk the boundaries:
 
-    expand right  — while gc[right+1].x > xMin  → show, right++
-    shrink right  — while gc[right].x  ≤ xMin   → hide, right--
-    shrink left   — while gc[left].x   ≥ xMax   → hide, left++
-    expand left   — while gc[left-1].x in range → show, left--
+    expand right  - while gc[right+1].x > xMin  → show, right++
+    shrink right  - while gc[right].x  ≤ xMin   → hide, right--
+    shrink left   - while gc[left].x   ≥ xMax   → hide, left++
+    expand left   - while gc[left-1].x in range → show, left--
 
 During normal forward playback roughly one child crosses each boundary per frame, so the cost is effectively **O(1)**. Scrubbing to a distant position is **O(Δ)** where Δ is the number of guides that crossed the viewport — proportional to how far you jumped, no more.
 
-### Note sprites — allocate on demand, destroy when done
+### Note sprites - allocate on demand, destroy when done
 
 Notes are much heavier: each one is a container holding a `PIXI.Graphics` fingering diagram, a `GlowFilter`, a hover background, a text label, and event listeners. Keeping thousands of them alive for a long song would be expensive even with visibility culling.
 
@@ -100,7 +100,7 @@ Newly allocated sprites start at `alpha = 0` and lerp to `alpha = 1` over the ne
 |                 | Guide lines                     | Note sprites                        |
 |-----------------|---------------------------------|-------------------------------------|
 | Cost per object | Low (plain graphics)            | High (filters, listeners, children) |
-| Total count     | Fixed — whole song built once   | Unbounded in theory                 |
+| Total count     | Fixed - whole song built once   | Unbounded in theory                 |
 | Strategy        | Keep all, toggle `visible`      | Allocate on enter, destroy on exit  |
 | Per-frame cost  | O(1) neighbor walk              | O(log n) binary search + O(Δ) alloc |
 

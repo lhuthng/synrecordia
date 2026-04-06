@@ -64,8 +64,8 @@
       "volume": "Adjusts the recorder playback volume.",
       "vibrato": "Adds a vibrato effect to sustained notes.",
       "variant": "Switches between different recorded sample sets.",
-      "type": "Selects the recorder type (soprano, alto, tenor, bass). Each type has a different pitch range.",
-      "system": "Selects the fingering chart system (baroque or german). Tenor also supports simple."
+      "type": "Selects the recorder type (soprano, alto, tenor, bass). Each type covers a different pitch range - most electronic woodwind instruments default to tenor.",
+      "system": "Selects the fingering chart system. 'Simple' is the layout used by most electronic woodwind instruments and, together with tenor, covers the widest playable range."
     }
   },
   "fingeringSystem": {
@@ -116,8 +116,12 @@
     "faq": {
       "title": "FAQ",
       "q1": {
-        "question": "1. What kind of recorder is this for?",
-        "answer": "SynRecordia is built around the soprano recorder - specifically a digital woodwind instrument. The one used during development is the Carry-On Simple recorder. It's no longer for sale, but you can find the second edition on their <carryOn>website</carryOn>."
+        "question": "1. What kind of recorder does this work with?",
+        "answer": "SynRecordia works with any recorder - soprano, alto, tenor, or bass. It was built with electronic woodwind instruments in mind: the one used during development is the Carry-On Simple recorder, a digital EWI-style instrument. It's no longer for sale, but the second edition is available on their <carryOn>website</carryOn>."
+      },
+      "qTenor": {
+        "question": "What are the 'recorder type' and 'simple' settings about?",
+        "answer": "The recorder type (soprano, alto, tenor, bass) tells the visualizer which pitch range your instrument covers. The fingering system switches the hole diagram to a different layout - baroque and german are the two classical styles, while 'simple' is the scheme most electronic woodwind instruments use by default. Tenor + simple happens to cover the widest playable range of any combination, so if the app warns you that notes are out of range, that's usually the first thing to try."
       },
       "q2": {
         "question": "2. What am I actually looking at?",
@@ -141,7 +145,7 @@
       },
       "q6": {
         "question": "6. Some fingering patterns are missing?",
-        "answer": "The chart covers the soprano recorder. Some alternate fingerings from reference materials aren't in yet, but they're planned. You can switch between available fingering systems in the Instrument Controls. The chart was sourced from <chart>this soprano recorder fingering reference</chart>."
+        "answer": "Some alternate fingerings from reference materials aren't in yet, but they're planned. You can switch between available fingering systems in the Instrument Controls. The chart was sourced from <chart>this recorder fingering reference</chart>."
       },
       "q7": {
         "question": "7. Why is it lagging?",

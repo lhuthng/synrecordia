@@ -173,14 +173,15 @@ export default function Recorder({
       {toggle &&
         controllerNode &&
         createPortal(
-          <div className="flex flex-col gap-2 max-w-full sm:max-w-100 [&>*>label]:min-w-10">
+          <div className="flex flex-col gap-2 max-w-full sm:max-w-100">
             {children}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+            <div className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-2">
+              {/* Volume */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <label>{t("recorder.volume")}:</label>
                 <SettingTooltip>{t("recorder.tips.volume")}</SettingTooltip>
               </div>
-              <div className="flex-1 mx-4">
+              <div className="min-w-0">
                 <DuoSlideBar
                   min={0}
                   max={100}
@@ -196,13 +197,13 @@ export default function Recorder({
                   barColor="bg-note-full"
                 />
               </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1">
+
+              {/* Vibrato */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <label>{t("recorder.vibrato")}:</label>
                 <SettingTooltip>{t("recorder.tips.vibrato")}</SettingTooltip>
               </div>
-              <div className="flex-1 mx-4">
+              <div className="min-w-0">
                 <DuoSlideBar
                   min={0}
                   max={100}
@@ -217,13 +218,13 @@ export default function Recorder({
                   barColor="bg-note-full"
                 />
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+
+              {/* Variant */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <label>{t("recorder.variant")}:</label>
                 <SettingTooltip>{t("recorder.tips.variant")}</SettingTooltip>
               </div>
-              <div className="flex-1 mx-4">
+              <div className="min-w-0">
                 <DuoSelect
                   options={alternatives}
                   value={version}
@@ -232,13 +233,13 @@ export default function Recorder({
                   disabled={!isReady}
                 />
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+
+              {/* Type */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <label>{t("recorder.type")}:</label>
                 <SettingTooltip>{t("recorder.tips.type")}</SettingTooltip>
               </div>
-              <div className="flex-1 mx-4">
+              <div className="min-w-0">
                 <DuoSelect
                   options={recorderTypes}
                   value={recorderType}
@@ -246,13 +247,13 @@ export default function Recorder({
                   onChange={handleRecorderTypeChanged}
                 />
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+
+              {/* Fingering system */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <label>{t("recorder.system")}:</label>
                 <SettingTooltip>{t("recorder.tips.system")}</SettingTooltip>
               </div>
-              <div className="flex-1 mx-4">
+              <div className="min-w-0">
                 <DuoSelect
                   options={fingeringSystems}
                   value={

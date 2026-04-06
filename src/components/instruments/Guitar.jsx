@@ -63,14 +63,15 @@ export default function Guitar({
       {toggle &&
         controllerNode &&
         createPortal(
-          <div className="flex flex-col gap-2 max-w-100 [&>*>label]:w-10">
+          <div className="flex flex-col gap-2 max-w-100">
             {children}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+            <div className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-2">
+              {/* Volume */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <label>{t("guitar.volume")}:</label>
                 <SettingTooltip>{t("guitar.tips.volume")}</SettingTooltip>
               </div>
-              <div className="flex-1 mx-4">
+              <div className="min-w-0">
                 <DuoSlideBar
                   min={0}
                   max={100}
@@ -85,13 +86,13 @@ export default function Guitar({
                   barColor="bg-note-full"
                 />
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+
+              {/* Variant */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
                 <label>{t("guitar.variant")}:</label>
                 <SettingTooltip>{t("guitar.tips.variant")}</SettingTooltip>
               </div>
-              <div className="flex-1 mx-4">
+              <div className="min-w-0">
                 <DuoSelect
                   options={alternatives}
                   value={version}

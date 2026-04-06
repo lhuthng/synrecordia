@@ -124,6 +124,14 @@ export default function Details() {
               </p>
             </div>
 
+            {/* qTenor — What are the recorder type and simple fingering settings? */}
+            <div className="p-3 rounded-lg">
+              <h4 className="font-semibold">
+                {t("details.faq.qTenor.question")}
+              </h4>
+              <p className="mt-2">{t("details.faq.qTenor.answer")}</p>
+            </div>
+
             {/* q2 — What am I actually looking at? */}
             <div className="p-3 rounded-lg">
               <h4 className="font-semibold">{t("details.faq.q2.question")}</h4>
