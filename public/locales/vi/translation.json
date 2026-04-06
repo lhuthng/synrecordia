@@ -127,8 +127,8 @@
         "question": "2. Mình đang xem cái quái gì vậy?",
         "intro": "Bộ visualizer hiển thị các lỗ sáo recorder cần bấm cho từng nốt. Các lỗ được chia làm ba nhóm:",
         "group1": "Nhóm 1: lỗ ngón cái tay trái (lỗ phía sau).",
-        "group2": "Nhóm 2: ba lỗ cho tay trái - ngón trỏ, ngón giữa và ngón đeo nhẫn.",
-        "group3": "Nhóm 3: bốn lỗ cho tay phải - ngón trỏ, ngón giữa, ngón đeo nhẫn và ngón út.",
+        "group2": "Nhóm 2: ba lỗ cho tay trái - ngón trỏ, ngón giữa và ngón áp út.",
+        "group3": "Nhóm 3: bốn lỗ cho tay phải - ngón trỏ, ngón giữa, ngón áp út và ngón út.",
         "outro": "Ngoài ra có nút \"?\" hiển thị sơ đồ nhạc cụ thực tế để mình thấy các lỗ tương ứng với nhạc cụ thật như thế nào."
       },
       "q3": {

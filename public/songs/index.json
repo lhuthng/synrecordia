@@ -13,7 +13,7 @@
     "composer": "Heinz Schnaufer",
     "bpm": 120,
     "file": "erika.json",
-    "difficulty": "Beginner"
+    "difficulty": "beginner"
   },
   {
     "id": "fallen-down-reprise",
@@ -40,6 +40,13 @@
     "difficulty": "beginner"
   },
   {
+    "id": "giorno-s-theme",
+    "title": "Giorno's Theme",
+    "bpm": 135,
+    "file": "giorno-s-theme.json",
+    "difficulty": "expert"
+  },
+  {
     "id": "happy-birthday-to-you",
     "title": "Happy Birthday To You",
     "bpm": 120,
@@ -63,6 +70,14 @@
     "difficulty": "beginner"
   },
   {
+    "id": "minuet-in-g",
+    "title": "Minuet in G",
+    "composer": "J.S. Bach",
+    "bpm": 126,
+    "file": "minuet-in-g.json",
+    "difficulty": "easy"
+  },
+  {
     "id": "ode-to-joy",
     "title": "Ode To Joy",
     "composer": "Ludwig van Beethoven",
@@ -84,7 +99,7 @@
     "composer": "Koji Kondo",
     "bpm": 180,
     "file": "song-of-storm.json",
-    "difficulty": "hard"
+    "difficulty": "medium"
   },
   {
     "id": "super-mario-main-theme",
@@ -122,6 +137,6 @@
     "composer": "PYKAMIA",
     "bpm": 120,
     "file": "yuna.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   }
 ]

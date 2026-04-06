@@ -1,4 +1,4 @@
 {
-  "versions": ["philharmonia-flute"],
+  "versions": ["philharmonia-flute", "flex-0"],
   "default": "philharmonia-flute"
 }

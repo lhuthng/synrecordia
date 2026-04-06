@@ -26,7 +26,7 @@ dist-ssr
 # Assets for prerendering
 src/assets/midis/
 src/assets/samples/
-public/samples/recorder/**/*.mp3
+public/samples/recorder/philharmonia-flute/*.mp3
 public/samples/recorder/*.zip
 
 tmp/*

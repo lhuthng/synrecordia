@@ -1,4 +1,4 @@
-export const PIANO_DELAY_MS = 80;
+export const PIANO_DELAY_MS = 30;
 
 export const DEFAULT_WIDTH = 1200;
 export const DEFAULT_HEIGHT = 400;

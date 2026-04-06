@@ -4,9 +4,9 @@ import Recorder from "../../components/instruments/Recorder";
 import fingeringChart from "../../assets/references/fingering-chart.json";
 import { noteNameToMidi } from "../utils.js";
 
-const MAX_DB = 40;
-const DEFAULT_DB = 15;
-const MIN_DB = -20;
+const MAX_DB = 0;
+const DEFAULT_DB = -10;
+const MIN_DB = -40;
 
 export default class RecorderSampler extends PackedSampler {
   constructor(urls, baseUrl, callback, addition) {
