@@ -34,6 +34,11 @@ export default class PianoSampler extends PackedSampler {
     this.reverb = null;
   }
 
+  getNoteRange() {
+    // Standard 88-key piano: A0 (MIDI 21) to C8 (MIDI 108)
+    return { min: 21, max: 108 };
+  }
+
   getPresentation() {
     return Piano;
   }

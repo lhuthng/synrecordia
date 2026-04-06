@@ -67,9 +67,9 @@
     }
   },
   "fingeringSystem": {
-    "baroque": "Baroque",
-    "german": "Đức",
-    "simple": "Đơn giản"
+    "baroque": "Soprano – Baroque",
+    "german": "Soprano – Đức",
+    "simple": "Soprano – Đơn giản"
   },
   "details": {
     "avatar": "Ảnh đại diện lập trình viên",
@@ -195,5 +195,25 @@
       "midiDenied": "Quyền truy cập MIDI bị từ chối.",
       "noDevices": "Không tìm thấy thiết bị MIDI. Hãy cắm thiết bị và mở lại."
     }
+  },
+  "waveform": {
+    "volume": "Âm lượng",
+    "waveform": "Dạng sóng",
+    "tips": {
+      "volume": "Điều chỉnh âm lượng phát của synth.",
+      "waveform": "Chọn loại dạng sóng của bộ tạo dao động."
+    },
+    "types": {
+      "sine": "Sine",
+      "square": "Vuông",
+      "triangle": "Tam giác",
+      "sawtooth": "Răng cưa"
+    }
+  },
+  "instruments": {
+    "recorder": "Sáo Recorder",
+    "piano": "Piano",
+    "waveform": "Sóng tổng hợp",
+    "swap": "Đổi nhạc cụ"
   }
 }

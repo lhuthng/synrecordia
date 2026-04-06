@@ -67,9 +67,9 @@
     }
   },
   "fingeringSystem": {
-    "baroque": "Baroque",
-    "german": "German",
-    "simple": "Simple"
+    "baroque": "Soprano – Baroque",
+    "german": "Soprano – German",
+    "simple": "Soprano – Simple"
   },
   "details": {
     "avatar": "Developer Avatar",
@@ -195,5 +195,25 @@
       "midiDenied": "MIDI access denied.",
       "noDevices": "No MIDI devices found. Plug in a device and reopen."
     }
+  },
+  "waveform": {
+    "volume": "Volume",
+    "waveform": "Waveform",
+    "tips": {
+      "volume": "Adjusts the synth playback volume.",
+      "waveform": "Selects the oscillator waveform type."
+    },
+    "types": {
+      "sine": "Sine",
+      "square": "Square",
+      "triangle": "Triangle",
+      "sawtooth": "Sawtooth"
+    }
+  },
+  "instruments": {
+    "recorder": "Recorder",
+    "piano": "Piano",
+    "waveform": "Waveform",
+    "swap": "Swap"
   }
 }

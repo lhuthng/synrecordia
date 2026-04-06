@@ -16,6 +16,10 @@ import usePlayer from "../hooks/usePlayer.js";
 import usePlayMode from "../hooks/usePlayMode.js";
 import { useTranslation } from "react-i18next";
 import { computeNoteRangeFromActions, midiToNoteName } from "../libs/utils.js";
+import {
+  VISUALIZABLE_INSTRUMENTS,
+  ALL_INSTRUMENTS,
+} from "../libs/packedSampler/factory";
 import * as Tone from "tone";
 import SelectDeviceModal from "./SelectDeviceModal";
 
@@ -145,6 +149,9 @@ export default function Player() {
   const [isVisualReady, setIsVisualReady] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
 
+  // Per-slot instrument overrides: { [slotIndex]: instrumentName }
+  const [instrumentOverrides, setInstrumentOverrides] = useState({});
+
   // Visual-effect preferences
   const [particlesEnabled, setParticlesEnabled] = useState(true);
   const [pulseEnabled, setPulseEnabled] = useState(true);
@@ -239,10 +246,28 @@ export default function Player() {
     [],
   );
 
+  const handleSwapInstrument = useCallback(
+    (slot, newName) => {
+      if (
+        newName ===
+        (instrumentOverrides[slot] ?? song?.tracks?.[slot]?.instrument)
+      )
+        return;
+      pausePlayback();
+      setInstrumentOverrides((prev) => ({ ...prev, [slot]: newName }));
+    },
+    [instrumentOverrides, song, pausePlayback],
+  );
+
   // Cancel any in-progress countdown when the loaded song changes
   useEffect(() => {
     cancelCountdown();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [song?.id]);
+
+  // Reset instrument overrides when a new song is loaded
+  useEffect(() => {
+    setInstrumentOverrides({});
   }, [song?.id]);
 
   // Re-evaluate the range warning when the song changes.
@@ -860,39 +885,50 @@ export default function Player() {
       )}
 
       <div className="flex mt-4 gap-2">
-        {song?.tracks?.map((track, index) => (
-          <InstrumentManager
-            controllerNode={controllerNode}
-            key={`${index}-${track.instrument}`}
-            slot={index}
-            muted={
-              index === 0 &&
-              playModeEnabled &&
-              micStatus === "granted" &&
-              selectedMidiInput === null
-            }
-            flashCount={pulseEnabled ? (flashCounters[index] ?? 0) : 0}
-            name={track.instrument}
-            register={registerSampler}
-            deregister={deregisterSampler}
-            toggle={index === selectedTrack}
-            onToggleChanged={handleToggleChanged}
-            initialReady={isAudioReady?.[index]}
-            handleAudioReady={(value) => handleAudioReady(index, value)}
-            onReady={() => handleAudioReady(index, true)}
-            offReady={() => handleAudioReady(index, false)}
-            trackNoteRange={
-              track.noteRange ?? computeNoteRangeFromActions(track.actions)
-            }
-            transpose={transposeSemitones}
-            fingeringSystem={fingeringSystem}
-            onOutOfRange={handleRangeStatus}
-            callbacks={{
-              pausePlayback,
-              setFingeringSystem,
-            }}
-          />
-        ))}
+        {song?.tracks?.map((track, index) => {
+          const effectiveInstrument =
+            instrumentOverrides[index] ?? track.instrument;
+          // Track 0 can only be swapped to visualizable instruments; others can use any
+          const swappable =
+            index === 0 ? VISUALIZABLE_INSTRUMENTS : ALL_INSTRUMENTS;
+          return (
+            <InstrumentManager
+              controllerNode={controllerNode}
+              key={`${index}-${effectiveInstrument}`}
+              slot={index}
+              muted={
+                index === 0 &&
+                playModeEnabled &&
+                micStatus === "granted" &&
+                selectedMidiInput === null
+              }
+              flashCount={pulseEnabled ? (flashCounters[index] ?? 0) : 0}
+              name={effectiveInstrument}
+              register={registerSampler}
+              deregister={deregisterSampler}
+              toggle={index === selectedTrack}
+              onToggleChanged={handleToggleChanged}
+              initialReady={isAudioReady?.[index]}
+              handleAudioReady={(value) => handleAudioReady(index, value)}
+              onReady={() => handleAudioReady(index, true)}
+              offReady={() => handleAudioReady(index, false)}
+              trackNoteRange={
+                track.noteRange ?? computeNoteRangeFromActions(track.actions)
+              }
+              transpose={transposeSemitones}
+              fingeringSystem={fingeringSystem}
+              onOutOfRange={handleRangeStatus}
+              swappableInstruments={swappable}
+              onSwapInstrument={(newName) =>
+                handleSwapInstrument(index, newName)
+              }
+              callbacks={{
+                pausePlayback,
+                setFingeringSystem,
+              }}
+            />
+          );
+        })}
       </div>
 
       {!!song && (

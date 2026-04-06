@@ -18,6 +18,7 @@ export default function Piano({
   controllerNode,
   onSamplerChanged,
   isReady,
+  children,
 }) {
   const { t } = useTranslation();
   const [volume, setVolume] = useState(0);
@@ -67,6 +68,7 @@ export default function Piano({
         controllerNode &&
         createPortal(
           <div className="flex flex-col gap-2 max-w-100 [&>*>label]:w-10">
+            {children}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <label>{t("piano.volume")}:</label>

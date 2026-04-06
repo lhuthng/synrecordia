@@ -67,9 +67,9 @@
     }
   },
   "fingeringSystem": {
-    "baroque": "Barock",
-    "german": "Deutsch",
-    "simple": "Einfach"
+    "baroque": "Sopran – Barock",
+    "german": "Sopran – Deutsch",
+    "simple": "Sopran – Einfach"
   },
   "details": {
     "avatar": "Entwickler-Avatar",
@@ -195,5 +195,25 @@
       "midiDenied": "MIDI-Zugriff verweigert.",
       "noDevices": "Keine MIDI-Geräte gefunden. Gerät anschließen und erneut öffnen."
     }
+  },
+  "waveform": {
+    "volume": "Lautstärke",
+    "waveform": "Wellenform",
+    "tips": {
+      "volume": "Passt die Lautstärke des Synthesizers an.",
+      "waveform": "Wählt den Oszillator-Wellenformtyp aus."
+    },
+    "types": {
+      "sine": "Sinus",
+      "square": "Rechteck",
+      "triangle": "Dreieck",
+      "sawtooth": "Sägezahn"
+    }
+  },
+  "instruments": {
+    "recorder": "Blockflöte",
+    "piano": "Klavier",
+    "waveform": "Wellenform",
+    "swap": "Wechseln"
   }
 }

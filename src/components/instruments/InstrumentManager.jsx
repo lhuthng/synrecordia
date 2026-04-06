@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPackedSampler } from "../../libs/packedSampler/factory";
+import {
+  createPackedSampler,
+  isSynthInstrument,
+  createSynthInstrument,
+  VISUALIZABLE_INSTRUMENTS,
+} from "../../libs/packedSampler/factory";
 import { motion as Motion, AnimatePresence, useAnimate } from "motion/react";
 import { cn, midiToNoteName } from "../../libs/utils";
+import DuoSelect from "../DuoSelect";
+import { useTranslation } from "react-i18next";
 
 // ── NoteRangeBar ─────────────────────────────────────────────────────────────
 function NoteRangeBar({ instrumentRange, trackRange, transpose }) {
@@ -114,9 +121,12 @@ export default function InstrumentManager({
   fingeringSystem = "baroque",
   onOutOfRange = undefined,
   muted = false,
+  swappableInstruments = null,
+  onSwapInstrument = undefined,
 }) {
   const [samplerInstance, setSamplerInstance] = useState(null);
   const [scope, animate] = useAnimate();
+  const { t } = useTranslation();
 
   const isReadyRef = useRef(false);
   const packedSamplerRef = useRef(null);
@@ -233,6 +243,26 @@ export default function InstrumentManager({
     const loadSampler = async () => {
       cleanupCurrentInstance();
 
+      // ── Synthesizer instruments (no sample files needed) ─────────────────
+      if (isSynthInstrument(name)) {
+        const packedSampler = createSynthInstrument(name, () => {
+          if (!isCancelled) {
+            handleAudioReady?.(true);
+            isReadyRef.current = true;
+          }
+        });
+        if (!packedSampler) return;
+
+        packedSamplerRef.current = packedSampler;
+        const sampler = packedSampler.getSampler();
+        register?.(slot, sampler);
+        registeredSamplerRef.current = sampler;
+        setPresentation(() => packedSampler.getPresentation());
+        setSamplerInstance(packedSampler);
+        return;
+      }
+
+      // ── Sampler instruments (load from /samples/) ─────────────────────────
       try {
         const response = await fetch(`/samples/${name}/index.json`);
         if (!response.ok) return;
@@ -294,6 +324,15 @@ export default function InstrumentManager({
     }
   }, [initialReady, handleAudioReady]);
 
+  // Build i18n-labelled options for the swap select
+  const swapOptions = swappableInstruments
+    ? swappableInstruments.map((n) => ({
+        value: n,
+        label: t(`instruments.${n}`),
+      }))
+    : [];
+  const canSwap = swapOptions.length > 1;
+
   return (
     <AnimatePresence>
       {Presentation ? (
@@ -303,7 +342,7 @@ export default function InstrumentManager({
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -5 }}
         >
-          {/* Flex column: button on top, range bar + warning below */}
+          {/* Flex column: button on top, range bar below */}
           <div className="inline-flex flex-col items-center gap-2">
             {/* Instrument button with optional ⚠ badge */}
             <Motion.div
@@ -316,6 +355,8 @@ export default function InstrumentManager({
               ref={scope}
               className="relative inline-block"
             >
+              {/* Swap selector — only visible when this instrument is selected */}
+
               <Presentation
                 packedSampler={samplerInstance}
                 label={slot + 1}
@@ -333,7 +374,19 @@ export default function InstrumentManager({
                 transpose={transpose}
                 fingeringSystem={fingeringSystem}
                 muted={muted}
-              />
+              >
+                {toggle && canSwap && (
+                  <div className="flex items-center gap-1">
+                    <label>{t("instruments.swap")}:</label>
+                    <DuoSelect
+                      options={swapOptions}
+                      value={name}
+                      padding="px-1.5 py-0.5"
+                      onChange={onSwapInstrument}
+                    />
+                  </div>
+                )}
+              </Presentation>
               {outOfRange && (
                 <span
                   className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-black text-xs font-bold leading-none cursor-help z-10 select-none shadow"
