@@ -119,6 +119,7 @@ export default function InstrumentManager({
   trackNoteRange = null,
   transpose = 0,
   fingeringSystem = "baroque",
+  recorderType = "tenor",
   onOutOfRange = undefined,
   muted = false,
   swappableInstruments = null,
@@ -157,7 +158,7 @@ export default function InstrumentManager({
 
   // ── Out-of-range detection ────────────────────────────────────────────────
   const samplerNoteRange =
-    samplerInstance?.getNoteRange?.(fingeringSystem) ?? null;
+    samplerInstance?.getNoteRange?.(fingeringSystem, recorderType) ?? null;
 
   const outOfRange = (() => {
     if (!samplerNoteRange || !trackNoteRange) return false;
@@ -176,14 +177,16 @@ export default function InstrumentManager({
   const alternatives = useMemo(() => {
     if (!samplerInstance || !trackNoteRange) return [];
     return KNOWN_SYSTEMS.flatMap((sys) => {
-      const r = samplerInstance.getNoteRange?.(sys);
+      // simple fingering is only available for tenor
+      if (sys === "simple" && recorderType !== "tenor") return [];
+      const r = samplerInstance.getNoteRange?.(sys, recorderType);
       if (!r) return [];
       const tMin = r.min - trackNoteRange.min;
       const tMax = r.max - trackNoteRange.max;
       if (tMin > tMax) return []; // impossible for this system at any transpose
       return [{ system: sys, tMin, tMax }];
     });
-  }, [samplerInstance, trackNoteRange]);
+  }, [samplerInstance, trackNoteRange, recorderType]);
 
   const onOutOfRangeRef = useRef(onOutOfRange);
   useEffect(() => {
@@ -373,11 +376,15 @@ export default function InstrumentManager({
                 trackNoteRange={trackNoteRange}
                 transpose={transpose}
                 fingeringSystem={fingeringSystem}
+                recorderType={recorderType}
                 muted={muted}
               >
                 {toggle && canSwap && (
                   <div className="flex items-center gap-1">
-                    <label>{t("instruments.swap")}:</label>
+                    <label>
+                      {t("instruments.swap")}
+                      {"->"}
+                    </label>
                     <DuoSelect
                       options={swapOptions}
                       value={name}

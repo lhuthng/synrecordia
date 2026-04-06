@@ -1,8 +1,11 @@
 {
   "instrument": "recorder",
-  "type": "soprano",
-  "approximate": false,
-  "noteShiftSemitones": 12,
+  "types": {
+    "soprano": { "noteOffset": 12 },
+    "alto": { "noteOffset": 5 },
+    "tenor": { "noteOffset": 0 },
+    "bass": { "noteOffset": -7 }
+  },
   "holes": [
     "left-thumb",
     "left-index",

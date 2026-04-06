@@ -2,9 +2,9 @@ import * as Tone from "tone";
 import WaveformComponent from "../../components/instruments/Waveform";
 
 const WAVEFORMS = ["sine", "square", "triangle", "sawtooth"];
-const MAX_DB = 0;
-const DEFAULT_DB = -10;
-const MIN_DB = -60;
+const MAX_DB = -10;
+const DEFAULT_DB = -20;
+const MIN_DB = -80;
 
 export default class WaveformSynth {
   constructor(callback) {

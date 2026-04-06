@@ -31,6 +31,7 @@ export default function usePlayer() {
   const [selectedTrack, setSelectedTrack] = useState(null);
   const [isAudioReady, setIsAudioReady] = useState([]);
   const [fingeringSystem, setFingeringSystem] = useState("german");
+  const [recorderType, setRecorderType] = useState("tenor");
   const [transposeSemitones, setTransposeSemitones] = useState(0);
 
   const durationBeats = computeSongEndBeat(song);
@@ -482,6 +483,7 @@ export default function usePlayer() {
     repeat,
     selectedTrack,
     fingeringSystem,
+    recorderType,
 
     // derived
     durationBeats,
@@ -499,6 +501,7 @@ export default function usePlayer() {
     setTransposeSemitones,
     setSelectedTrack: setSelectedTrack,
     setFingeringSystem: setFingeringSystem,
+    setRecorderType: setRecorderType,
     handleBpmChange,
     handleNoteWidthChange: setNoteWidth,
     handlePlayPause,

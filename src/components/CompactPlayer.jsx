@@ -33,6 +33,7 @@ export default function CompactPlayer() {
     isReady: isAudioReadyAll,
     transposeSemitones,
     fingeringSystem,
+    recorderType,
     registerSampler,
     deregisterSampler,
     startPlayback,
@@ -182,8 +183,13 @@ export default function CompactPlayer() {
             }
             transpose={transposeSemitones}
             fingeringSystem={fingeringSystem}
+            recorderType={recorderType}
             onOutOfRange={() => {}}
-            callbacks={{ pausePlayback, setFingeringSystem: () => {} }}
+            callbacks={{
+              pausePlayback,
+              setFingeringSystem: () => {},
+              setRecorderType: () => {},
+            }}
           />
         ))}
       </div>
@@ -286,6 +292,7 @@ export default function CompactPlayer() {
         onPlayPause={handleTogglePlayback}
         onPlayBarPositionChange={setPlayBarPosition}
         fingeringSystem={fingeringSystem}
+        recorderType={recorderType}
         transpose={transposeSemitones}
         latencyMs={0}
       />

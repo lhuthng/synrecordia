@@ -59,14 +59,16 @@ export default class RecorderSampler extends PackedSampler {
     this.volume.volume.rampTo(db, 0.1);
   }
 
-  getNoteRange(fingeringSystem = "baroque") {
+  getNoteRange(fingeringSystem = "baroque", recorderType = "tenor") {
     const chartKey = fingeringSystem === "simple" ? "simple" : "recorder";
     const system = fingeringChart.systems?.[chartKey];
+    const noteOffset = fingeringChart.types?.[recorderType]?.noteOffset ?? 0;
 
     if (system) {
       const midiNums = Object.keys(system)
         .map((name) => noteNameToMidi(name))
-        .filter((n) => n !== null);
+        .filter((n) => n !== null)
+        .map((n) => n + noteOffset);
       if (midiNums.length > 0) {
         return { min: Math.min(...midiNums), max: Math.max(...midiNums) };
       }

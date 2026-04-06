@@ -58,18 +58,26 @@
     "volume": "Âm lượng",
     "vibrato": "Rung",
     "variant": "Phiên bản",
+    "type": "Loại",
     "system": "Hệ thống",
     "tips": {
       "volume": "Điều chỉnh âm lượng phát của recorder.",
       "vibrato": "Thêm hiệu ứng rung cho các nốt dài.",
       "variant": "Chuyển đổi giữa các bộ mẫu thu âm khác nhau.",
-      "system": "Chọn hệ thống bảng bấm ngón (ảnh hưởng đến nốt nào có thể chơi được)."
+      "type": "Chọn loại recorder (soprano, alto, tenor, bass). Mỗi loại có tầm âm khác nhau.",
+      "system": "Chọn hệ thống bảng bấm ngón (baroque hoặc đức). Tenor cũng hỗ trợ đơn giản."
     }
   },
   "fingeringSystem": {
-    "baroque": "Soprano – Baroque",
-    "german": "Soprano – Đức",
-    "simple": "Soprano – Đơn giản"
+    "baroque": "Baroque",
+    "german": "Đức",
+    "simple": "Đơn giản"
+  },
+  "recorderType": {
+    "soprano": "Soprano",
+    "alto": "Alto",
+    "tenor": "Tenor",
+    "bass": "Bass"
   },
   "details": {
     "avatar": "Ảnh đại diện lập trình viên",

@@ -42,6 +42,7 @@ export default function Player() {
     setNoteTriggerListener,
     selectedTrack,
     fingeringSystem,
+    recorderType,
     durationBeats,
     isAudioReady,
     isReady: isAudioReadyAll,
@@ -63,6 +64,7 @@ export default function Player() {
     handleToggleChanged,
     handleAudioReady,
     setFingeringSystem,
+    setRecorderType,
     latencyMs,
     setLatencyMs,
     suppressAudioTrack,
@@ -836,6 +838,7 @@ export default function Player() {
           onPlayPause={handleTogglePlayback}
           onPlayBarPositionChange={setPlayBarPosition}
           fingeringSystem={fingeringSystem}
+          recorderType={recorderType}
           transpose={transposeSemitones}
           latencyMs={latencyMs}
         />
@@ -917,6 +920,7 @@ export default function Player() {
               }
               transpose={transposeSemitones}
               fingeringSystem={fingeringSystem}
+              recorderType={recorderType}
               onOutOfRange={handleRangeStatus}
               swappableInstruments={swappable}
               onSwapInstrument={(newName) =>
@@ -925,6 +929,7 @@ export default function Player() {
               callbacks={{
                 pausePlayback,
                 setFingeringSystem,
+                setRecorderType,
               }}
             />
           );

@@ -58,18 +58,26 @@
     "volume": "Lautstärke",
     "vibrato": "Vibrato",
     "variant": "Variante",
+    "type": "Typ",
     "system": "System",
     "tips": {
       "volume": "Passt die Wiedergabelautstärke der Blockflöte an.",
       "vibrato": "Fügt langen Noten einen Vibrato-Effekt hinzu.",
       "variant": "Wechselt zwischen verschiedenen aufgenommenen Samplesätzen.",
-      "system": "Wählt das Griffsystem aus (beeinflusst, welche Noten spielbar sind)."
+      "type": "Wählt den Blockflötentyp (Sopran, Alt, Tenor, Bass). Jeder Typ hat einen anderen Tonumfang.",
+      "system": "Wählt das Griffsystem aus (Barock oder Deutsch). Tenor unterstützt auch Einfach."
     }
   },
   "fingeringSystem": {
-    "baroque": "Sopran – Barock",
-    "german": "Sopran – Deutsch",
-    "simple": "Sopran – Einfach"
+    "baroque": "Barock",
+    "german": "Deutsch",
+    "simple": "Einfach"
+  },
+  "recorderType": {
+    "soprano": "Sopran",
+    "alto": "Alt",
+    "tenor": "Tenor",
+    "bass": "Bass"
   },
   "details": {
     "avatar": "Entwickler-Avatar",

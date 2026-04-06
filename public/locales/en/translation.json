@@ -58,18 +58,26 @@
     "volume": "Volume",
     "vibrato": "Vibrato",
     "variant": "Variant",
+    "type": "Type",
     "system": "System",
     "tips": {
       "volume": "Adjusts the recorder playback volume.",
       "vibrato": "Adds a vibrato effect to sustained notes.",
       "variant": "Switches between different recorded sample sets.",
-      "system": "Selects the fingering chart system (affects which notes are playable)."
+      "type": "Selects the recorder type (soprano, alto, tenor, bass). Each type has a different pitch range.",
+      "system": "Selects the fingering chart system (baroque or german). Tenor also supports simple."
     }
   },
   "fingeringSystem": {
-    "baroque": "Soprano – Baroque",
-    "german": "Soprano – German",
-    "simple": "Soprano – Simple"
+    "baroque": "Baroque",
+    "german": "German",
+    "simple": "Simple"
+  },
+  "recorderType": {
+    "soprano": "Soprano",
+    "alto": "Alto",
+    "tenor": "Tenor",
+    "bass": "Bass"
   },
   "details": {
     "avatar": "Developer Avatar",

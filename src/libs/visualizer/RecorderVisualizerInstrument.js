@@ -39,10 +39,10 @@ import { BaseVisualizerInstrument } from "./BaseVisualizerInstrument.js";
 export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
   // ─── computeNoteEvents ─────────────────────────────────────────────────────
 
-  computeNoteEvents(track, fingeringSystem, transpose) {
+  computeNoteEvents(track, fingeringSystem, transpose, recorderType = "tenor") {
     if (!track || !Array.isArray(track.actions)) return [];
 
-    const resolver = createFingeringResolver(fingeringSystem);
+    const resolver = createFingeringResolver(fingeringSystem, recorderType);
 
     return track.actions
       .filter((action) => action.type === "note")
@@ -86,7 +86,15 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
 
   createSprite(
     event,
-    { ppb, height, notesLayer, isPlayingRef, hasDraggedRef, onNoteClickRef, setIsHoveringNote },
+    {
+      ppb,
+      height,
+      notesLayer,
+      isPlayingRef,
+      hasDraggedRef,
+      onNoteClickRef,
+      setIsHoveringNote,
+    },
   ) {
     const fingeringColors = getFingeringColors();
     const durationForWidth = Math.max(event.duration ?? 0, 0);
@@ -202,7 +210,14 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
 
   onTickSprite(
     sprite,
-    { isActive, particleRefs, particleTextureRef, isPlayingRef, particlesEnabledRef, barXRef },
+    {
+      isActive,
+      particleRefs,
+      particleTextureRef,
+      isPlayingRef,
+      particlesEnabledRef,
+      barXRef,
+    },
   ) {
     // ── Hole scale bounce ────────────────────────────────────────────────────
     if (sprite.holeSprites?.length) {

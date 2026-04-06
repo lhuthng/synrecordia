@@ -40,6 +40,7 @@ export function usePixiVisualizer({
   isPlaying = false,
   bpm = 120,
   fingeringSystem = "baroque",
+  recorderType = "tenor",
   noteWidth = 70,
   height,
   playBarPosition = 0.95,
@@ -194,10 +195,15 @@ export function usePixiVisualizer({
       track.instrument ?? "recorder",
     );
     return {
-      events: instrument.computeNoteEvents(track, fingeringSystem, transpose),
+      events: instrument.computeNoteEvents(
+        track,
+        fingeringSystem,
+        transpose,
+        recorderType,
+      ),
       instrument,
     };
-  }, [displaySong, fingeringSystem, transpose]);
+  }, [displaySong, fingeringSystem, transpose, recorderType]);
 
   // Extract the events array used as an effect dependency and captured by the
   // init closure.  Changing this reference is what triggers a scene rebuild.

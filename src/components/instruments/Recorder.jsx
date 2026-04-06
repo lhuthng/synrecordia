@@ -39,6 +39,7 @@ export default function Recorder({
   isReady = true,
   trackNoteRange = null,
   fingeringSystem = "german",
+  recorderType = "tenor",
   muted = false,
 }) {
   const [volume, setVolume] = useState(0);
@@ -52,7 +53,7 @@ export default function Recorder({
   const systemRangeInfo = useMemo(() => {
     const compute = (system) => {
       if (!trackNoteRange) return null;
-      const r = recorderSampler.getNoteRange(system);
+      const r = recorderSampler.getNoteRange(system, recorderType);
       if (!r) return null;
 
       const tMin = r.min - trackNoteRange.min;
@@ -63,12 +64,22 @@ export default function Recorder({
     return {
       baroque: compute("baroque"),
       german: compute("german"),
-      simple: compute("simple"),
+      simple: recorderType === "tenor" ? compute("simple") : null,
     };
-  }, [recorderSampler, trackNoteRange]);
+  }, [recorderSampler, trackNoteRange, recorderType]);
 
-  const fingeringSystems = useMemo(
+  const recorderTypes = useMemo(
     () => [
+      { value: "soprano", label: t("recorderType.soprano") },
+      { value: "alto", label: t("recorderType.alto") },
+      { value: "tenor", label: t("recorderType.tenor") },
+      { value: "bass", label: t("recorderType.bass") },
+    ],
+    [t],
+  );
+
+  const fingeringSystems = useMemo(() => {
+    const base = [
       {
         value: "baroque",
         label: t("fingeringSystem.baroque"),
@@ -79,14 +90,16 @@ export default function Recorder({
         label: t("fingeringSystem.german"),
         badge: systemBadge(systemRangeInfo.german),
       },
-      {
+    ];
+    if (recorderType === "tenor") {
+      base.push({
         value: "simple",
         label: t("fingeringSystem.simple"),
         badge: systemBadge(systemRangeInfo.simple),
-      },
-    ],
-    [t, systemRangeInfo],
-  );
+      });
+    }
+    return base;
+  }, [t, systemRangeInfo, recorderType]);
 
   useEffect(() => {
     setVolume(recorderSampler.getVolume());
@@ -119,6 +132,17 @@ export default function Recorder({
       recorderSampler.setVersion(value, onSamplerChanged);
     },
     [offReady, recorderSampler, onSamplerChanged, callbacks],
+  );
+
+  const handleRecorderTypeChanged = useCallback(
+    (value) => {
+      callbacks?.setRecorderType?.(value);
+      // If switching away from tenor while simple is active, reset to baroque
+      if (value !== "tenor" && fingeringSystem === "simple") {
+        callbacks?.setFingeringSystem?.("baroque");
+      }
+    },
+    [callbacks, fingeringSystem],
   );
 
   const handleFingeringSystemChanged = useCallback(
@@ -211,13 +235,31 @@ export default function Recorder({
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
+                <label>{t("recorder.type")}:</label>
+                <SettingTooltip>{t("recorder.tips.type")}</SettingTooltip>
+              </div>
+              <div className="flex-1 mx-4">
+                <DuoSelect
+                  options={recorderTypes}
+                  value={recorderType}
+                  padding="px-2"
+                  onChange={handleRecorderTypeChanged}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <label>{t("recorder.system")}:</label>
                 <SettingTooltip>{t("recorder.tips.system")}</SettingTooltip>
               </div>
               <div className="flex-1 mx-4">
                 <DuoSelect
                   options={fingeringSystems}
-                  value={fingeringSystem}
+                  value={
+                    fingeringSystems.some((s) => s.value === fingeringSystem)
+                      ? fingeringSystem
+                      : (fingeringSystems[0]?.value ?? "baroque")
+                  }
                   padding="px-2"
                   onChange={handleFingeringSystemChanged}
                 />
