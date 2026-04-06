@@ -139,7 +139,7 @@ function printUsage() {
       "  --min-duration <s>        Minimum output duration in seconds        (default: 8)",
       "  --attack-ratio <0-1>      Fraction of duration to treat as attack   (default: 0.15)",
       "  --release-ratio <0-1>     Fraction of duration to treat as release  (default: 0.20)",
-      "  --crossfade <s>           Crossfade at each loop boundary, seconds  (default: 0.05)",
+      "  --crossfade <s>           Loop crossfade duration; also sets phase-analysis window  (default: 0.05)",
       "  --fade-out <s>            Fade-out applied to the tail              (default: 1.5)",
       "  --output-dir <path>       Write extended files here                 (default: <folder>-extended)",
       "  --in-place                Overwrite original files  ⚠ use with caution",
@@ -147,7 +147,7 @@ function printUsage() {
       "  --dry-run                 Preview actions without writing any audio",
       "  --quality <0-9>           MP3 VBR quality for output               (default: 2)",
       "  --zero-cross-window <s>   Search window for zero-crossing snapping  (default: 0.08)",
-      "  --phase-window <s>        Search window for phase-matched loop-end   (default: 0.04)",
+      "  --phase-window <s>        ±Search window for phase-matched loop-end snap  (default: 0.04)",
       "",
     ].join("\n"),
   );
@@ -277,30 +277,52 @@ function findZeroCrossing(samples, sampleRate, targetTime, windowSec = 0.08) {
   return targetTime; // no crossing found – use the raw estimate
 }
 
+// ─── RMS energy helper ────────────────────────────────────────────────────────
+
+/**
+ * Returns the RMS amplitude of a waveform slice.
+ * Used to measure how much the body's amplitude has decayed between
+ * loopStart and loopEnd so the gain-ramp compensation can equalise them.
+ *
+ * @param {Float32Array} samples
+ * @param {number}       startSec
+ * @param {number}       endSec
+ * @param {number}       sampleRate
+ * @returns {number}
+ */
+function computeRMS(samples, startSec, endSec, sampleRate) {
+  const s = Math.max(0, Math.round(startSec * sampleRate));
+  const e = Math.min(samples.length, Math.round(endSec * sampleRate));
+  if (e <= s) return 0;
+  let sum = 0;
+  for (let i = s; i < e; i++) sum += samples[i] ** 2;
+  return Math.sqrt(sum / (e - s));
+}
+
 // ─── Phase-matched loop-end detection ────────────────────────────────────────
 
 /**
- * Finds a refined loop-end time near `targetEnd` where the *tail* of the body
- * waveform phase-matches the *head* of the body waveform (at `loopStart`).
+ * Finds a refined loop-end time near `targetEnd` where the TAIL of the body
+ * waveform is in phase with — and has a similar amplitude to — the HEAD of
+ * the body waveform at `loopStart`.
  *
  * During the acrossfade crossfade the filter mixes:
- *   body1[ loopEnd-D … loopEnd ]    (fading out)
- *   body2[ loopStart … loopStart+D ](fading in)
+ *   body_N  [ loopEnd - crossfade … loopEnd ]    (fading out)
+ *   body_N+1[ loopStart … loopStart + crossfade ](fading in)
  *
- * If those two windows are in phase they add constructively → smooth sustain.
- * If they are anti-phase they cancel → the audible volume dip the user hears.
+ * The analysis window is set to the FULL crossfade duration (not a short
+ * sub-window) so the entire blend region is phase-matched, eliminating the
+ * cancellation that causes the audible volume dip.
  *
- * We search a ±searchWindowSec window around targetEnd for the candidate
- * `candEnd` where samples[ candEnd-W … candEnd ] has the highest normalised
- * cross-correlation with samples[ loopStart … loopStart+W ].
+ * Scoring = 0.7 × normalised_cross_correlation + 0.3 × amplitude_match
  *
  * @param {Float32Array} samples
  * @param {number}       sampleRate
- * @param {number}       loopStart          seconds – finalized loop start
+ * @param {number}       loopStart          seconds – finalised loop start
  * @param {number}       targetEnd          seconds – ratio-based ideal loop end
- * @param {number}       searchWindowSec    ±seconds to scan (default 0.04)
- * @param {number}       analysisWindowSec  comparison window length (default 0.02)
- * @returns {number}  refined loop-end in seconds
+ * @param {number}       searchWindowSec    ±seconds to scan around targetEnd
+ * @param {number}       crossfadeSec       crossfade duration (= analysis window)
+ * @returns {{ time: number, score: number }}
  */
 function findPhaseMatchedLoopEnd(
   samples,
@@ -308,28 +330,27 @@ function findPhaseMatchedLoopEnd(
   loopStart,
   targetEnd,
   searchWindowSec = 0.04,
-  analysisWindowSec = 0.02,
+  crossfadeSec = 0.05,
 ) {
-  const winLen = Math.round(analysisWindowSec * sampleRate);
+  const winLen = Math.round(crossfadeSec * sampleRate);
   const startIdx = Math.round(loopStart * sampleRate);
   const targetIdx = Math.round(targetEnd * sampleRate);
   const halfSearch = Math.round(searchWindowSec * sampleRate);
 
-  // Pre-compute sum-of-squares for the reference window at loopStart.
-  if (startIdx + winLen >= samples.length) return targetEnd;
+  if (startIdx + winLen >= samples.length) return { time: targetEnd, score: 0 };
 
+  // Pre-compute reference window statistics (head of body at loopStart)
   let refSumSq = 0;
   for (let j = 0; j < winLen; j++) {
     refSumSq += samples[startIdx + j] ** 2;
   }
-  if (refSumSq < 1e-12) return targetEnd; // near-silence, bail out
+  const refRMS = Math.sqrt(refSumSq / winLen);
+  if (refSumSq < 1e-12) return { time: targetEnd, score: 0 }; // near-silence
 
-  // Search for candEnd such that:
-  //   samples[ candEnd-winLen … candEnd ]  ≈  samples[ startIdx … startIdx+winLen ]
   const minEnd = Math.max(startIdx + winLen * 2, targetIdx - halfSearch);
   const maxEnd = Math.min(samples.length - 1, targetIdx + halfSearch);
 
-  let bestCorr = -Infinity;
+  let bestScore = -Infinity;
   let bestIdx = targetIdx;
 
   for (let candEnd = minEnd; candEnd <= maxEnd; candEnd++) {
@@ -345,15 +366,24 @@ function findPhaseMatchedLoopEnd(
       candSumSq += cand * cand;
     }
 
-    // Normalised cross-correlation (audio is AC so mean ≈ 0)
+    // Normalised cross-correlation: +1 = perfect in-phase, -1 = anti-phase
     const normCorr = crossSum / (Math.sqrt(refSumSq * candSumSq) + 1e-10);
-    if (normCorr > bestCorr) {
-      bestCorr = normCorr;
+
+    // Amplitude match: 1.0 when tail RMS = head RMS, 0.0 when very different
+    const candRMS = Math.sqrt(candSumSq / winLen);
+    const ampRatio = candRMS / (refRMS + 1e-10);
+    const ampScore = 1 - Math.min(1, Math.abs(ampRatio - 1));
+
+    // Combined score: phase is primary, amplitude is secondary
+    const score = 0.7 * normCorr + 0.3 * ampScore;
+
+    if (score > bestScore) {
+      bestScore = score;
       bestIdx = candEnd;
     }
   }
 
-  return bestIdx / sampleRate;
+  return { time: bestIdx / sampleRate, score: bestScore };
 }
 
 // ─── Loop point detection ─────────────────────────────────────────────────────
@@ -361,62 +391,65 @@ function findPhaseMatchedLoopEnd(
 /**
  * Determines loop start and end times for a sample.
  *
+ * Accepts a pre-decoded mono Float32Array so the caller can reuse the same
+ * buffer for subsequent RMS computation without decoding the file twice.
+ *
  * Strategy:
  *   - loopStart: snapped to the nearest upward zero-crossing near
  *                attackRatio × duration.
- *   - loopEnd:   phase-matched to loopStart via cross-correlation, searched
- *                near (1 − releaseRatio) × duration.  This ensures the
- *                waveform tail of the body is in the same phase as its head,
- *                so the acrossfade blend is constructive rather than cancelling.
+ *   - loopEnd:   found by searching ±phaseWindow around the ratio-based target,
+ *                scored by BOTH phase correlation and amplitude similarity over
+ *                a window equal to the crossfade duration.  Using the full
+ *                crossfade duration as the analysis window ensures the entire
+ *                blend region is in phase, eliminating the cancellation dip.
  *
- * Falls back gracefully if waveform decoding fails.
- *
- * @param {string} wavPath
- * @param {number} duration
- * @param {number} attackRatio
- * @param {number} releaseRatio
- * @param {number} zeroCrossWindow  search window for zero-crossing (loopStart)
- * @param {number} phaseWindow      search window for phase-matching (loopEnd)
- * @returns {{ loopStart: number, loopEnd: number }}
+ * @param {Float32Array|null} samples     pre-decoded mono audio (or null for fallback)
+ * @param {number}            sampleRate
+ * @param {number}            duration
+ * @param {number}            attackRatio
+ * @param {number}            releaseRatio
+ * @param {number}            zeroCrossWindow  search window for zero-crossing (loopStart)
+ * @param {number}            phaseWindow      ±search window for phase matching (loopEnd)
+ * @param {number}            crossfade        crossfade duration → analysis window size
+ * @returns {{ loopStart: number, loopEnd: number, phaseScore: number|null }}
  */
 function findLoopPoints(
-  wavPath,
+  samples,
+  sampleRate,
   duration,
   attackRatio,
   releaseRatio,
   zeroCrossWindow,
   phaseWindow = 0.04,
+  crossfade = 0.05,
 ) {
-  const ANALYSIS_SR = 44100;
   const rawLoopStart = duration * attackRatio;
   const rawLoopEnd = duration * (1 - releaseRatio);
 
-  const samples = decodeToMono(wavPath, ANALYSIS_SR);
-
   if (!samples || samples.length === 0) {
-    // Graceful fallback: no waveform available
-    return { loopStart: rawLoopStart, loopEnd: rawLoopEnd };
+    return { loopStart: rawLoopStart, loopEnd: rawLoopEnd, phaseScore: null };
   }
 
   // loopStart: snap to nearest upward zero-crossing for a clean body entry
   const loopStart = findZeroCrossing(
     samples,
-    ANALYSIS_SR,
+    sampleRate,
     rawLoopStart,
     zeroCrossWindow,
   );
 
   // loopEnd: phase-match the body tail to the body head so the acrossfade
   // crossfade region is constructive (same phase) rather than cancelling.
-  const loopEnd = findPhaseMatchedLoopEnd(
+  const { time: loopEnd, score: phaseScore } = findPhaseMatchedLoopEnd(
     samples,
-    ANALYSIS_SR,
+    sampleRate,
     loopStart,
     rawLoopEnd,
     phaseWindow,
+    crossfade,
   );
 
-  return { loopStart, loopEnd };
+  return { loopStart, loopEnd, phaseScore };
 }
 
 // ─── Segment extraction ───────────────────────────────────────────────────────
@@ -467,41 +500,76 @@ function extractSegment(inputPath, startTime, endTime, outputPath) {
  * Builds the FFmpeg -filter_complex string for:
  *   [0]=attack  +  [1..N]=body (N copies)  +  [N+1]=release
  *
- * Body copies are chained with `acrossfade` (crossfade between each pair).
- * The attack→body and body→release junctions are stitched with `concat`
- * (they are already sample-continuous, having been cut at the same loop
- * boundary, so no crossfade is needed at those edges).
+ * Each body copy optionally has a gain ramp applied (to compensate for natural
+ * amplitude decay across the body segment), then the copies are chained with
+ * `acrossfade` using the `tri` (linear) curve.
+ *
+ * Why `tri` instead of `qsin`?
+ *   `qsin` (constant-power) is designed for crossfading *uncorrelated* streams
+ *   (e.g. DJ transitions). For a looped body the two signals are highly
+ *   correlated: at the crossfade midpoint, `qsin` gives +3 dB when in phase
+ *   and heavy cancellation when even slightly anti-phase.
+ *   `tri` (linear) gives exactly 0 dB for in-phase correlated audio, which is
+ *   what a seamless loop needs.
  *
  * The assembled stream is then:
  *   • atrim  → clamped to targetDuration
  *   • afade  → fade-out over the last fadeOut seconds
  *
  * @param {number} numBodyCopies
- * @param {number} crossfade       seconds
- * @param {number} targetDuration  seconds
- * @param {number} fadeOut         seconds
+ * @param {number} crossfade        seconds
+ * @param {number} targetDuration   seconds
+ * @param {number} fadeOut          seconds
+ * @param {number} bodyGainRamp     end-of-body gain multiplier (1.0 = no ramp)
+ * @param {number|null} bodyDuration seconds – required when bodyGainRamp ≠ 1.0
  * @returns {string}
  */
-function buildFiltergraph(numBodyCopies, crossfade, targetDuration, fadeOut) {
+function buildFiltergraph(
+  numBodyCopies,
+  crossfade,
+  targetDuration,
+  fadeOut,
+  bodyGainRamp = 1.0,
+  bodyDuration = null,
+) {
   const parts = [];
   const releaseIdx = numBodyCopies + 1; // input index of release.wav
   const fadeStart = Math.max(0, targetDuration - fadeOut);
   const xfStr = crossfade.toFixed(6);
 
-  // ── Chain body copies with acrossfade ────────────────────────────────────
+  // ── Optional gain ramp per body copy ────────────────────────────────────
+  // A linear ramp from 1.0 → bodyGainRamp equalises the amplitude at both
+  // ends of the body before the acrossfade blends them.
+  const applyRamp = Math.abs(bodyGainRamp - 1.0) > 0.01 && bodyDuration != null;
+  const bodyLabels = [];
+
+  for (let i = 1; i <= numBodyCopies; i++) {
+    if (applyRamp) {
+      const delta = (bodyGainRamp - 1.0).toFixed(6);
+      const durStr = bodyDuration.toFixed(6);
+      // volume filter with eval=frame: t is the PTS in seconds (0 at body start)
+      parts.push(
+        `[${i}]volume=volume='1.0+(${delta})*(t/${durStr})':eval=frame[vb${i}]`,
+      );
+      bodyLabels.push(`vb${i}`);
+    } else {
+      bodyLabels.push(String(i));
+    }
+  }
+
+  // ── Chain body copies with acrossfade (tri curve for correlated loops) ──
   // Input indices:  0=attack, 1..N=body copies, N+1=release
   let bodyChainLabel;
 
   if (numBodyCopies === 1) {
-    // Single body copy – no crossfade needed, use input [1] directly
-    bodyChainLabel = "1";
+    // Single body copy – no crossfade needed, use its label directly
+    bodyChainLabel = bodyLabels[0];
   } else {
-    let prevLabel = "1";
+    let prevLabel = bodyLabels[0];
     for (let i = 1; i < numBodyCopies; i++) {
-      const inputIdx = i + 1; // body copy i+1 is at input index i+1
       const outLabel = i === numBodyCopies - 1 ? "bodies" : `bc${i}`;
       parts.push(
-        `[${prevLabel}][${inputIdx}]acrossfade=d=${xfStr}:c1=qsin:c2=qsin[${outLabel}]`,
+        `[${prevLabel}][${bodyLabels[i]}]acrossfade=d=${xfStr}:c1=tri:c2=tri[${outLabel}]`,
       );
       prevLabel = outLabel;
     }
@@ -600,14 +668,22 @@ async function extendSample(inputPath, outputPath, opts) {
       return { status: "error", reason: "Failed to decode source to WAV" };
     }
 
-    // Analyse waveform to snap loop boundaries to zero crossings
-    let { loopStart, loopEnd } = findLoopPoints(
-      decodedWav,
+    // Decode to Float32 for analysis (reused for loop-point detection AND
+    // body-RMS computation — avoids decoding the file twice).
+    const ANALYSIS_SR = 44100;
+    const samples = decodeToMono(decodedWav, ANALYSIS_SR);
+
+    // Analyse waveform to snap loop boundaries to zero crossings and find a
+    // phase-matched, amplitude-similar loop end.
+    let { loopStart, loopEnd, phaseScore } = findLoopPoints(
+      samples,
+      ANALYSIS_SR,
       duration,
       attackRatio,
       releaseRatio,
       zeroCrossWindow,
       phaseWindow,
+      crossfade,
     );
 
     // Safety clamps: ensure at least 50 ms from edges and a sane body size
@@ -619,6 +695,31 @@ async function extendSample(inputPath, outputPath, opts) {
     );
 
     const bodyDuration = loopEnd - loopStart;
+
+    // ── Body gain ramp: compensate for natural amplitude decay ───────────
+    // Measure RMS over the crossfade-sized windows at the start and end of
+    // the body.  If the body decays, bodyGainRamp > 1 so the gain ramp
+    // brings the tail amplitude back up to match the head before blending.
+    let bodyGainRamp = 1.0;
+    if (samples) {
+      const rmsWindow = Math.min(crossfade, bodyDuration / 4);
+      const headRMS = computeRMS(
+        samples,
+        loopStart,
+        loopStart + rmsWindow,
+        ANALYSIS_SR,
+      );
+      const tailRMS = computeRMS(
+        samples,
+        loopEnd - rmsWindow,
+        loopEnd,
+        ANALYSIS_SR,
+      );
+      if (headRMS > 1e-6 && tailRMS > 1e-6) {
+        // Clamp to ±6 dB to avoid extreme corrections
+        bodyGainRamp = Math.max(0.5, Math.min(2.0, headRMS / tailRMS));
+      }
+    }
 
     // Body must be longer than the crossfade (both sides) so acrossfade works
     if (bodyDuration <= crossfade * 2) {
@@ -642,12 +743,20 @@ async function extendSample(inputPath, outputPath, opts) {
     );
     const estimatedDuration = duration + (numBodyCopies - 1) * effectiveBodyDur;
 
+    const phaseLabel =
+      phaseScore != null ? ` phase=${phaseScore.toFixed(2)}` : "";
+    const rampLabel =
+      Math.abs(bodyGainRamp - 1.0) > 0.01
+        ? ` gain-ramp×${bodyGainRamp.toFixed(2)}`
+        : "";
     process.stdout.write(
       col(
         C.grey,
         `\n      loop: ${loopStart.toFixed(3)}s – ${loopEnd.toFixed(3)}s` +
           ` (body=${bodyDuration.toFixed(3)}s, ×${numBodyCopies} copies` +
-          ` → ~${estimatedDuration.toFixed(2)}s)`,
+          ` → ~${estimatedDuration.toFixed(2)}s)` +
+          phaseLabel +
+          rampLabel,
       ),
     );
 
@@ -689,6 +798,8 @@ async function extendSample(inputPath, outputPath, opts) {
       crossfade,
       minDuration,
       fadeOut,
+      bodyGainRamp,
+      bodyDuration,
     );
 
     const ffmpegArgs = ["-y"];
@@ -827,10 +938,10 @@ async function processSamplesFolder(folderPath, opts) {
     `  Loop method:  zero-crossing  (window ±${((opts.zeroCrossWindow / 2) * 1000).toFixed(0)} ms)`,
   );
   console.log(
-    `  Crossfade:    ${(opts.crossfade * 1000).toFixed(0)} ms  (equal-power qsin)`,
+    `  Crossfade:    ${(opts.crossfade * 1000).toFixed(0)} ms  (linear/tri, phase-matched)`,
   );
   console.log(
-    `  Phase window: ±${(opts.phaseWindow * 1000).toFixed(0)} ms  (loop-end matching)`,
+    `  Phase window: ±${(opts.phaseWindow * 1000).toFixed(0)} ms  (analysis window = crossfade duration)`,
   );
   console.log(`  Fade-out:     ${opts.fadeOut}s`);
   if (opts.inPlace) {

@@ -1,4 +1,4 @@
 {
-  "versions": ["forte", "mezzo-forte", "mezzo-piano", "pianissimo", "piano"],
-  "default": "forte"
+  "versions": ["philharmonia-flute"],
+  "default": "philharmonia-flute"
 }

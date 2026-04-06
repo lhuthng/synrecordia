@@ -1,476 +1,633 @@
 #!/usr/bin/env node
 /**
- * synrecordia/scripts/wav2mp3-folder.mjs
+ * wav2mp3-folder.mjs
  *
- * Lightweight Node.js helper to convert all .wav files in a samples folder
- * (organized by "versions" listed in a top-level index.json) to .mp3 and
- * update per-version index.json files to point at the .mp3 filenames.
+ * Converts all .wav samples referenced in an instrument folder's index.json(s)
+ * to .mp3 and updates the index.json files to point at the new filenames.
  *
- * Usage:
- *   node wav2mp3-folder.mjs [rootDir]
- *   node wav2mp3-folder.mjs /path/to/public/samples/piano --bitrate=192k --delete-original --overwrite
+ * Works with two folder layouts:
+ *   Flat      – index.json maps  { note: filename.wav, … }   (e.g. salamander)
+ *   Versioned – index.json has   { versions: […] }            (e.g. recorder)
+ *               each version sub-folder has its own index.json
+ *
+ * Requires: ffmpeg on PATH.
+ *
+ * Usage (from the project root):
+ *   node scripts/wav2mp3-folder.mjs public/samples/piano/salamander [options]
  *
  * Options:
- *   --bitrate=192k       MP3 target bitrate (ffmpeg accepts "192k"; lame accepts "192")
- *   --delete-original    Remove .wav files after successful conversion
- *   --overwrite          Overwrite existing .mp3 output files
- *   --concurrency=4      Number of parallel conversions
- *   --dry-run            Don't actually run conversions or write files; just report
- *   --verbose            More logging
- *   --help               Show help
- *
- * Notes:
- *  - Prefers `ffmpeg` if available, falls back to `lame` (both must be in PATH).
- *  - Backs up each modified index.json as `index.json.bak` before writing.
- *  - Only updates JSON entries that currently reference `.wav` filenames and whose
- *    conversion succeeded (unless --dry-run).
- *
- * Written to be dependency-free (Node builtin modules only).
+ *   --bitrate <kbps>     CBR bitrate in kbps, e.g. 192              (default: 192)
+ *   --quality <0-9>      VBR quality instead of CBR; 0 = best       (overrides --bitrate)
+ *   --output-dir <path>  Write mp3s here                            (default: <folder>-mp3)
+ *   --in-place           Convert and update index.json inside the source folder
+ *   --delete-source      Remove original .wav after successful conversion
+ *   --overwrite          Re-encode even if the .mp3 already exists
+ *   --versions <v1,v2>   Only process these versions                (versioned folders only)
+ *   --dry-run            Preview without writing any files
  */
 
-import {
-  access,
-  copyFile,
-  mkdir,
-  readdir,
-  readFile,
-  unlink,
-  writeFile,
-} from "fs/promises";
-import { spawn } from "child_process";
-import { delimiter, dirname, join, resolve as resolvePath } from "path";
-import { EOL } from "os";
+import { spawnSync } from "child_process";
+import fsp from "fs/promises";
+import fs from "fs";
+import path from "path";
 
-// ── CLI options ───────────────────────────────────────────────────────────────
+// ─── ANSI colours ─────────────────────────────────────────────────────────────
 
-function parseArgs(args) {
+const C = {
+  reset: "\x1b[0m",
+  bold: "\x1b[1m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  cyan: "\x1b[36m",
+  grey: "\x1b[90m",
+};
+const col = (c, s) => `${c}${s}${C.reset}`;
+
+// ─── CLI args ─────────────────────────────────────────────────────────────────
+
+function parseArgs(argv) {
+  const args = argv.slice(2);
   const opts = {
-    root: process.cwd(),
-    bitrate: "192k",
-    deleteOriginal: false,
+    folderPath: null,
+    bitrate: 192, // CBR kbps — used when quality is null
+    quality: null, // VBR q (0–9); overrides bitrate when set
+    outputDir: null, // null → <folder>-mp3
+    inPlace: false,
+    deleteSource: false,
     overwrite: false,
-    concurrency: 4,
+    versions: null, // null → all versions
     dryRun: false,
-    verbose: false,
   };
 
-  for (const arg of args) {
-    if (!arg.startsWith("--") && opts.root === process.cwd()) {
-      opts.root = arg;
-      continue;
-    }
-    if (arg === "--delete-original") opts.deleteOriginal = true;
-    else if (arg === "--overwrite") opts.overwrite = true;
-    else if (arg === "--dry-run") opts.dryRun = true;
-    else if (arg === "--verbose") opts.verbose = true;
-    else if (arg.startsWith("--bitrate=")) opts.bitrate = arg.split("=")[1];
-    else if (arg.startsWith("--concurrency="))
-      opts.concurrency = Math.max(1, Number(arg.split("=")[1]) || 1);
-    else if (arg === "--help") opts.help = true;
-    else {
-      console.error(`Unknown argument: ${arg}`);
-      opts.help = true;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    switch (a) {
+      case "--bitrate":
+        opts.bitrate = parseInt(args[++i], 10);
+        break;
+      case "--quality":
+        opts.quality = parseInt(args[++i], 10);
+        break;
+      case "--output-dir":
+        opts.outputDir = args[++i];
+        break;
+      case "--in-place":
+        opts.inPlace = true;
+        break;
+      case "--delete-source":
+        opts.deleteSource = true;
+        break;
+      case "--overwrite":
+        opts.overwrite = true;
+        break;
+      case "--versions":
+        opts.versions = args[++i].split(",").map((v) => v.trim());
+        break;
+      case "--dry-run":
+        opts.dryRun = true;
+        break;
+      default:
+        if (!a.startsWith("--")) opts.folderPath = a;
     }
   }
+
   return opts;
 }
 
-function usageExit(code = 0) {
-  console.log(
-    `Usage: node wav2mp3-folder.mjs [rootDir] [--bitrate=192k] [--delete-original] [--overwrite] [--concurrency=4] [--dry-run] [--verbose]`,
+function printUsage() {
+  console.error(
+    [
+      "",
+      col(C.bold, "Usage:"),
+      "  node scripts/wav2mp3-folder.mjs <samples-folder> [options]",
+      "",
+      col(C.bold, "Arguments:"),
+      "  <samples-folder>          Path to a flat or versioned sample folder",
+      "                            (must contain an index.json)",
+      "",
+      col(C.bold, "Options:"),
+      "  --bitrate <kbps>          CBR bitrate in kbps                              (default: 192)",
+      "  --quality <0-9>           VBR quality; 0 = best / largest  (overrides --bitrate)",
+      "  --output-dir <path>       Write converted files here                       (default: <folder>-mp3)",
+      "  --in-place                Convert inside the source folder, update index.json in-place",
+      "  --delete-source           Remove original .wav after successful conversion",
+      "  --overwrite               Re-encode even if the .mp3 already exists",
+      "  --versions <v1,v2,...>    Only process these versions  (versioned folders only)",
+      "  --dry-run                 Preview actions without writing any files",
+      "",
+      col(C.bold, "Examples:"),
+      "  # Preview what would happen:",
+      "  node scripts/wav2mp3-folder.mjs public/samples/piano/salamander --dry-run",
+      "",
+      "  # Convert to a new folder (safe default):",
+      "  node scripts/wav2mp3-folder.mjs public/samples/piano/salamander",
+      "",
+      "  # Convert in-place with VBR quality 3, then remove the source wavs:",
+      "  node scripts/wav2mp3-folder.mjs public/samples/piano/salamander --in-place --quality 3 --delete-source",
+      "",
+    ].join("\n"),
   );
-  process.exit(code);
 }
 
-// ── Logging ───────────────────────────────────────────────────────────────────
+// ─── Pre-flight ───────────────────────────────────────────────────────────────
 
-let verbose = false;
-
-function log(...xs) {
-  if (verbose) console.log(...xs);
-}
-function info(...xs) {
-  console.log(...xs);
-}
-
-// ── System utilities ──────────────────────────────────────────────────────────
-
-async function which(cmd) {
-  const paths = (process.env.PATH || "").split(delimiter);
-  const exts =
-    process.platform === "win32" && process.env.PATHEXT
-      ? process.env.PATHEXT.split(";")
-      : [""];
-  for (const p of paths) {
-    const candidate = join(p, cmd);
-    for (const ext of exts) {
-      try {
-        await access(candidate + ext);
-        return candidate + ext;
-      } catch (e) {
-        /* continue */
-      }
-    }
+function requireTool(name) {
+  const r = spawnSync(name, ["-version"], { encoding: "utf8" });
+  if (r.error) {
+    console.error(
+      col(C.red, `✖  ${name} not found on PATH. Please install ffmpeg.`),
+    );
+    process.exit(1);
   }
-  return null;
 }
 
-async function detectConverter() {
-  const ffmpegPath = await which("ffmpeg");
-  if (ffmpegPath) return { name: "ffmpeg", path: ffmpegPath };
-  const lamePath = await which("lame");
-  if (lamePath) return { name: "lame", path: lamePath };
-  return null;
-}
+// ─── File helpers ─────────────────────────────────────────────────────────────
 
-function runProcess(cmd, args, optsSpawn = {}) {
-  return new Promise((resolve, reject) => {
-    const ps = spawn(cmd, args, {
-      stdio: ["ignore", "pipe", "pipe"],
-      ...optsSpawn,
-    });
-    let stdout = "",
-      stderr = "";
-    ps.stdout.on("data", (b) => {
-      stdout += b.toString();
-    });
-    ps.stderr.on("data", (b) => {
-      stderr += b.toString();
-    });
-    ps.on("error", (err) => reject(err));
-    ps.on("close", (code) => {
-      if (code === 0) resolve({ stdout, stderr, code });
-      else
-        reject(
-          new Error(
-            `Command "${cmd} ${args.join(" ")}" exited ${code}\n${stderr}`,
-          ),
-        );
-    });
-  });
-}
-
-// ── File utilities ────────────────────────────────────────────────────────────
-
-function toMp3Name(wavName) {
-  if (wavName.toLowerCase().endsWith(".wav")) {
-    return wavName.slice(0, -4) + ".mp3";
-  }
-  return wavName;
-}
-
-async function readJson(filePath) {
-  const raw = await readFile(filePath, "utf8");
-  return JSON.parse(raw);
-}
-
-async function writeJson(filePath, obj) {
-  const data = JSON.stringify(obj, null, 2) + EOL;
-  await writeFile(filePath, data, "utf8");
-}
-
-async function ensureFileExists(p) {
+function getFileSize(filePath) {
   try {
-    await access(p);
-    return true;
+    return fs.statSync(filePath).size;
   } catch {
-    return false;
+    return null;
   }
 }
 
-// ── Conversion ────────────────────────────────────────────────────────────────
-
-async function convertFile(
-  converter,
-  inputPath,
-  outputPath,
-  bitrate,
-  { overwrite = false, dryRun = false } = {},
-) {
-  if (!overwrite) {
-    const exists = await ensureFileExists(outputPath);
-    if (exists) {
-      log(`Skipping existing: ${outputPath}`);
-      return { skipped: true };
-    }
-  }
-
-  if (dryRun) {
-    log(`[dry-run] would convert: ${inputPath} -> ${outputPath}`);
-    return { dry: true };
-  }
-
-  // Ensure parent dir of output exists
-  await mkdir(dirname(outputPath), { recursive: true });
-
-  if (converter.name === "ffmpeg") {
-    // ffmpeg -hide_banner -loglevel error -y -i "in.wav" -codec:a libmp3lame -b:a 192k "out.mp3"
-    const args = [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-y",
-      "-i",
-      inputPath,
-      "-codec:a",
-      "libmp3lame",
-      "-b:a",
-      bitrate,
-      outputPath,
-    ];
-    log("Running ffmpeg", args.join(" "));
-    await runProcess(converter.path, args);
-    return { converted: true };
-  } else if (converter.name === "lame") {
-    // lame -m s -b 192 input.wav output.mp3
-    // lame expects numeric bitrate, strip trailing k/K
-    const bnum = String(bitrate).replace(/[kK]$/, "");
-    const args = ["-m", "s", "-b", bnum, inputPath, outputPath];
-    log("Running lame", args.join(" "));
-    await runProcess(converter.path, args);
-    return { converted: true };
-  } else {
-    throw new Error("Unsupported converter: " + JSON.stringify(converter));
-  }
+function fmtSize(bytes) {
+  if (bytes == null) return "?";
+  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(2)} MB`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
-async function processVersion(converter, rootDir, version, options) {
-  const versionDir = join(rootDir, version);
-  const indexPath = join(versionDir, "index.json");
+function fmtPct(before, after) {
+  if (!before || !after) return "";
+  const pct = ((1 - after / before) * 100).toFixed(1);
+  return (
+    col(C.green, `−${pct}%`) +
+    col(C.grey, ` (saved ${fmtSize(before - after)})`)
+  );
+}
 
-  if (!(await ensureFileExists(indexPath))) {
-    info(`No index.json in ${versionDir}, skipping.`);
-    return { version, converted: 0, skipped: 0 };
+/** Replaces the .wav extension with .mp3 (case-insensitive). */
+function toMp3Name(wavFilename) {
+  return wavFilename.replace(/\.wav$/i, ".mp3");
+}
+
+// ─── Folder structure detection ───────────────────────────────────────────────
+
+/**
+ * Reads and interprets the root index.json.
+ *
+ * Returns one of:
+ *   { type: "flat",      index, indexPath }
+ *   { type: "versioned", rootIndex, versions: [{ version, dir, index, indexPath }] }
+ */
+async function loadStructure(folderPath, versionFilter) {
+  const rootIndexPath = path.join(folderPath, "index.json");
+  let root;
+
+  try {
+    root = JSON.parse(await fsp.readFile(rootIndexPath, "utf8"));
+  } catch (err) {
+    throw new Error(`Cannot read ${rootIndexPath}: ${err.message}`);
   }
 
-  log(`Processing version ${version} (index: ${indexPath})`);
-  const mapping = await readJson(indexPath);
-  if (typeof mapping !== "object" || mapping === null) {
-    info(`index.json in ${versionDir} is not an object, skipping.`);
-    return { version, converted: 0, skipped: 0 };
-  }
-
-  // Gather tasks: key -> filename
-  const tasks = [];
-  for (const [key, fname] of Object.entries(mapping)) {
-    if (typeof fname === "string" && fname.toLowerCase().endsWith(".wav")) {
-      const inputPath = join(versionDir, fname);
-      const outName = toMp3Name(fname);
-      const outputPath = join(versionDir, outName);
-      tasks.push({ key, fname, inputPath, outName, outputPath });
-    }
-  }
-
-  if (tasks.length === 0) {
-    log(`No .wav entries found in ${indexPath}`);
-    return { version, converted: 0, skipped: 0 };
-  }
-
-  info(`Found ${tasks.length} .wav files to convert in ${version}`);
-
-  // Run conversions with concurrency
-  const concurrency = options.concurrency || 4;
-  let active = 0;
-  let idx = 0;
-  let convertedCount = 0;
-  let skippedCount = 0;
-  const results = [];
-
-  async function worker() {
-    while (true) {
-      let task;
-      // Fetch next task atomically
-      if (idx < tasks.length) {
-        task = tasks[idx++];
-      } else break;
-
-      log(`Converting [${version}] ${task.fname} -> ${task.outName}`);
-      try {
-        const conversion = await convertFile(
-          converter,
-          task.inputPath,
-          task.outputPath,
-          options.bitrate,
-          { overwrite: options.overwrite, dryRun: options.dryRun },
-        );
-        if (conversion.converted || conversion.dry) {
-          convertedCount++;
-          results.push({ task, ok: true });
-          // Optionally delete original
-          if (
-            options.deleteOriginal &&
-            !options.dryRun &&
-            conversion.converted
-          ) {
-            try {
-              await unlink(task.inputPath);
-              log("Deleted original:", task.inputPath);
-            } catch (e) {
-              log("Failed to delete original:", e.message);
-            }
+  if (Array.isArray(root.versions)) {
+    // ── Versioned layout ─────────────────────────────────────────────────
+    const all = root.versions;
+    const wanted = versionFilter
+      ? versionFilter.filter((v) => {
+          if (!all.includes(v)) {
+            console.warn(
+              col(C.yellow, `  ⚠  Unknown version "${v}" – skipping`),
+            );
+            return false;
           }
-        } else if (conversion.skipped) {
-          skippedCount++;
-          results.push({ task, ok: false, skipped: true });
-        } else {
-          results.push({ task, ok: false });
-        }
-      } catch (e) {
-        log(`Conversion failed for ${task.inputPath}:`, e.message);
-        results.push({ task, ok: false, error: e });
+          return true;
+        })
+      : all;
+
+    const versions = [];
+    for (const version of wanted) {
+      const dir = path.join(folderPath, version);
+      const indexPath = path.join(dir, "index.json");
+      let index;
+      try {
+        index = JSON.parse(await fsp.readFile(indexPath, "utf8"));
+      } catch (err) {
+        console.warn(
+          col(C.yellow, `  ⚠  Skipping version "${version}": ${err.message}`),
+        );
+        continue;
       }
+      versions.push({ version, dir, index, indexPath });
     }
+
+    return { type: "versioned", rootIndex: root, rootIndexPath, versions };
   }
 
-  // Launch workers
-  const workers = Array.from({ length: concurrency }, () => worker());
-  await Promise.all(workers);
-
-  // Update index.json: only change entries for tasks that succeeded
-  const succeededOutNames = new Set(
-    results.filter((r) => r.ok).map((r) => r.task.fname),
-  ); // original wav names that succeeded
-  if (!options.dryRun) {
-    // Backup index.json
-    const bakPath = indexPath + ".bak";
-    try {
-      await copyFile(indexPath, bakPath);
-      log(`Backed up ${indexPath} -> ${bakPath}`);
-    } catch (e) {
-      log(`Warning: failed to backup ${indexPath}: ${e.message}`);
-    }
-
-    let changed = false;
-    for (const r of results) {
-      if (r.ok) {
-        const { key, fname, outName } = r.task;
-        if (mapping[key] === fname) {
-          mapping[key] = outName;
-          changed = true;
-        } else {
-          log(
-            `Skipping update for ${key} because mapping changed (was ${mapping[key]})`,
-          );
-        }
-      }
-    }
-    if (changed) {
-      await writeJson(indexPath, mapping);
-      info(`Updated ${indexPath} to reference .mp3 files`);
-    } else {
-      log(`No index.json changes necessary for ${indexPath}`);
-    }
-  } else {
-    log(`[dry-run] would update ${indexPath} for ${convertedCount} entries`);
-  }
-
-  return {
-    version,
-    converted: convertedCount,
-    skipped: skippedCount,
-    total: tasks.length,
-  };
+  // ── Flat layout ──────────────────────────────────────────────────────────
+  return { type: "flat", index: root, indexPath: rootIndexPath };
 }
 
-// ── Entry point ───────────────────────────────────────────────────────────────
+// ─── Core: convert one file ───────────────────────────────────────────────────
+
+/**
+ * Converts a single .wav to .mp3 using ffmpeg (spawnSync).
+ *
+ * @returns {{ status: "ok"|"skipped"|"dry-run"|"error", beforeBytes, afterBytes, reason? }}
+ */
+async function convertFile(inputPath, outputPath, opts) {
+  if (!fs.existsSync(inputPath)) {
+    return { status: "error", reason: "source .wav not found" };
+  }
+
+  const beforeBytes = getFileSize(inputPath);
+
+  // Skip if the .mp3 already exists and --overwrite was not given
+  if (!opts.overwrite && fs.existsSync(outputPath)) {
+    return {
+      status: "skipped",
+      reason: "mp3 already exists (use --overwrite to re-encode)",
+      beforeBytes,
+      afterBytes: getFileSize(outputPath),
+    };
+  }
+
+  if (opts.dryRun) {
+    return { status: "dry-run", beforeBytes, afterBytes: null };
+  }
+
+  await fsp.mkdir(path.dirname(outputPath), { recursive: true });
+
+  // Build ffmpeg args
+  const ffArgs = ["-y", "-hide_banner", "-loglevel", "error", "-i", inputPath];
+
+  if (opts.quality != null) {
+    ffArgs.push("-codec:a", "libmp3lame", "-q:a", String(opts.quality));
+  } else {
+    ffArgs.push("-codec:a", "libmp3lame", "-b:a", `${opts.bitrate}k`);
+  }
+
+  ffArgs.push(outputPath);
+
+  const r = spawnSync("ffmpeg", ffArgs, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  if (r.status !== 0) {
+    const snippet = (r.stderr ?? "").split("\n").slice(-8).join("\n");
+    return {
+      status: "error",
+      reason: "FFmpeg encoding failed",
+      ffmpegErr: snippet,
+      beforeBytes,
+    };
+  }
+
+  // Optionally remove the source .wav (non-fatal if it fails)
+  if (opts.deleteSource) {
+    try {
+      await fsp.rm(inputPath);
+    } catch (err) {
+      process.stderr.write(
+        col(C.yellow, `  ⚠  Could not delete source: ${err.message}\n`),
+      );
+    }
+  }
+
+  const afterBytes = getFileSize(outputPath);
+  return { status: "ok", beforeBytes, afterBytes };
+}
+
+// ─── Progress reporter ────────────────────────────────────────────────────────
+
+function reportResult(label, filename, result) {
+  const CLEAR = "\r" + " ".repeat(90) + "\r";
+  const lbl = label.padEnd(8);
+
+  switch (result.status) {
+    case "ok":
+      process.stdout.write(
+        `${CLEAR}  ${col(C.green, "✔")}  ${lbl} ` +
+          `${col(C.grey, filename)}  ` +
+          `${col(C.grey, fmtSize(result.beforeBytes))} → ${col(C.cyan, fmtSize(result.afterBytes))}  ` +
+          fmtPct(result.beforeBytes, result.afterBytes) +
+          "\n",
+      );
+      break;
+
+    case "skipped":
+      process.stdout.write(
+        `${CLEAR}  ${col(C.grey, "–")}  ${lbl} ` +
+          `${col(C.grey, filename + "  " + result.reason)}\n`,
+      );
+      break;
+
+    case "dry-run":
+      process.stdout.write(
+        `${CLEAR}  ${col(C.cyan, "~")}  ${lbl} ` +
+          `${col(C.grey, filename)}  ` +
+          col(
+            C.grey,
+            `${fmtSize(result.beforeBytes)} → would convert to ${toMp3Name(filename)}`,
+          ) +
+          "\n",
+      );
+      break;
+
+    case "error":
+      process.stdout.write(
+        `${CLEAR}  ${col(C.red, "✖")}  ${lbl} ` +
+          `${col(C.grey, filename)}  ` +
+          col(C.red, result.reason) +
+          "\n",
+      );
+      if (result.ffmpegErr) {
+        process.stderr.write(
+          col(
+            C.grey,
+            result.ffmpegErr
+              .split("\n")
+              .map((l) => `      ${l}`)
+              .join("\n"),
+          ) + "\n",
+        );
+      }
+      break;
+  }
+}
+
+// ─── Process one { note → wavFilename } index map ────────────────────────────
+
+/**
+ * @param {Object}  index      { note: wavFilename, … }
+ * @param {string}  inputDir   directory containing the source .wav files
+ * @param {string}  outputDir  directory where .mp3 files will be written
+ * @param {Object}  opts
+ * @returns {{ ok, skipped, errors, beforeTotal, afterTotal, updatedIndex }}
+ */
+async function processIndexMap(index, inputDir, outputDir, opts) {
+  let ok = 0,
+    skipped = 0,
+    errors = 0;
+  let beforeTotal = 0,
+    afterTotal = 0;
+  const updatedIndex = {};
+
+  for (const [note, filename] of Object.entries(index)) {
+    // Pass through entries that aren't .wav files unchanged
+    if (!filename.toLowerCase().endsWith(".wav")) {
+      updatedIndex[note] = filename;
+      process.stdout.write(
+        `  ${col(C.grey, "–")}  ${note.padEnd(8)} ${col(C.grey, `${filename}  (not a .wav, skipped)`)}\n`,
+      );
+      skipped++;
+      continue;
+    }
+
+    const inputPath = path.join(inputDir, filename);
+    const mp3Name = toMp3Name(filename);
+    const outputPath = path.join(outputDir, mp3Name);
+
+    // Show in-progress spinner
+    process.stdout.write(
+      `  ${col(C.grey, "…")}  ${note.padEnd(8)} ${col(C.grey, filename)}`,
+    );
+
+    const result = await convertFile(inputPath, outputPath, opts);
+
+    reportResult(note, filename, result);
+
+    switch (result.status) {
+      case "ok":
+        updatedIndex[note] = mp3Name; // point index at the new .mp3
+        ok++;
+        if (result.beforeBytes) beforeTotal += result.beforeBytes;
+        if (result.afterBytes) afterTotal += result.afterBytes;
+        break;
+
+      case "skipped":
+        // .mp3 already existed — still update the index ref so it's correct
+        updatedIndex[note] = mp3Name;
+        skipped++;
+        if (result.beforeBytes) beforeTotal += result.beforeBytes;
+        if (result.afterBytes) afterTotal += result.afterBytes;
+        break;
+
+      case "dry-run":
+        updatedIndex[note] = mp3Name; // show what the index would look like
+        ok++;
+        if (result.beforeBytes) beforeTotal += result.beforeBytes;
+        break;
+
+      case "error":
+        updatedIndex[note] = filename; // preserve original ref on failure
+        errors++;
+        break;
+    }
+  }
+
+  return { ok, skipped, errors, beforeTotal, afterTotal, updatedIndex };
+}
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
 
 async function main() {
-  const argv = process.argv.slice(2);
-  const opts = parseArgs(argv);
-  if (opts.help) usageExit(0);
-  verbose = opts.verbose;
+  const opts = parseArgs(process.argv);
 
-  const converter = await detectConverter();
-  if (!converter) {
-    console.error(
-      "No converter found. Please install ffmpeg (recommended) or lame and ensure it is in your PATH.",
-    );
-    console.error("On macOS: brew install ffmpeg");
-    console.error("On Debian/Ubuntu: sudo apt install ffmpeg");
-    process.exit(2);
+  if (!opts.folderPath) {
+    printUsage();
+    process.exit(1);
   }
-  info("Using converter:", converter.name);
 
-  const rootDir = resolvePath(opts.root);
-  info("Root directory:", rootDir);
+  if (opts.quality != null && (opts.quality < 0 || opts.quality > 9)) {
+    console.error(col(C.red, "✖  --quality must be 0–9"));
+    process.exit(1);
+  }
+  if (opts.bitrate != null && opts.bitrate <= 0) {
+    console.error(col(C.red, "✖  --bitrate must be a positive number (kbps)"));
+    process.exit(1);
+  }
 
-  // Read top-level index.json
-  const topIndexPath = join(rootDir, "index.json");
-  let versions = [];
-  if (await ensureFileExists(topIndexPath)) {
-    try {
-      const top = await readJson(topIndexPath);
-      if (Array.isArray(top.versions)) {
-        versions = top.versions.slice();
-        info(`Found versions in top index.json: ${versions.join(", ")}`);
+  requireTool("ffmpeg");
+
+  const folderPath = path.resolve(opts.folderPath);
+
+  if (!fs.existsSync(folderPath)) {
+    console.error(col(C.red, `✖  Folder not found: ${folderPath}`));
+    process.exit(1);
+  }
+
+  // Determine output base directory
+  let outputBase;
+  if (opts.inPlace) {
+    outputBase = folderPath;
+  } else if (opts.outputDir) {
+    outputBase = path.resolve(opts.outputDir);
+  } else {
+    outputBase = folderPath.replace(/\/+$/, "") + "-mp3";
+  }
+
+  // Load folder structure (flat or versioned)
+  let structure;
+  try {
+    structure = await loadStructure(folderPath, opts.versions);
+  } catch (err) {
+    console.error(col(C.red, `✖  ${err.message}`));
+    process.exit(1);
+  }
+
+  // ── Print header ───────────────────────────────────────────────────────────
+  const encodeLabel =
+    opts.quality != null ? `VBR q=${opts.quality}` : `CBR ${opts.bitrate} kbps`;
+
+  console.log("");
+  console.log(
+    col(C.bold, "wav2mp3-folder") + col(C.grey, " – WAV → MP3 converter"),
+  );
+  console.log(col(C.grey, "─".repeat(62)));
+  console.log(`  Folder:      ${folderPath}`);
+  console.log(`  Structure:   ${structure.type}`);
+  console.log(`  Encode:      ${encodeLabel}`);
+  if (opts.deleteSource) {
+    console.log(
+      col(C.yellow, "  ⚠  Source .wav files will be deleted after conversion"),
+    );
+  }
+  if (opts.inPlace) {
+    console.log(
+      col(
+        C.yellow,
+        "  Mode:        IN-PLACE  (source folder will be modified)",
+      ),
+    );
+  } else {
+    console.log(`  Output dir:  ${outputBase}`);
+  }
+  if (opts.dryRun) {
+    console.log(col(C.yellow, "  ⚠  DRY RUN – no files will be written"));
+  }
+  console.log(col(C.grey, "─".repeat(62)));
+
+  let grandOk = 0,
+    grandSkipped = 0,
+    grandErrors = 0;
+  let grandBefore = 0,
+    grandAfter = 0;
+
+  // ── Flat folder ────────────────────────────────────────────────────────────
+  if (structure.type === "flat") {
+    const outputDir = opts.inPlace ? folderPath : outputBase;
+
+    if (!opts.inPlace && !opts.dryRun) {
+      await fsp.mkdir(outputDir, { recursive: true });
+    }
+
+    const { ok, skipped, errors, beforeTotal, afterTotal, updatedIndex } =
+      await processIndexMap(structure.index, folderPath, outputDir, opts);
+
+    grandOk += ok;
+    grandSkipped += skipped;
+    grandErrors += errors;
+    grandBefore += beforeTotal;
+    grandAfter += afterTotal;
+
+    // Write updated index.json
+    if (!opts.dryRun) {
+      const targetIndexPath = opts.inPlace
+        ? structure.indexPath
+        : path.join(outputDir, "index.json");
+      await fsp.writeFile(
+        targetIndexPath,
+        JSON.stringify(updatedIndex, null, 2) + "\n",
+        "utf8",
+      );
+      console.log(col(C.grey, `  ↳ index.json updated`));
+    } else {
+      console.log(col(C.grey, `  ↳ [dry-run] would update index.json`));
+    }
+  }
+
+  // ── Versioned folder ───────────────────────────────────────────────────────
+  else {
+    for (const { version, dir, index, indexPath } of structure.versions) {
+      console.log("");
+      console.log(col(C.bold, `Version: ${version}`));
+
+      const outputVersionDir = opts.inPlace
+        ? dir
+        : path.join(outputBase, version);
+
+      if (!opts.inPlace && !opts.dryRun) {
+        await fsp.mkdir(outputVersionDir, { recursive: true });
       }
-    } catch (e) {
-      log("Failed to read top index.json:", e.message);
-    }
-  }
 
-  // If no versions found, discover subdirs that contain index.json
-  if (versions.length === 0) {
-    info(
-      'No "versions" in top index.json; searching for subfolders with index.json',
-    );
-    const dirents = await readdir(rootDir, { withFileTypes: true });
-    for (const d of dirents) {
-      if (d.isDirectory()) {
-        const candidate = join(rootDir, d.name, "index.json");
-        if (await ensureFileExists(candidate)) versions.push(d.name);
+      const { ok, skipped, errors, beforeTotal, afterTotal, updatedIndex } =
+        await processIndexMap(index, dir, outputVersionDir, opts);
+
+      grandOk += ok;
+      grandSkipped += skipped;
+      grandErrors += errors;
+      grandBefore += beforeTotal;
+      grandAfter += afterTotal;
+
+      // Write updated version index.json
+      if (!opts.dryRun) {
+        const targetIndexPath = opts.inPlace
+          ? indexPath
+          : path.join(outputVersionDir, "index.json");
+        await fsp.writeFile(
+          targetIndexPath,
+          JSON.stringify(updatedIndex, null, 2) + "\n",
+          "utf8",
+        );
+        console.log(col(C.grey, `  ↳ index.json updated`));
+      } else {
+        console.log(col(C.grey, `  ↳ [dry-run] would update index.json`));
       }
     }
-    info(`Discovered versions: ${versions.join(", ")}`);
-  }
 
-  if (versions.length === 0) {
-    console.error(
-      'No versions found to process. Ensure a top-level index.json with "versions" or subfolders with index.json exist.',
-    );
-    process.exit(3);
-  }
-
-  const results = [];
-  for (const ver of versions) {
-    try {
-      const res = await processVersion(converter, rootDir, ver, {
-        bitrate: opts.bitrate,
-        deleteOriginal: opts.deleteOriginal,
-        overwrite: opts.overwrite,
-        concurrency: opts.concurrency,
-        dryRun: opts.dryRun,
-      });
-      results.push(res);
-    } catch (e) {
-      console.error(`Failed to process version ${ver}:`, e.message);
+    // Copy the root index.json to the output dir when not in-place
+    if (!opts.inPlace && !opts.dryRun) {
+      await fsp.mkdir(outputBase, { recursive: true });
+      await fsp.copyFile(
+        structure.rootIndexPath,
+        path.join(outputBase, "index.json"),
+      );
     }
   }
 
-  // Summary
-  let totalConverted = 0,
-    totalSkipped = 0,
-    totalTasks = 0;
-  for (const r of results) {
-    totalConverted += r.converted || 0;
-    totalSkipped += r.skipped || 0;
-    totalTasks += r.total || 0;
+  // ── Summary ────────────────────────────────────────────────────────────────
+  console.log("");
+  console.log(col(C.grey, "─".repeat(62)));
+
+  if (grandBefore > 0) {
+    const sizeStr =
+      grandAfter > 0
+        ? `${col(C.grey, fmtSize(grandBefore))} → ${col(C.cyan, fmtSize(grandAfter))}  ${fmtPct(grandBefore, grandAfter)}`
+        : col(C.grey, fmtSize(grandBefore));
+    const suffix = opts.dryRun ? col(C.grey, " (estimated)") : "";
+    console.log(`  Total:  ${sizeStr}${suffix}`);
   }
 
-  info("--- Summary ---");
-  info(`Versions processed: ${results.length}`);
-  info(`Total tasks found: ${totalTasks}`);
-  info(`Converted: ${totalConverted}`);
-  info(`Skipped: ${totalSkipped}`);
-  if (opts.dryRun)
-    info(
-      "Note: dry-run was enabled; no files were actually written or deleted.",
-    );
+  const parts = [
+    grandOk > 0 ? col(C.green, `✔  ${grandOk} converted`) : "",
+    grandSkipped > 0 ? col(C.grey, `–  ${grandSkipped} skipped`) : "",
+    grandErrors > 0
+      ? col(C.red, `✖  ${grandErrors} error${grandErrors !== 1 ? "s" : ""}`)
+      : "",
+  ].filter(Boolean);
+  console.log("  " + parts.join("  "));
 
-  info("Done.");
+  if (!opts.inPlace && !opts.dryRun && grandOk > 0) {
+    console.log(`  Output: ${outputBase}`);
+  }
+  console.log("");
 }
 
 main().catch((err) => {
-  console.error(err.message || err);
+  console.error(col(C.red, `✖  Unexpected error: ${err.message}`));
+  if (process.env.DEBUG) console.error(err.stack);
   process.exit(1);
 });

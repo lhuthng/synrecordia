@@ -3,7 +3,7 @@ import { useAnimate } from "motion/react";
 
 // ── Per-slot palette ─────────────────────────────────────────────────────────
 const SLOT_COLORS = [
-  "var(--color-accent-pink)",
+  "var(--color-yellow-400)",
   "var(--color-note-full)",
   "var(--color-accent-pink)",
 ];
@@ -26,7 +26,7 @@ function AmbientLayer({ color, flashCount }) {
     // peak is almost instant and the long tail is the visual "glow fading away".
     animate(
       scope.current,
-      { opacity: [0.3, 0] },
+      { opacity: [0.1, 0] },
       {
         duration: 1.6,
         ease: [0.16, 1, 0.3, 1],
