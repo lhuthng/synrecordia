@@ -46,3 +46,15 @@ Items are ordered by impact (highest first).
 ## 🟢 Quick Wins — Visual
 
 - [x] **`SynthwaveBackground` star count reduced in eco mode** (35→12) — Fewer CSS-animated SVG elements; also stops `feGaussianBlur` SVG filter from firing on every paint.
+
+---
+
+## Batch 2 — Audio & Rendering GC
+
+### 🔴 Critical — Reverb Construction Cost (applies even without eco mode)
+
+- [x] **`Tone.Reverb` → `Tone.Freeverb` in all samplers** (`piano.js`, `guitar.js`, `harpsichord.js`, `recorder.js`, `brecorder.js`, `waveform.js`) — `Tone.Reverb` renders an impulse response in an `OfflineAudioContext` which stalls the audio thread 100–500 ms per instance at construction time. `Tone.Freeverb` is a pure IIR Schroeder reverb (comb + all-pass filters) with zero construction cost. The `wet` signal API is identical so `setEcoMode()` ramp logic is unchanged. Room-size values mapped from old decay values (decay 5 → roomSize 0.85, decay 4 → 0.80, decay 2.5 → 0.70, decay 1.5 → 0.50).
+
+### 🟠 High — Particle GC Pressure
+
+- [x] **Particle object pool pre-allocated at init** (`usePixiVisualizer.js`, `RecorderVisualizerInstrument.js`) — Previously every particle spawn did `new PIXI.Sprite(texture)` + `particleLayer.addChild()` and every particle death did `spr.destroy()` + `removeChild()`. With `MAX_PARTICLES = 150` particles and up to 60 fps, this was up to ~9 000 alloc/dealloc cycles per second during active playback. The pool pre-allocates all 150 sprites at canvas init time (`visible: false`), permanently parented to `particleLayer`. `acquire()` flips `visible = true` and returns a sprite; `release()` flips `visible = false` and returns it to the free stack. No per-frame JS object allocation or GPU texture upload.

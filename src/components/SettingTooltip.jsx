@@ -71,6 +71,7 @@ export default function SettingTooltip({ children, className }) {
               "text-main text-xs text-center leading-snug",
               "shadow-[0_4px_16px_rgba(0,0,0,0.55)]",
               "pointer-events-none",
+              "whitespace-normal",
             )}
           >
             {children}

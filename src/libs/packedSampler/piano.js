@@ -6,7 +6,7 @@ const MAX_DB = 6;
 const DEFAULT_DB = 0;
 const MIN_DB = -60;
 
-const REVERB_WET = 0.15;
+const REVERB_WET = 0.05;
 
 export default class PianoSampler extends PackedSampler {
   constructor(urls, baseUrl, callback, addition) {
@@ -15,9 +15,9 @@ export default class PianoSampler extends PackedSampler {
     const ecoMode = addition?.ecoMode ?? false;
 
     if (!ecoMode) {
-      this.reverb = new Tone.Reverb({
-        decay: 5,
-        preDelay: 0.02,
+      this.reverb = new Tone.Freeverb({
+        roomSize: 0.85,
+        dampening: 3500,
         wet: REVERB_WET,
       }).toDestination();
       this.volume = new Tone.Volume(DEFAULT_DB).connect(this.reverb);

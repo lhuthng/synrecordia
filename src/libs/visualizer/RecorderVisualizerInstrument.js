@@ -233,7 +233,7 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
     }
 
     // ── Particle emission from active holes while playing ────────────────────
-    const { particleLayerRef, particlesRef } = particleRefs;
+    const { particleLayerRef, particlesRef, particlePoolRef } = particleRefs;
 
     if (
       sprite.activeHoles?.length &&
@@ -248,16 +248,15 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
         if (Math.random() > PARTICLE_SPAWN_CHANCE) return;
         if (particlesRef.current.length >= MAX_PARTICLES) return;
 
-        const spr = new PIXI.Sprite(particleTextureRef.current);
-        spr.anchor.set(0.5);
-        spr.tint = 0xffffff;
+        const spr = particlePoolRef?.current?.acquire();
+        if (!spr) return; // pool exhausted
 
         const spawnX = barXRef.current + (Math.random() - 0.5) * 10;
         const spawnY = y + (Math.random() - 0.5) * 5;
         spr.x = spawnX;
         spr.y = spawnY;
+        // No addChild needed — pool sprites are permanently in the layer
 
-        particleLayerRef.current.addChild(spr);
         particlesRef.current.push({
           spr,
           x: spawnX,

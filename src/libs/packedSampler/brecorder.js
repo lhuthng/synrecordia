@@ -6,7 +6,7 @@ const MAX_DB = 0;
 const DEFAULT_DB = -10;
 const MIN_DB = -40;
 
-const REVERB_WET = 0.15;
+const REVERB_WET = 0.05;
 const VIBRATO_WET = 1.0;
 
 export default class BRecorderSampler extends PackedSampler {
@@ -17,9 +17,9 @@ export default class BRecorderSampler extends PackedSampler {
 
     if (!ecoMode) {
       this.vibrato = new Tone.Vibrato(5, 0.1).toDestination();
-      this.reverb = new Tone.Reverb({
-        decay: 5,
-        preDelay: 0.02,
+      this.reverb = new Tone.Freeverb({
+        roomSize: 0.85,
+        dampening: 3000,
         wet: REVERB_WET,
       }).connect(this.vibrato);
       this.volume = new Tone.Volume(DEFAULT_DB).connect(this.reverb);

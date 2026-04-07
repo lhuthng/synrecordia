@@ -15,9 +15,9 @@ export default class GuitarSampler extends PackedSampler {
     const ecoMode = addition?.ecoMode ?? false;
 
     if (!ecoMode) {
-      this.reverb = new Tone.Reverb({
-        decay: 4,
-        preDelay: 0.01,
+      this.reverb = new Tone.Freeverb({
+        roomSize: 0.8,
+        dampening: 3200,
         wet: REVERB_WET,
       }).toDestination();
       this.volume = new Tone.Volume(DEFAULT_DB).connect(this.reverb);

@@ -717,7 +717,7 @@ export default function Player() {
             >
               {t("playMode.selectDevice")}
             </DuoButton>
-
+            <SettingTooltip>{t("playMode.tip")}</SettingTooltip>
             <DuoToggleButton
               value={playModeEnabled}
               onToggle={() => setPlayModeEnabled(true)}
@@ -738,8 +738,6 @@ export default function Player() {
             >
               {t("playMode.title")}
             </DuoToggleButton>
-
-            <SettingTooltip>{t("playMode.tip")}</SettingTooltip>
           </div>
 
           {/* Device status text — hidden on mobile (moved to hamburger menu) */}

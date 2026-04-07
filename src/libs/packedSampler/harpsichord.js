@@ -6,7 +6,7 @@ const MAX_DB = 6;
 const DEFAULT_DB = -3;
 const MIN_DB = -60;
 
-const REVERB_WET = 0.08;
+const REVERB_WET = 0.05;
 
 export default class HarpsichordSampler extends PackedSampler {
   constructor(urls, baseUrl, callback, addition) {
@@ -15,9 +15,9 @@ export default class HarpsichordSampler extends PackedSampler {
     const ecoMode = addition?.ecoMode ?? false;
 
     if (!ecoMode) {
-      this.reverb = new Tone.Reverb({
-        decay: 1.5,
-        preDelay: 0.01,
+      this.reverb = new Tone.Freeverb({
+        roomSize: 0.5,
+        dampening: 4000,
         wet: REVERB_WET,
       }).toDestination();
       this.volume = new Tone.Volume(DEFAULT_DB).connect(this.reverb);

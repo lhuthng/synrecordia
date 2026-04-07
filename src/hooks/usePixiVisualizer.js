@@ -16,6 +16,7 @@ import {
   NOTE_GLOW_PADDING,
   NOTE_LAZY_BUFFER_PX,
   NOTE_FADE_SPEED,
+  MAX_PARTICLES,
 } from "../components/utils/constants.js";
 import {
   cssColorToPixiHex,
@@ -81,6 +82,7 @@ export function usePixiVisualizer({
   const particleLayerRef = useRef(null);
   const particlesRef = useRef([]);
   const particleTextureRef = useRef(null);
+  const particlePoolRef = useRef(null);
 
   // ─── Rebuild callbacks (set once inside init, called by external effects) ────
   const buildGuidesRef = useRef(null);
@@ -233,7 +235,7 @@ export function usePixiVisualizer({
     // When particles are disabled, destroy any already-live particles immediately
     if (!particlesEnabled && particleLayerRef.current) {
       for (const p of particlesRef.current) {
-        p.spr.destroy();
+        particlePoolRef.current?.release(p.spr);
       }
       particlesRef.current = [];
     }
@@ -419,6 +421,32 @@ export function usePixiVisualizer({
       ptGfx.fill({ color: 0xffffff });
       particleTextureRef.current = app.renderer.generateTexture(ptGfx);
       ptGfx.destroy();
+
+      // ── Pre-allocate particle sprite pool ────────────────────────────────────
+      const pool = {
+        _free: [],
+        acquire() {
+          const spr = this._free.pop();
+          if (!spr) return null; // pool exhausted (shouldn't happen if sized correctly)
+          spr.visible = true;
+          spr.alpha = 1;
+          spr.tint = 0xffffff;
+          return spr;
+        },
+        release(spr) {
+          spr.visible = false;
+          spr.alpha = 0;
+          this._free.push(spr);
+        },
+      };
+      for (let i = 0; i < MAX_PARTICLES; i++) {
+        const spr = new PIXI.Sprite(particleTextureRef.current);
+        spr.anchor.set(0.5);
+        spr.visible = false;
+        particleLayer.addChild(spr);
+        pool._free.push(spr);
+      }
+      particlePoolRef.current = pool;
 
       // ── Scroll / zone layers ─────────────────────────────────────────────────
       const scrollLayer = new PIXI.Container();
@@ -969,7 +997,11 @@ export function usePixiVisualizer({
               // Instrument-specific per-sprite tick (hole bounce, particles, etc.)
               instrumentRef.current?.onTickSprite(sprite, {
                 isActive,
-                particleRefs: { particleLayerRef, particlesRef },
+                particleRefs: {
+                  particleLayerRef,
+                  particlesRef,
+                  particlePoolRef,
+                },
                 particleTextureRef,
                 isPlayingRef,
                 particlesEnabledRef,
@@ -992,7 +1024,7 @@ export function usePixiVisualizer({
           p.spr.x = p.x;
           p.spr.y = p.y;
           if (p.age >= p.lifetime) {
-            p.spr.destroy();
+            particlePoolRef.current?.release(p.spr);
             particlesRef.current.splice(i, 1);
           }
         }
@@ -1019,6 +1051,7 @@ export function usePixiVisualizer({
       noteEventsRef.current = [];
       particlesRef.current = [];
       particleTextureRef.current = null;
+      particlePoolRef.current = null;
     };
   }, [noteEvents, width, height, effectiveTimeSignature]); // eslint-disable-line react-hooks/exhaustive-deps
 

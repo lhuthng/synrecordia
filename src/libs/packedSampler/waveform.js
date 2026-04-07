@@ -6,7 +6,7 @@ const MAX_DB = -10;
 const DEFAULT_DB = -20;
 const MIN_DB = -80;
 
-const REVERB_WET = 0.2;
+const REVERB_WET = 0.1;
 const CHORUS_WET = 0.5;
 
 export default class WaveformSynth {
@@ -15,9 +15,9 @@ export default class WaveformSynth {
     this.version = "sine";
 
     if (!ecoMode) {
-      this.reverb = new Tone.Reverb({
-        decay: 2.5,
-        preDelay: 0.01,
+      this.reverb = new Tone.Freeverb({
+        roomSize: 0.7,
+        dampening: 3200,
         wet: REVERB_WET,
       }).toDestination();
       this.chorus = new Tone.Chorus(4, 2.5, CHORUS_WET)

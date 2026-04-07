@@ -451,15 +451,14 @@ export default function usePlayer() {
       setBpm(newSong?.bpm ?? 120);
       bpmRef.current = newSong?.bpm ?? 120;
 
-      const computed = computeIdealNoteWidth(newSong);
-      setNoteWidth(computed);
-      setIdealNoteWidth(computed);
-
       clearTimeout(resetTimeoutRef.current);
 
       pausePlayback();
 
       resetTimeoutRef.current = setTimeout(() => {
+        const computed = computeIdealNoteWidth(newSong);
+        setNoteWidth(computed);
+        setIdealNoteWidth(computed);
         stopPlayback();
         setCurrentBeat(0);
       }, FADE_MS); // delay reset until visualizer fade completes (FADE_MS)
