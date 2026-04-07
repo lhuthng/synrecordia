@@ -1,85 +1,173 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { noteNameToMidi, transposeNote } from "../libs/utils.js";
+import { noteNameToMidi, transposeNote, midiToNoteName } from "../libs/utils.js";
 import { getHighestNote } from "../components/utils/fingeringUtils.js";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Timing windows ───────────────────────────────────────────────────────────
 
-// How many beats BEFORE a note's position the user can play and still be accepted.
-const ACCEPT_EARLY_BEATS = 0.8;
+/**
+ * How many beats *before* a note's scheduled beat the user can play and still
+ * get credit.  Large window so users who play slightly early are not penalised.
+ */
+const EARLY_BEATS = 1.0;
 
-// Small grace period AFTER the note's beat before we declare it missed.
-// Gives the mic detection loop a couple of frames to register the onset.
-const GRACE_BEATS = 0.15;
+/**
+ * How many beats *after* a note's scheduled beat before the gate fires and
+ * checks whether the user played.  Gives the onset detector time to finish
+ * confirming a note that was played exactly on the beat.
+ */
+const GATE_DELAY_BEATS = 0.3;
 
-// ─── Autocorrelation pitch detector ──────────────────────────────────────────
+// ─── Mic detector parameters ─────────────────────────────────────────────────
 
-function detectMidiFromAudio(buffer, sampleRate) {
-  // Compute RMS — bail on silence.
-  let rms = 0;
-  for (let i = 0; i < buffer.length; i++) rms += buffer[i] * buffer[i];
-  rms = Math.sqrt(rms / buffer.length);
-  if (rms < 0.012) return null;
+/** Minimum RMS amplitude to treat a frame as non-silent. */
+const MIC_SILENCE_THRESHOLD = 0.01;
 
-  const minLag = Math.floor(sampleRate / 2600); // ~2 600 Hz upper limit
-  const maxLag = Math.min(
-    Math.floor(sampleRate / 200),
-    Math.floor(buffer.length / 2),
-  );
+/**
+ * Consecutive frames that must return the same MIDI note before the note is
+ * confirmed.  2 frames (~33 ms at 60 fps) is enough to reject single-frame
+ * noise spikes while keeping detection latency low.
+ */
+const MIC_STABLE_FRAMES = 2;
 
-  let bestLag = minLag;
-  let bestCorr = -Infinity;
-  for (let lag = minLag; lag <= maxLag; lag++) {
-    let corr = 0;
-    const len = buffer.length - lag;
-    for (let i = 0; i < len; i++) corr += buffer[i] * buffer[i + lag];
-    corr /= len;
-    if (corr > bestCorr) {
-      bestCorr = corr;
-      bestLag = lag;
+// ─── NSDF pitch detector (McLeod Pitch Method) ────────────────────────────────
+
+/**
+ * Estimates the MIDI pitch of the dominant fundamental in `buffer` using the
+ * Normalized Square Difference Function (NSDF) from McLeod & Wyvill (2005).
+ *
+ * NSDF(τ) = 2·r(τ) / m'(τ)
+ *   r(τ)  = Σ x[n]·x[n+τ]               (cross-correlation)
+ *   m'(τ) = Σ x[n]² + Σ x[n+τ]²         (normalisation)
+ *
+ * The normalised value lies in [−1, 1]; a peak near +1 indicates a true
+ * periodic lag.  We search for the global maximum above a threshold in the
+ * lag range that corresponds to our target pitch range and refine the winning
+ * lag with parabolic interpolation for sub-sample accuracy.
+ *
+ * @param {Float32Array} buffer  PCM audio samples (typically 2048)
+ * @param {number}       sampleRate  Audio context sample rate (e.g. 44100)
+ * @returns {number|null}  Integer MIDI note (36–108) or null on failure
+ */
+function detectPitch(buffer, sampleRate) {
+  const N = buffer.length;
+
+  // Lag range: corresponds to roughly 100 Hz – 2600 Hz
+  const minLag = Math.floor(sampleRate / 2600);
+  const maxLag = Math.min(Math.floor(sampleRate / 100), Math.floor(N / 2) - 1);
+
+  // Quick energy check — bail on silence before doing any real work.
+  let totalSq = 0;
+  for (let i = 0; i < N; i++) totalSq += buffer[i] * buffer[i];
+  if (totalSq < 1e-10) return null;
+
+  // ── Compute NSDF incrementally ──────────────────────────────────────────
+  // The normalisation denominator satisfies the recurrence:
+  //   denom(0)   = 2 · totalSq
+  //   denom(τ)   = denom(τ−1) − x[N−τ]² − x[τ−1]²
+  // This avoids an extra O(N) pass per lag.
+  const nsdf = new Float32Array(maxLag + 1);
+  let denom = 2 * totalSq;
+
+  for (let tau = 0; tau <= maxLag; tau++) {
+    if (tau > 0) {
+      denom -= buffer[N - tau] * buffer[N - tau];
+      denom -= buffer[tau - 1] * buffer[tau - 1];
+    }
+
+    if (tau < minLag) continue; // update denom but skip NSDF computation
+
+    let num = 0;
+    const len = N - tau;
+    for (let i = 0; i < len; i++) num += buffer[i] * buffer[i + tau];
+    nsdf[tau] = denom > 1e-12 ? (2 * num) / denom : 0;
+  }
+
+  // ── Find global maximum above threshold ─────────────────────────────────
+  // The global maximum corresponds to the fundamental period for most
+  // instruments (including recorder) where the fundamental is dominant.
+  const NSDF_THRESHOLD = 0.8;
+  let bestLag = -1;
+  let bestVal = NSDF_THRESHOLD;
+
+  for (let tau = minLag; tau <= maxLag; tau++) {
+    if (nsdf[tau] > bestVal) {
+      bestVal = nsdf[tau];
+      bestLag = tau;
     }
   }
 
-  // Reject weak correlations (noise floor ~ rms²).
-  if (bestCorr < 0.05 * rms * rms) return null;
+  if (bestLag === -1) return null;
 
-  const freq = sampleRate / bestLag;
+  // ── Parabolic interpolation for sub-sample lag accuracy ─────────────────
+  let refinedLag = bestLag;
+  if (bestLag > minLag && bestLag < maxLag) {
+    const alpha = nsdf[bestLag - 1];
+    const beta = nsdf[bestLag];
+    const gamma = nsdf[bestLag + 1];
+    const d = alpha - 2 * beta + gamma;
+    // d < 0 means a valid downward-opening parabola peak
+    if (d < 0) refinedLag = bestLag - (0.5 * (gamma - alpha)) / d;
+  }
+
+  const freq = sampleRate / refinedLag;
   const midi = Math.round(69 + 12 * Math.log2(freq / 440));
-  return midi >= 0 && midi <= 127 ? midi : null;
+  return midi >= 36 && midi <= 108 ? midi : null;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
- * usePlayMode — play along mode driven by MIDI controller or microphone.
+ * usePlayMode — play-along mode driven by MIDI controller or microphone.
  *
- * Core idea (input-queue):
- *   Every time the user plays a note (MIDI note-on or mic onset) we push
- *   { midi, beat } onto inputQueueRef.  Each entry can satisfy exactly ONE
- *   note event in the song.  When the song reaches a note's check window
- *   (note.time + GRACE_BEATS) we search the queue for a matching entry and
- *   splice it out (consumed).  If nothing matches, we pause and wait.
+ * ── Mic onset detection ──────────────────────────────────────────────────────
+ * Rather than tracking pitch frame-by-frame with a "lastConfirmed" gate (which
+ * requires complex external resets for consecutive identical notes), we use
+ * *energy-rise onset detection*:
  *
- * Why this fixes same-note repetitions:
- *   C4 → C4 in the score needs two separate C4 presses.  After the first
- *   press is consumed for note[0] it is gone from the queue, so note[1]
- *   cannot reuse it — the user must press C4 again.  Works for any sequence
- *   (C4 D4 C4, C4 C4 C4, …) without special-casing.
+ *   • A slow exponential moving average (EMA) tracks the background energy.
+ *   • A fast EMA tracks the current frame energy.
+ *   • An onset fires when fast/slow > ONSET_RISE_RATIO, the level is above
+ *     the silence threshold, and a cooldown has elapsed since the last onset.
+ *   • Because onset fires once per *attack*, holding a note never fires twice
+ *     and replaying the same pitch always produces a fresh event.
+ *   • No external reset flag is ever needed.
  *
- * Early playing:
- *   A note played up to ACCEPT_EARLY_BEATS before its score position is kept
- *   in the queue and matched when the check window arrives.
+ * After an onset, pitch detection is retried for up to MAX_DETECT_FRAMES
+ * frames.  This handles the common case where the analyser buffer is only
+ * partially filled with the new note at the moment the onset is declared.
+ * The beat timestamp is captured at onset time so that timing-window checks
+ * in the gate remain accurate regardless of how many frames it takes to
+ * confirm the pitch.
+ *
+ * ── Input log with per-entry consumed flag ───────────────────────────────────
+ * Every confirmed onset (mic or MIDI) appends { midi, beat, used } to
+ * inputLogRef.  Entries are never spliced — the gate marks an entry `used`
+ * when it is consumed.  This avoids the "double-accept" bug that arose from
+ * modifying the array mid-iteration.
+ *
+ * ── Gate timing ──────────────────────────────────────────────────────────────
+ * The gate fires at note.time + GATE_DELAY_BEATS.  It searches inputLog for a
+ * matching, unused entry whose beat falls in
+ *   [note.time − EARLY_BEATS, note.time + GATE_DELAY_BEATS].
+ * If found → advance; if not → pause and wait for the user to play.
+ *
+ * ── Consecutive identical notes (e.g. C4 → C4 in Twinkle Twinkle) ───────────
+ * Each note attack produces a separate log entry.  An entry can satisfy at
+ * most one gate.  Holding C4 through two gates misses the second (no second
+ * onset entry) → correct pause.  Re-attacking C4 after the pause produces a
+ * new entry → resumes correctly.
  */
 export default function usePlayMode({
   song,
   transpose,
-  currentBeatRef, // MutableRefObject<number> — always-fresh, avoids stale closures
+  currentBeatRef, // MutableRefObject<number> — always-fresh playback cursor
   isPlaying,
   startPlayback,
   handleScrub,
   setPauseGate,
 }) {
   // ── Device state ──────────────────────────────────────────────────────────
-  const [micStatus, setMicStatus] = useState(null); // null | 'requesting' | 'granted' | 'denied'
+  const [micStatus, setMicStatus] = useState(null); // null|'requesting'|'granted'|'denied'
   const [micName, setMicName] = useState(null);
   const micStreamRef = useRef(null);
   const micContextRef = useRef(null);
@@ -94,21 +182,35 @@ export default function usePlayMode({
   const [isWaiting, setIsWaiting] = useState(false);
   const [showSelectDevice, setShowSelectDevice] = useState(false);
 
-  // Stable ref so callbacks that live outside React renders can read isWaiting.
+  /**
+   * Last MIDI note confirmed by the mic (or MIDI controller).
+   * Shown in the UI as a brief visual indicator; auto-cleared after 900 ms.
+   */
+  const [detectedNote, setDetectedNote] = useState(null); // { name, midi, ts }
+  const detectedNoteTimerRef = useRef(null);
+
+  // Stable ref mirror so gate callbacks (which live outside React renders) can
+  // read `isWaiting` without capturing stale closure values.
   const isWaitingRef = useRef(false);
   useEffect(() => {
     isWaitingRef.current = isWaiting;
   }, [isWaiting]);
 
-  // ── Beat-tracking refs ────────────────────────────────────────────────────
-  const nextNoteIdxRef = useRef(0); // index into noteEvents of the next note to check
-  const waitTargetRef = useRef(null); // the note event we are currently waiting on
+  // ── Tracking refs ─────────────────────────────────────────────────────────
+  /** Index into noteEvents for the next note gate to install. */
+  const nextNoteIdxRef = useRef(0);
 
-  // Queue of user inputs.  Each entry { midi, beat } is consumed by at most
-  // one note event — this is the key to correct same-note repetition handling.
-  const inputQueueRef = useRef([]);
+  /** The note event we are currently paused on (null when not waiting). */
+  const waitTargetRef = useRef(null);
 
-  // ── Computed note events (sorted) ─────────────────────────────────────────
+  /**
+   * Log of user onsets: { midi: number, beat: number, used: boolean }.
+   * Appended on every confirmed onset; entries marked used by gates.
+   * Pruned lazily to prevent unbounded growth.
+   */
+  const inputLogRef = useRef([]);
+
+  // ── Computed note events ───────────────────────────────────────────────────
   const noteEvents = useMemo(() => {
     if (!song?.tracks?.[0]) return [];
     return (song.tracks[0].actions ?? [])
@@ -125,150 +227,200 @@ export default function usePlayMode({
       .sort((a, b) => a.time - b.time);
   }, [song, transpose]);
 
-  // Stable ref so gate callbacks (which live outside React renders) can
-  // access the current noteEvents without capturing a stale closure.
   const noteEventsRef = useRef(noteEvents);
   useEffect(() => {
     noteEventsRef.current = noteEvents;
   }, [noteEvents]);
 
-  // ── Tracking reset ────────────────────────────────────────────────────────
-  // Stable ref so onNoteInput can call handleScrub without a stale closure.
+  // ── Stable callback refs ───────────────────────────────────────────────────
+  // These allow closures created once to call the latest version of a callback
+  // without being recreated themselves (avoids cascading effect re-runs).
   const handleScrubRef = useRef(handleScrub);
   useEffect(() => {
     handleScrubRef.current = handleScrub;
   }, [handleScrub]);
 
+  const onNoteInputRef = useRef(null);
+  const installNextGateRef = useRef(null);
+
+  // ── resetTracking ─────────────────────────────────────────────────────────
   const resetTracking = useCallback(() => {
     nextNoteIdxRef.current = 0;
     waitTargetRef.current = null;
-    inputQueueRef.current = [];
+    inputLogRef.current = [];
     isWaitingRef.current = false;
     setPauseGate?.(null);
     queueMicrotask(() => setIsWaiting(false));
   }, [setPauseGate]);
 
-  // Reset whenever the song or transpose changes.
+  // Reset whenever the song changes or play mode is disabled.
   useEffect(() => {
     resetTracking();
   }, [noteEvents, resetTracking]);
-
-  // Reset when play mode is turned off.
   useEffect(() => {
     if (!playModeEnabled) resetTracking();
   }, [playModeEnabled, resetTracking]);
 
   // ── onNoteInput ───────────────────────────────────────────────────────────
-  // Entry point for both MIDI note-on and confirmed mic onsets.
-  const onNoteInputRef = useRef(null);
-
+  /**
+   * Entry point for every confirmed user onset (MIDI note-on or mic attack).
+   *
+   * @param {number}       midi         MIDI note number of the detected pitch.
+   * @param {number|null}  beatOverride Optional beat timestamp captured at the
+   *                                    moment of onset (mic path).  When null
+   *                                    the current playback cursor is used.
+   */
   const onNoteInput = useCallback(
-    (midi) => {
+    (midi, beatOverride = null) => {
       if (!playModeEnabled) return;
 
-      // While waiting the user must replay the exact missed note.
+      // Flash the visual note indicator on every confirmed onset.
+      setDetectedNote({ name: midiToNoteName(midi), midi, ts: Date.now() });
+      clearTimeout(detectedNoteTimerRef.current);
+      detectedNoteTimerRef.current = setTimeout(
+        () => setDetectedNote(null),
+        900,
+      );
+
+      // ── Waiting (paused) path ─────────────────────────────────────────────
       if (isWaitingRef.current) {
-        if (waitTargetRef.current?.midi === midi) {
-          // Synchronously clear waiting state so a rapid second event can't re-fire.
+        const target = waitTargetRef.current;
+        if (target && midi % 12 === target.midi % 12) {
+          // Correct note played — resolve the block.
+          // Clear state synchronously before any React updates so that a rapid
+          // second event cannot re-enter the waiting path.
           isWaitingRef.current = false;
-          // Scrub 1ms past the exact note beat.  The gate already prevented
-          // the piano from pre-firing; resuming from e.time+0.001 lets the
-          // piano's scheduled note (at e.time + pianoDelayBeats) play naturally
-          // on resume — correct musical behaviour.
-          const resumeBeat = (waitTargetRef.current?.time ?? 0) + 0.001;
           waitTargetRef.current = null;
+          inputLogRef.current = []; // discard stale entries accumulated during wait
+          const resumeBeat = target.time + 0.001;
           nextNoteIdxRef.current += 1;
           setIsWaiting(false);
           handleScrubRef.current?.(resumeBeat);
           startPlayback();
         }
-        // Wrong note while waiting — ignore.
+        // Wrong note while paused → ignore completely; do NOT log it.
         return;
       }
 
-      // Normal play: enqueue the onset.  The gate callback will
-      // match and consume it when the note's check window arrives.
-      const beat = currentBeatRef?.current ?? 0;
-      inputQueueRef.current.push({ midi, beat });
+      // ── Normal (playing) path ─────────────────────────────────────────────
+      const beat = beatOverride ?? currentBeatRef?.current ?? 0;
+      inputLogRef.current.push({ midi, beat, used: false });
+
+      // Prune entries that are too old to match any upcoming gate.
+      const cutoff = beat - EARLY_BEATS - 0.5;
+      inputLogRef.current = inputLogRef.current.filter((e) => e.beat >= cutoff);
     },
-    [playModeEnabled, startPlayback, currentBeatRef],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [playModeEnabled, startPlayback], // currentBeatRef is a stable ref object — omitted intentionally
   );
 
   useEffect(() => {
     onNoteInputRef.current = onNoteInput;
   }, [onNoteInput]);
 
-  // ── Gate setup ────────────────────────────────────────────────────────────
-  // setNextGateImplRef.current() installs a pauseGate in usePlayer for the
-  // next required note.  Stored as a ref so it can recursively reference itself
-  // without stale closure issues.
-  const setNextGateImplRef = useRef(null);
+  // ── installNextGate ────────────────────────────────────────────────────────
+  /**
+   * Installs a pauseGate in usePlayer for the next note that must be played.
+   * The gate fires at note.time + GATE_DELAY_BEATS:
+   *   • Match found  → mark entry used, advance index, install next gate.
+   *   • No match     → pause playback and enter the waiting state.
+   *
+   * Stored as a ref so it can call itself recursively (next-gate chain)
+   * without creating new closures on every render.
+   */
   useEffect(() => {
-    setNextGateImplRef.current = () => {
+    installNextGateRef.current = () => {
       if (!setPauseGate) return;
+
       const events = noteEventsRef.current;
       const idx = nextNoteIdxRef.current;
+
       if (idx >= events.length) {
-        setPauseGate(null); // no more notes to gate
+        setPauseGate(null); // no more notes to gate — song can play to the end freely
         return;
       }
+
       const e = events[idx];
+
       setPauseGate({
-        atBeat: e.time,
+        atBeat: e.time + GATE_DELAY_BEATS,
         onGate: () => {
-          // Check whether the user has played this note.
-          const qIdx = inputQueueRef.current.findIndex(
-            (inp) =>
-              inp.midi === e.midi && inp.beat >= e.time - ACCEPT_EARLY_BEATS,
+          const log = inputLogRef.current;
+
+          console.log(
+            `[gate] beat=${e.time.toFixed(2)} expects ${e.note}(${e.midi}) | log:`,
+            log.map(
+              (x) =>
+                `midi=${x.midi} beat=${x.beat.toFixed(2)}${x.used ? " used" : ""}`,
+            ),
           );
-          if (qIdx !== -1) {
-            // Accepted — consume the input and advance to the next note.
-            inputQueueRef.current.splice(qIdx, 1);
+
+          // Search for a matching, unconsumed onset within the accept window.
+          // Pitch-class matching (% 12) tolerates octave errors from the mic
+          // detector and handles soprano-vs-tenor octave differences.
+          const matchIdx = log.findIndex(
+            (entry) =>
+              !entry.used &&
+              entry.midi % 12 === e.midi % 12 &&
+              entry.beat >= e.time - EARLY_BEATS &&
+              entry.beat <= e.time + GATE_DELAY_BEATS,
+          );
+
+          if (matchIdx !== -1) {
+            // Accepted — consume this entry and advance to the next note.
+            log[matchIdx].used = true;
             nextNoteIdxRef.current += 1;
-            setNextGateImplRef.current?.(); // install gate for the next note
-            return false; // don't pause
+            installNextGateRef.current?.(); // chain: install gate for next note
+            return false; // do NOT pause; let playback continue
           }
-          // Missed — pause BEFORE any notes fire at this beat.
+
+          // Missed — pause and wait for the user to play this note.
           waitTargetRef.current = e;
           isWaitingRef.current = true;
           queueMicrotask(() => {
             handleScrubRef.current?.(e.time);
             setIsWaiting(true);
           });
-          return true; // pause
+          return true; // pause playback
         },
       });
     };
   }, [setPauseGate]);
 
   // ── Gate activation ───────────────────────────────────────────────────────
-  // When play starts in play-mode, reposition nextNoteIdx to the current beat
-  // and install a gate for the next required note so the RAF tick pauses
-  // BEFORE firing any accompaniment note at that beat.
+  /**
+   * When play starts in play-mode, reposition nextNoteIdx to the current
+   * playback cursor and install the first gate.
+   * When playback stops for any reason, clear the gate.
+   */
   useEffect(() => {
     if (playModeEnabled && isPlaying && !isWaiting) {
-      // Reposition nextNoteIdx to match the current playback cursor.
       const beat = currentBeatRef?.current ?? 0;
       const events = noteEventsRef.current;
       const idx = events.findIndex((e) => e.time >= beat);
       nextNoteIdxRef.current = idx === -1 ? events.length : Math.max(0, idx);
-      inputQueueRef.current = [];
-      setNextGateImplRef.current?.();
+
+      // Keep unused entries that are recent enough to match the upcoming gate;
+      // discard already-consumed entries to prevent stale matches.
+      inputLogRef.current = inputLogRef.current.filter((e) => !e.used);
+
+      installNextGateRef.current?.();
     } else if (!isPlaying) {
       setPauseGate?.(null);
     }
   }, [isPlaying, playModeEnabled, isWaiting, setPauseGate, currentBeatRef]);
 
   // ── cancelWait ────────────────────────────────────────────────────────────
-  // Advances past the missed note so pressing Play after cancelling doesn't
-  // immediately re-trigger the same wait.
+  /**
+   * Called when the user presses "Skip" on the waiting overlay.
+   * Skips past the missed note so the next press of Play advances correctly.
+   */
   const cancelWait = useCallback(() => {
     isWaitingRef.current = false;
     const e = waitTargetRef.current;
     waitTargetRef.current = null;
+    inputLogRef.current = [];
     setPauseGate?.(null);
-    // Scrub 1ms past the missed note so that when play resumes the gate-
-    // activation effect repositions nextNoteIdx to the note AFTER this one.
     if (e !== null) {
       handleScrubRef.current?.(e.time + 0.001);
     }
@@ -276,7 +428,25 @@ export default function usePlayMode({
   }, [setPauseGate]);
 
   // ── Microphone pitch detection ─────────────────────────────────────────────
+  /**
+   * Starts a continuous mic analysis loop using energy-rise onset detection
+   * and NSDF pitch detection.
+   *
+   * Detection lifecycle per note:
+   *   1. Monitor energyFast / energySlow ratio each frame.
+   *   2. When ratio > ONSET_RISE_RATIO (and level > silence, cooldown elapsed):
+   *      declare an onset, capture the current beat timestamp.
+   *   3. Over the next MAX_DETECT_FRAMES frames, attempt detectPitch().
+   *      On first success: fire onNoteInput(midi, onsetBeat).
+   *   4. Once energyFast falls back below energySlow * 1.2, re-arm for the
+   *      next attack.
+   *
+   * This approach requires zero external reset signals: holding a note never
+   * fires twice (fast EMA catches up to slow EMA → no new onset), and
+   * re-attacking the same pitch always fires a fresh onset event.
+   */
   const startMicPitchDetection = useCallback((stream) => {
+    // Clean up any previous context.
     if (micContextRef.current) {
       micContextRef.current.close().catch(() => {});
     }
@@ -291,48 +461,83 @@ export default function usePlayMode({
 
     const buffer = new Float32Array(analyser.fftSize);
 
-    // Two-state onset detector:
-    //   lastConfirmed — the last MIDI note we fired onNoteInput for, or null.
+    // ── State machine ─────────────────────────────────────────────────────
+    // 'idle'   — listening; looking for a stable pitch above the silence floor.
+    // 'locked' — note already fired; ignoring signal until silence returns.
     //
-    // A new onset fires only when the confirmed note DIFFERS from lastConfirmed.
-    // After silence, lastConfirmed resets to null, so the user CAN play the
-    // same note again — they just have to release it first (go through silence).
-    // This is what separates repeated notes: C4 → silence → C4 fires twice.
-    let lastConfirmed = null;
+    // This completely replaces the EMA-based onset detector.  The old approach
+    // kept a slow moving-average of background energy and required the current
+    // energy to exceed it by ONSET_RISE_RATIO.  In practice the slow average
+    // stays elevated after each note, so the ratio never reaches the threshold
+    // for the NEXT note — forcing the user to blow many times before a second
+    // consecutive note is registered.
+    //
+    // The state-machine approach is simpler and more reliable:
+    //   • Any silence gap between notes resets to 'idle'.
+    //   • MIC_STABLE_FRAMES consecutive matching frames are required before
+    //     the pitch is accepted, which rejects single-frame noise spikes.
+    //   • No cooldown, no EMA, no external reset flags needed.
+    let detectState = "idle"; // 'idle' | 'locked'
     let pendingMidi = null;
     let pendingCount = 0;
-    const STABLE_FRAMES = 2; // consecutive matching frames before confirming
 
     const tick = () => {
       if (!micContextRef.current || micContextRef.current.state === "closed")
         return;
 
       analyser.getFloatTimeDomainData(buffer);
-      const detected = detectMidiFromAudio(buffer, context.sampleRate);
 
-      if (detected === null) {
-        // Silence — reset pending and clear lastConfirmed so same note can retrigger.
+      // ── RMS energy ────────────────────────────────────────────────────────
+      let sumSq = 0;
+      for (let i = 0; i < buffer.length; i++) sumSq += buffer[i] * buffer[i];
+      const rms = Math.sqrt(sumSq / buffer.length);
+      const isSilent = rms < MIC_SILENCE_THRESHOLD;
+
+      // ── Locked state: wait for silence before accepting next note ─────────
+      if (detectState === "locked") {
+        if (isSilent) {
+          detectState = "idle";
+          pendingMidi = null;
+          pendingCount = 0;
+        }
+        requestAnimationFrame(tick);
+        return;
+      }
+
+      // ── Idle state: detect pitch once signal is present ───────────────────
+      if (isSilent) {
         pendingMidi = null;
         pendingCount = 0;
-        lastConfirmed = null;
-      } else if (detected !== pendingMidi) {
-        // New candidate — start accumulating stability frames.
-        pendingMidi = detected;
-        pendingCount = 1;
-      } else {
+        requestAnimationFrame(tick);
+        return;
+      }
+
+      const midi = detectPitch(buffer, context.sampleRate);
+
+      if (midi !== null && midi === pendingMidi) {
         pendingCount++;
-        if (pendingCount === STABLE_FRAMES && detected !== lastConfirmed) {
-          // Stable new note confirmed.
-          lastConfirmed = detected;
-          onNoteInputRef.current?.(detected);
+        if (pendingCount >= MIC_STABLE_FRAMES) {
+          // Stable pitch confirmed — fire and lock until next silence.
+          detectState = "locked";
+          const confirmedMidi = midi;
+          pendingMidi = null;
+          pendingCount = 0;
+          const beat = currentBeatRef?.current ?? 0;
+          console.log("confirmed midi:", confirmedMidi);
+          onNoteInputRef.current?.(confirmedMidi, beat);
         }
+      } else {
+        // New or inconsistent result — restart stability counter.
+        pendingMidi = midi;
+        pendingCount = midi !== null ? 1 : 0;
       }
 
       requestAnimationFrame(tick);
     };
 
     requestAnimationFrame(tick);
-  }, []); // only uses refs — stable forever
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // currentBeatRef is a stable ref object — safe to never recreate
 
   // ── stopMicrophone ────────────────────────────────────────────────────────
   const stopMicrophone = useCallback(() => {
@@ -366,8 +571,7 @@ export default function usePlayMode({
       const track = stream.getAudioTracks()[0];
       setMicName(track?.label || "Microphone");
       setMicStatus("granted");
-      // Mutual exclusion: deselect any active MIDI input when mic is activated.
-      setSelectedMidiInput(null);
+      setSelectedMidiInput(null); // mutual exclusion: mic and MIDI are never both active
       startMicPitchDetection(stream);
     } catch {
       setMicStatus("denied");
@@ -375,10 +579,9 @@ export default function usePlayMode({
   }, [startMicPitchDetection]);
 
   // ── selectMidiInput ───────────────────────────────────────────────────────
-  // Wrapper around setSelectedMidiInput that enforces mic/MIDI mutual exclusion.
+  /** Selects a MIDI input and stops the mic (mutual exclusion). */
   const selectMidiInput = useCallback((input) => {
     if (input !== null) {
-      // Mutual exclusion: stop mic when a MIDI input is activated.
       micStreamRef.current?.getTracks().forEach((t) => t.stop());
       micStreamRef.current = null;
       micContextRef.current?.close().catch(() => {});
@@ -411,7 +614,7 @@ export default function usePlayMode({
     }
   }, []);
 
-  // Wire selected MIDI input → onNoteInput.
+  // ── Wire MIDI input → onNoteInput ─────────────────────────────────────────
   useEffect(() => {
     if (!selectedMidiInput) return;
 
@@ -419,6 +622,7 @@ export default function usePlayMode({
       const [status, note, velocity] = msg.data;
       // note-on with non-zero velocity
       if ((status & 0xf0) === 0x90 && velocity > 0) {
+        // MIDI has perfect timing; use current beat directly (no beat override needed).
         onNoteInputRef.current?.(note);
       }
     };
@@ -489,5 +693,8 @@ export default function usePlayMode({
 
     // Exposed for external wiring / testing
     onNoteInput,
+
+    // Visual note-detection feedback
+    detectedNote,
   };
 }
