@@ -224,6 +224,7 @@ function parseArgs(argv) {
           .filter((n) => !isNaN(n));
         const instrument = parts[1].trim();
         const semitones = parts.length >= 3 ? parseInt(parts[2].trim(), 10) : 0;
+        const hint = parts.length >= 4 ? parts[3].trim() || null : null;
         if (indices.length === 0 || !instrument) {
           console.warn(
             `Invalid --track spec "${spec}": need at least one index and a non-empty instrument name`,
@@ -236,7 +237,7 @@ function parseArgs(argv) {
           );
           break;
         }
-        args.tracks.push({ indices, instrument, semitones });
+        args.tracks.push({ indices, instrument, semitones, hint });
         break;
       }
       case "--id":
@@ -271,11 +272,12 @@ Usage:
 
 Options:
   --list                     List all tracks with note counts and instrument info, then exit.
-  --track <i,j,...>:<name>[:<semitones>]
+  --track <i,j,...>:<name>[:<semitones>[:<hint>]]
                              Define an output track: merge the given 0-based MIDI track indices
                              and assign them the instrument id <name>. Repeat for N tracks.
                              An optional semitone offset (e.g. -12 for one octave down) is
                              applied to every note in that track before conversion.
+                             hint is an optional instrument sub-type hint stored on the track (e.g. alto, tenor).
                              When omitted entirely, auto-detects and splits into recorder + piano.
                              Note: many MIDI files use C3 = middle C (Yamaha/Roland convention)
                              while this script uses C4 = middle C. If notes sound one octave too
@@ -864,25 +866,28 @@ let outputTracks;
 
 if (args.tracks.length > 0) {
   // ── Explicit track definitions via --track ──────────────────────────────────
-  outputTracks = args.tracks.map(({ indices, instrument, semitones }, i) => {
-    if (semitones) {
-      const dir = semitones > 0 ? "up" : "down";
-      console.log(
-        `  Transpose (${instrument}): ${Math.abs(semitones)} semitone(s) ${dir}`,
-      );
-    }
-    const collected = collectNotes(parsed.tracks, indices, semitones);
-    const noteRange = computeNoteRange(collected);
-    let actions = buildActions(collected, parsed.ppq);
-    // --trim applies to the first defined track only
-    if (args.trim && i === 0) actions = trimMonophonicActions(actions);
-    return {
-      id: instrument,
-      instrument,
-      ...(noteRange && { noteRange }),
-      actions,
-    };
-  });
+  outputTracks = args.tracks.map(
+    ({ indices, instrument, semitones, hint }, i) => {
+      if (semitones) {
+        const dir = semitones > 0 ? "up" : "down";
+        console.log(
+          `  Transpose (${instrument}): ${Math.abs(semitones)} semitone(s) ${dir}`,
+        );
+      }
+      const collected = collectNotes(parsed.tracks, indices, semitones);
+      const noteRange = computeNoteRange(collected);
+      let actions = buildActions(collected, parsed.ppq);
+      // --trim applies to the first defined track only
+      if (args.trim && i === 0) actions = trimMonophonicActions(actions);
+      return {
+        id: instrument,
+        instrument,
+        ...(noteRange && { noteRange }),
+        ...(hint && { hint }),
+        actions,
+      };
+    },
+  );
 } else {
   // ── Auto-detect (legacy: recorder + piano) ──────────────────────────────────
   const split = splitTracks(parsed);

@@ -38,6 +38,9 @@
       "default": "Một số nốt trong bài nằm ngoài tầm chơi của nhạc cụ.",
       "trySystems": "Có thể chơi được với:",
       "impossible": "Không có hệ thống bấm ngón nào có thể bao phủ tất cả các nốt trong bài này."
+    },
+    "hint": {
+      "recorderType": "Đã chuyển sang recorder {{type}} - theo gợi ý của bài nhạc"
     }
   },
   "directory": {

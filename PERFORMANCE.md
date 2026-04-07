@@ -89,6 +89,8 @@ Items are ordered by impact (highest first).
 
 - [x] **`React.memo` on `Visualizer`** (`src/components/Visualizer.jsx`) — `Visualizer` was a plain function component re-entering on every parent re-render, including non-beat-driven ones (modal opens, song selection, settings changes). Wrapped with `memo()` so React skips reconciliation when none of its props changed.
 - [x] **`React.memo` on `SongTimeline`** (`src/components/SongTimeline.jsx`) — Same pattern. `SongTimeline` is a moderately complex component with `ResizeObserver`, drag state, and animation RAF; memoising prevents unnecessary re-entry during parent renders unrelated to timeline state.
+- [x] **`React.memo` on `InstrumentManager`** (`src/components/instruments/InstrumentManager.jsx`) — `InstrumentManager` does not receive `currentBeat`, yet previously re-rendered on every 30-fps beat tick because its parent (`Player`) re-rendered. With `memo`, it only re-renders when its own props change (e.g. `flashCount` on note trigger, `initialReady` on sampler load, `toggle` on track selection).
+- [x] **Stable per-track callback props for `InstrumentManager`** (`src/components/Player.jsx`) — The JSX previously created new inline arrow functions (`handleAudioReady`, `onSwapInstrument`) and a new `callbacks` object literal on every Player render, defeating `React.memo`. Replaced with two `useMemo` blocks: `trackHandlers` (per-track, keyed on track count + stable callbacks) and `instrumentCallbacks` (shared object of stable state-setter refs). Dead `onReady`/`offReady` props — confirmed not destructured by `InstrumentManager` — removed entirely.
 
 ### 🟠 High — GPU Compositing Hints
 
@@ -104,3 +106,23 @@ Items are ordered by impact (highest first).
 - [x] **`esbuild.drop: ["console", "debugger"]` in production** (`vite.config.js`) — Strips all `console.*` calls and `debugger` statements from the production bundle. Saves ~5–10 KB minified and removes log noise on mobile.
 - [x] **`build.target: "es2020"`** (`vite.config.js`) — Targets modern syntax, enabling more aggressive tree-shaking and avoiding unnecessary transpilation of optional chaining, nullish coalescing, etc.
 - [x] **`optimizeDeps.include` for tone, pixi.js, pixi-filters** (`vite.config.js`) — Explicitly pre-bundles the three heaviest ESM dependencies during Vite dev-server startup. Eliminates repeated on-demand transforms during development HMR and reduces cold-start time.
+
+---
+
+## Batch 5 — UX Fixes & Feature: Song Hints
+
+### 🟢 Bug Fix — SongTimeline Zoom Drag Pauses Playback
+
+- [x] **Zoom-handle drag no longer pauses playback** (`src/components/SongTimeline.jsx`) — The `startDrag` function called `onScrubStart` (→ `pausePlayback`) unconditionally for all three drag types: `thumb` (scrub), `left` (zoom), `right` (zoom). Changed to only call `onScrubStart` when `type === "thumb"`. Dragging the left or right edge to zoom now leaves the song playing; only scrubbing the thumb pauses it.
+
+### 🟢 Feature — Per-Track Instrument Hints in Song JSON
+
+- [x] **`hint` property on song tracks** (`public/songs/departure.json`, `scripts/convert-midi.mjs`) — Songs can now declare an optional `hint` string on any track (e.g. `"hint": "alto"`). `departure.json` track 0 now carries `"hint": "alto"` since this piece is written for an alto recorder. The `convert-midi.mjs` script accepts a 4th component in `--track` specs (`0:recorder:0:alto`) and writes it to the output JSON.
+- [x] **Auto-apply hint on song load with toast notification** (`src/hooks/usePlayer.js`, `src/components/Player.jsx`, locales) — When `selectSong` is called, `usePlayer` checks `tracks[0].hint`. If it matches a known recorder type (`soprano`, `alto`, `tenor`, `bass`), it calls `setRecorderType` automatically and sets a `pendingHint` state. `Player` renders a dismissible `AnimatePresence` toast at the bottom of the screen showing e.g. *"Switched to Alto recorder — suggested by this song"*, which auto-clears after 3 seconds. i18n keys added for `en`, `de`, and `vi`.
+
+### 🟢 Bug Fix — Guide Bar Misalignment During Zoom
+
+- [x] **Guide bars immediately rescale on `noteWidth` change** (`usePixiVisualizer.js`) — `buildGuides()` is debounced 60 ms to prevent GC thrashing during zoom gestures, but `scrollLayer.x` and note sprites updated immediately. This left guide bar/beat lines at old pixel positions for 60 ms — visibly misaligned. Fix: capture `prevPpb` before updating `pixelsPerBeatRef`, compute `ratio = newPpb / prevPpb`, and multiply every guide child's `.x` by that ratio synchronously in the same effect. The debounced full rebuild still fires for text label correctness.
+
+---
+

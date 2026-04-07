@@ -6,7 +6,7 @@ export default function Details() {
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-4 pb-8 max-w-4xl mx-auto px-4">
+    <div className="space-y-4 pt-10 pb-8 max-w-4xl mx-auto px-4">
       <img
         className="mx-auto rounded-full bg-main w-40 h-40"
         src={me}

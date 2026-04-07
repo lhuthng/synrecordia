@@ -56,6 +56,7 @@ export default function usePlayer() {
   const [fingeringSystem, setFingeringSystem] = useState("german");
   const [recorderType, setRecorderType] = useState("tenor");
   const [transposeSemitones, setTransposeSemitones] = useState(0);
+  const [pendingHint, setPendingHint] = useState(null);
 
   const durationBeats = computeSongEndBeat(song);
 
@@ -451,6 +452,16 @@ export default function usePlayer() {
       setBpm(newSong?.bpm ?? 120);
       bpmRef.current = newSong?.bpm ?? 120;
 
+      // Apply per-track-0 recorder type hint from song data
+      const RECORDER_HINTS = ["soprano", "alto", "tenor", "bass"];
+      const hint0 = newSong?.tracks?.[0]?.hint;
+      if (hint0 && RECORDER_HINTS.includes(hint0)) {
+        setRecorderType(hint0);
+        setPendingHint(hint0);
+      } else {
+        setPendingHint(null);
+      }
+
       clearTimeout(resetTimeoutRef.current);
 
       pausePlayback();
@@ -536,6 +547,8 @@ export default function usePlayer() {
     selectedTrack,
     fingeringSystem,
     recorderType,
+    pendingHint,
+    clearPendingHint: () => setPendingHint(null),
 
     // derived
     durationBeats,

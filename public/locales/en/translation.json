@@ -38,6 +38,9 @@
       "default": "Some notes in this track fall outside the instrument's playable range.",
       "trySystems": "Can be played with:",
       "impossible": "No available fingering system can cover all notes in this track."
+    },
+    "hint": {
+      "recorderType": "Switched to {{type}} recorder - suggested by this song"
     }
   },
   "directory": {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import AmbientLight from "./AmbientLight.jsx";
 import { useMatch } from "react-router-dom";
@@ -74,7 +74,16 @@ export default function Player() {
     setLatencyMs,
     suppressAudioTrack,
     setPauseGate,
+    pendingHint,
+    clearPendingHint,
   } = usePlayer();
+
+  useEffect(() => {
+    if (!pendingHint) return;
+    const id = setTimeout(() => clearPendingHint(), 3000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingHint]);
 
   // Always-fresh beat ref — passed to usePlayMode so the onNoteInput callback
   // can read the current beat without being in a stale closure.
@@ -332,6 +341,27 @@ export default function Player() {
     [instrumentOverrides, song, pausePlayback],
   );
 
+  // Stable per-track handler map — prevents InstrumentManager from re-rendering
+  // on every currentBeat tick caused by inline arrow functions recreated each render.
+  const trackHandlers = useMemo(
+    () =>
+      (song?.tracks ?? []).map((_, i) => ({
+        handleAudioReady: (value) => handleAudioReady(i, value),
+        onSwapInstrument: (newName) => handleSwapInstrument(i, newName),
+      })),
+    // Only re-create when track count or stable callbacks change.
+    // handleAudioReady and handleSwapInstrument are both useCallback — they are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [song?.tracks?.length, handleAudioReady, handleSwapInstrument],
+  );
+
+  // Stable shared callbacks object for InstrumentManager → Presentation.
+  // pausePlayback is useCallback; setFingeringSystem/setRecorderType are state setters — all stable.
+  const instrumentCallbacks = useMemo(
+    () => ({ pausePlayback, setFingeringSystem, setRecorderType }),
+    [pausePlayback, setFingeringSystem, setRecorderType],
+  );
+
   // Cancel any in-progress countdown when the loaded song changes
   useEffect(() => {
     cancelCountdown();
@@ -492,7 +522,7 @@ export default function Player() {
 
   // ── render ────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full min-h-[calc(100dvh-8rem)] text-main space-y-2">
+    <div className="w-full text-main space-y-2">
       {/* Ambient glow — portalled to document.body so it lives in the root
           stacking context at z-[1], above the SynthwaveBackground (z-0) and
           below the page content (z-10). This lets the glow bleed through the
@@ -880,6 +910,29 @@ export default function Player() {
             </DuoButton>
           </Motion.div>
         )}
+        {pendingHint && (
+          <Motion.div
+            key="hint-toast"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-auto"
+            initial={{ opacity: 0, y: 16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 320, damping: 26 }}
+          >
+            <button
+              className="inline-flex items-center gap-2 rounded-lg bg-note-half border-2 border-note-full-dark px-3 py-2 text-base text-main shadow-lg cursor-pointer hover:brightness-125 transition-[filter]"
+              onClick={clearPendingHint}
+            >
+              <span>♪</span>
+              <span>
+                {t("player.hint.recorderType", {
+                  type: t(`recorderType.${pendingHint}`),
+                })}
+              </span>
+              <span className="opacity-40 ml-1 text-xs">✕</span>
+            </button>
+          </Motion.div>
+        )}
       </AnimatePresence>
 
       {/* Visualizer with countdown overlay */}
@@ -987,9 +1040,7 @@ export default function Player() {
               toggle={index === selectedTrack}
               onToggleChanged={handleToggleChanged}
               initialReady={isAudioReady?.[index]}
-              handleAudioReady={(value) => handleAudioReady(index, value)}
-              onReady={() => handleAudioReady(index, true)}
-              offReady={() => handleAudioReady(index, false)}
+              handleAudioReady={trackHandlers[index]?.handleAudioReady}
               trackNoteRange={
                 track.noteRange ?? computeNoteRangeFromActions(track.actions)
               }
@@ -998,14 +1049,8 @@ export default function Player() {
               recorderType={recorderType}
               onOutOfRange={handleRangeStatus}
               swappableInstruments={swappable}
-              onSwapInstrument={(newName) =>
-                handleSwapInstrument(index, newName)
-              }
-              callbacks={{
-                pausePlayback,
-                setFingeringSystem,
-                setRecorderType,
-              }}
+              onSwapInstrument={trackHandlers[index]?.onSwapInstrument}
+              callbacks={instrumentCallbacks}
             />
           );
         })}

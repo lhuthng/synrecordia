@@ -38,6 +38,9 @@
       "default": "Einige Noten in diesem Track liegen außerhalb des spielbaren Bereichs des Instruments.",
       "trySystems": "Spielbar mit:",
       "impossible": "Kein verfügbares Griffsystem kann alle Noten in diesem Track abdecken."
+    },
+    "hint": {
+      "recorderType": "Zu {{type}}-Blockflöte gewechselt - vom Stück vorgeschlagen"
     }
   },
   "directory": {

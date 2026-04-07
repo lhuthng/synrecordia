@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, memo } from "react";
 import {
   createPackedSampler,
   isSynthInstrument,
@@ -106,7 +106,7 @@ function NoteRangeBar({ instrumentRange, trackRange, transpose }) {
 // ── InstrumentManager ────────────────────────────────────────────────────────
 const KNOWN_SYSTEMS = ["baroque", "german", "simple"];
 
-export default function InstrumentManager({
+const InstrumentManager = memo(function InstrumentManager({
   slot,
   name,
   toggle,
@@ -433,4 +433,5 @@ export default function InstrumentManager({
       )}
     </AnimatePresence>
   );
-}
+});
+export default InstrumentManager;
