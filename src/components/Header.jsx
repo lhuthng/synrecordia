@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import i18next from "i18next";
 import DuoSelect from "./DuoSelect";
 import DuoButton from "./DuoButton";
+import { useMobileMenu } from "../context/useMobileMenu";
 
 const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
@@ -15,6 +16,7 @@ export default function Header() {
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language?.split("-")[0] ?? "en";
 
+  const { extraContent } = useMobileMenu();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef(null);
 
@@ -105,13 +107,18 @@ export default function Header() {
             </DuoButton>
 
             {mobileMenuOpen && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-50">
+              <div className="absolute right-0 top-[calc(100%+6px)] z-50 flex flex-col gap-2 min-w-40 border-2 border-note-half-dark bg-dark rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.55)] p-3">
                 <DuoSelect
                   options={LANGUAGE_OPTIONS}
                   value={currentLang}
                   onChange={handleLangChange}
                   padding="px-2 py-1"
                 />
+                {extraContent && (
+                  <div className="border-t border-note-half-dark pt-2">
+                    {extraContent}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { MobileMenuProvider } from "./context/MobileMenuContext";
 import Player from "./components/Player";
 import CompactPlayer from "./components/CompactPlayer";
 import Header from "./components/Header";
@@ -7,13 +8,13 @@ import SynthwaveBackground from "./components/SynthwaveBackground";
 
 function MainLayout() {
   return (
-    <>
+    <MobileMenuProvider>
       <Header />
       <div className="w-cap min-h-screen bg-dark/70 px-4 shadow-md">
         <Player />
         <Details />
       </div>
-    </>
+    </MobileMenuProvider>
   );
 }
 

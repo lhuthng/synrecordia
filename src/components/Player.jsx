@@ -23,6 +23,7 @@ import {
 } from "../libs/packedSampler/factory";
 import * as Tone from "tone";
 import SelectDeviceModal from "./SelectDeviceModal";
+import { useMobileMenu } from "../context/useMobileMenu";
 
 export default function Player() {
   // URL param — present when route is /songs/:songId
@@ -149,6 +150,8 @@ export default function Player() {
     return () => selectedMidiInput.removeEventListener("midimessage", handler);
   }, [playModeEnabled, selectedMidiInput, internalSamplersRef]);
 
+  const { setExtraContent } = useMobileMenu();
+
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -198,6 +201,70 @@ export default function Player() {
     countdownTimerRef.current = null;
     setCountdown(null);
   }, []);
+
+  // Push Select Device + Play Mode controls into the mobile hamburger menu
+  useEffect(() => {
+    setExtraContent(
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          <DuoButton
+            background="bg-note-half"
+            shadowBackground="bg-note-half-dark"
+            border="border-note-half-dark"
+            text="text-main"
+            onClick={() => setShowSelectDevice(true)}
+          >
+            {t("playMode.selectDevice")}
+          </DuoButton>
+          <DuoToggleButton
+            value={playModeEnabled}
+            onToggle={() => setPlayModeEnabled(true)}
+            offToggle={() => setPlayModeEnabled(false)}
+            onColors={{
+              background: "bg-note-full",
+              shadowBackground: "bg-note-full-dark",
+              border: "border-note-full-dark",
+              text: "text-dark",
+            }}
+            offColors={{
+              background: "bg-note-half",
+              shadowBackground: "bg-note-half-dark",
+              border: "border-note-half-dark",
+              text: "text-main",
+            }}
+            disabled={!canEnablePlayMode && !playModeEnabled}
+          >
+            {t("playMode.title")}
+          </DuoToggleButton>
+        </div>
+        <div className="flex flex-col gap-0.5 text-xs opacity-60">
+          <span>
+            {t("playMode.deviceStatus.microphone")}:{" "}
+            {micStatus === "granted"
+              ? (micName ?? t("playMode.deviceStatus.connected"))
+              : (micStatus ?? t("playMode.deviceStatus.none"))}
+          </span>
+          <span>
+            {t("playMode.deviceStatus.midi")}:{" "}
+            {selectedMidiInput
+              ? selectedMidiInput.name
+              : t("playMode.deviceStatus.none")}
+          </span>
+        </div>
+      </div>,
+    );
+    return () => setExtraContent(null);
+  }, [
+    playModeEnabled,
+    canEnablePlayMode,
+    micStatus,
+    micName,
+    selectedMidiInput,
+    t,
+    setExtraContent,
+    setShowSelectDevice,
+    setPlayModeEnabled,
+  ]);
 
   const handlePlay = useCallback(() => {
     if (startDelay === 0) {
@@ -637,8 +704,8 @@ export default function Player() {
         </div>
 
         <div className="flex flex-col gap-2 justify-end">
-          {/* Select Device + Play Mode row */}
-          <div className="flex gap-2 justify-end items-center not-md:ml-auto">
+          {/* Select Device + Play Mode row — hidden on mobile (moved to hamburger menu) */}
+          <div className="hidden sm:flex gap-2 justify-end items-center not-md:ml-auto">
             <DuoButton
               background="bg-note-half"
               shadowBackground="bg-note-half-dark"
@@ -673,8 +740,8 @@ export default function Player() {
             <SettingTooltip>{t("playMode.tip")}</SettingTooltip>
           </div>
 
-          {/* Device status text */}
-          <div className="flex justify-end gap-3 text-xs opacity-50 not-md:ml-auto">
+          {/* Device status text — hidden on mobile (moved to hamburger menu) */}
+          <div className="hidden sm:flex justify-end gap-3 text-xs opacity-50 not-md:ml-auto">
             <span>
               {t("playMode.deviceStatus.microphone")}:{" "}
               {micStatus === "granted"

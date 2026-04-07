@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { cn } from "../libs/utils";
-import { Activity } from "react";
 
 export default function DuoToggleButton({
   children,
@@ -55,15 +54,15 @@ export default function DuoToggleButton({
 
   return (
     <div className={cn("relative min-h-fit", className)}>
-      <Activity mode={disabled ? "hidden" : "visible"}>
+      {!disabled && (
         <div
           className={cn(
-            "absolute full rounded-2xl translate-y-0.5 z-0",
+            "absolute inset-0 rounded-2xl translate-y-0.5 z-0",
             "transition-colors duration-75",
             shadowBackground,
           )}
         />
-      </Activity>
+      )}
       <button
         onClick={handleClick}
         disabled={disabled}

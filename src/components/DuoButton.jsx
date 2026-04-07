@@ -1,4 +1,3 @@
-import { Activity } from "react";
 import { cn } from "../libs/utils";
 
 export default function DuoButton({
@@ -14,14 +13,14 @@ export default function DuoButton({
 }) {
   return (
     <div className={cn("relative min-h-fit", className)}>
-      <Activity mode={disabled ? "hidden" : "visible"}>
+      {!disabled && (
         <div
           className={cn(
             "absolute inset-0 translate-y-0.5 rounded-2xl z-0",
             shadowBackground,
           )}
         />
-      </Activity>
+      )}
 
       <button
         onClick={onClick}
