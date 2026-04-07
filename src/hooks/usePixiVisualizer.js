@@ -514,6 +514,20 @@ export function usePixiVisualizer({
         guideLayer.removeChildren();
 
         const pxPerBeat = pixelsPerBeatRef.current || 1;
+
+        // Compute how many bars to skip between visible labels.
+        // When bars are narrow, labels would overlap; skip every N bars.
+        // Bar width ≈ pxPerBeat × typical beats-per-bar (use 4 as default for the density check).
+        const approxBarPx = pxPerBeat * 4; // approximate — good enough for threshold
+        const labelInterval =
+          approxBarPx < 80
+            ? 8
+            : approxBarPx < 160
+              ? 4
+              : approxBarPx < 320
+                ? 2
+                : 1;
+
         const duration = durationBeatsRef.current ?? Infinity;
 
         // Multi-segment time signatures take priority over single ts.
@@ -557,19 +571,21 @@ export function usePixiVisualizer({
               barLine.x = -barBeat * pxPerBeat;
               guideLayer.addChild(barLine);
 
-              const barLabel = new PIXI.Text({
-                text: String(globalBarIndex + 1) + " ",
-                style: {
-                  fill: 0xffffff,
-                  fontSize: 12,
-                  fontFamily: "Iosevka Charon",
-                  align: "right",
-                },
-              });
-              barLabel.anchor.set(1, 0);
-              barLabel.y = 6;
-              barLabel.x = -barBeat * pxPerBeat;
-              guideLayer.addChild(barLabel);
+              if (globalBarIndex % labelInterval === 0) {
+                const barLabel = new PIXI.Text({
+                  text: String(globalBarIndex + 1) + " ",
+                  style: {
+                    fill: 0xffffff,
+                    fontSize: 12,
+                    fontFamily: "Iosevka Charon",
+                    align: "right",
+                  },
+                });
+                barLabel.anchor.set(1, 0);
+                barLabel.y = 6;
+                barLabel.x = -barBeat * pxPerBeat;
+                guideLayer.addChild(barLabel);
+              }
 
               for (
                 let beatIndex = 1;
@@ -614,19 +630,21 @@ export function usePixiVisualizer({
             barLine.x = -barBeat * pxPerBeatLocal;
             guideLayer.addChild(barLine);
 
-            const barLabel = new PIXI.Text({
-              text: String(barIndex + 1) + " ",
-              style: {
-                fill: 0xffffff,
-                fontSize: 12,
-                fontFamily: "Iosevka Charon",
-                align: "right",
-              },
-            });
-            barLabel.anchor.set(1, 0);
-            barLabel.y = 6;
-            barLabel.x = -barBeat * pxPerBeatLocal;
-            guideLayer.addChild(barLabel);
+            if (barIndex % labelInterval === 0) {
+              const barLabel = new PIXI.Text({
+                text: String(barIndex + 1) + " ",
+                style: {
+                  fill: 0xffffff,
+                  fontSize: 12,
+                  fontFamily: "Iosevka Charon",
+                  align: "right",
+                },
+              });
+              barLabel.anchor.set(1, 0);
+              barLabel.y = 6;
+              barLabel.x = -barBeat * pxPerBeatLocal;
+              guideLayer.addChild(barLabel);
+            }
 
             for (
               let beatIndex = 1;

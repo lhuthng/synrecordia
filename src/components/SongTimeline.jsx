@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { cn } from "../libs/utils";
 
 const NOTE_WIDTH_MIN = 40;
@@ -8,7 +8,7 @@ function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
-export default function SongTimeline({
+const SongTimeline = memo(function SongTimeline({
   currentBeat = 0,
   durationBeats = 0,
   noteWidth = 70,
@@ -258,8 +258,9 @@ export default function SongTimeline({
       {/* ── Playhead ───────────────────────────────────────────────────────── */}
       <div
         className="absolute top-0 bottom-0 w-px bg-white/70 pointer-events-none drop-shadow-[0_0_3px_rgba(255,255,255,0.8)]"
-        style={{ left: `${playheadFrac * 100}%` }}
+        style={{ left: `${playheadFrac * 100}%`, willChange: "transform" }}
       />
     </div>
   );
-}
+});
+export default SongTimeline;

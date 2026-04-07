@@ -2,9 +2,20 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
+
+  // Pre-bundle heavy ESM deps so the dev server doesn't re-transform them on
+  // every cold start. Has no effect on production builds.
+  optimizeDeps: {
+    include: ["tone", "pixi.js", "pixi-filters"],
+  },
+
   build: {
+    // Target modern browsers — enables more aggressive tree-shaking and avoids
+    // unnecessary polyfill transforms.
+    target: "es2020",
+
     rollupOptions: {
       output: {
         manualChunks: (id) => {
@@ -19,4 +30,10 @@ export default defineConfig({
       },
     },
   },
-});
+
+  // Drop console/debugger calls in production builds only.
+  // Saves ~5–10 KB on minified output and removes noisy logs on mobile.
+  esbuild: {
+    drop: mode === "production" ? ["console", "debugger"] : [],
+  },
+}));

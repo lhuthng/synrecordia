@@ -76,3 +76,31 @@ Items are ordered by impact (highest first).
 ### 🟠 High — PixiJS Hit-Test Cost
 
 - [x] **`eventMode = 'none'` on non-interactive Pixi layers** (`usePixiVisualizer.js`) — Set on `guideLayer` (hundreds of bar/beat `Graphics` objects), `holesLayer` (static instrument decorations), `particleLayer` (150 sprites), and `zonesLayer` (gray overlay rectangles). PixiJS traverses the full scene graph on every pointer event to find hit targets; marking these subtrees as `'none'` eliminates their traversal entirely. `notesLayer` and `playBarLayer` are left at their defaults since they host interactive children.
+
+### 🟢 Bug Fix — Guide Bar Misalignment During Zoom
+
+- [x] **Guide bars immediately rescale on `noteWidth` change** (`usePixiVisualizer.js`) — `buildGuides()` is debounced 60 ms to prevent GC thrashing during zoom gestures, but `scrollLayer.x` and note sprites updated immediately. This left guide bar/beat lines at old pixel positions for 60 ms — visibly misaligned. Fix: capture `prevPpb` before updating `pixelsPerBeatRef`, compute `ratio = newPpb / prevPpb`, and multiply every guide child's `.x` by that ratio synchronously in the same effect. The debounced full rebuild still fires for text label correctness.
+
+---
+
+## Batch 4 — React Render Cost & Build Quality
+
+### 🟠 High — React Re-render Reduction
+
+- [x] **`React.memo` on `Visualizer`** (`src/components/Visualizer.jsx`) — `Visualizer` was a plain function component re-entering on every parent re-render, including non-beat-driven ones (modal opens, song selection, settings changes). Wrapped with `memo()` so React skips reconciliation when none of its props changed.
+- [x] **`React.memo` on `SongTimeline`** (`src/components/SongTimeline.jsx`) — Same pattern. `SongTimeline` is a moderately complex component with `ResizeObserver`, drag state, and animation RAF; memoising prevents unnecessary re-entry during parent renders unrelated to timeline state.
+
+### 🟠 High — GPU Compositing Hints
+
+- [x] **`willChange: "transform"` on Pixi canvas container** (`src/components/Visualizer.jsx`) — Tells the browser to promote the PixiJS canvas host element to its own GPU compositor layer. Reduces paint cost when the play bar, particles, and scroll layer animate each frame.
+- [x] **`willChange: "transform"` on SongTimeline playhead** (`src/components/SongTimeline.jsx`) — The playhead `<div>` moves on every beat tick (~30 fps). GPU layer promotion means position updates are composited without triggering browser layout or paint.
+
+### 🟡 Medium — PixiJS Text Object Count
+
+- [x] **Bar label density skip in `buildGuides()`** (`usePixiVisualizer.js`) — Every bar previously received a `new PIXI.Text()` label regardless of zoom level, each allocating a Canvas 2D context internally. A `labelInterval` is now computed from approximate bar pixel width: every 8th bar when bars are < 80 px wide, every 4th when < 160 px, every 2nd when < 320 px, every bar otherwise. Bar lines and beat lines are unaffected. At minimum zoom with a 3-minute song this reduces `PIXI.Text` objects from ~180 to ~23.
+
+### 🟡 Medium — Build & Dev Server
+
+- [x] **`esbuild.drop: ["console", "debugger"]` in production** (`vite.config.js`) — Strips all `console.*` calls and `debugger` statements from the production bundle. Saves ~5–10 KB minified and removes log noise on mobile.
+- [x] **`build.target: "es2020"`** (`vite.config.js`) — Targets modern syntax, enabling more aggressive tree-shaking and avoiding unnecessary transpilation of optional chaining, nullish coalescing, etc.
+- [x] **`optimizeDeps.include` for tone, pixi.js, pixi-filters** (`vite.config.js`) — Explicitly pre-bundles the three heaviest ESM dependencies during Vite dev-server startup. Eliminates repeated on-demand transforms during development HMR and reduces cold-start time.

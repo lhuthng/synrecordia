@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
 import { usePixiVisualizer } from "../hooks/usePixiVisualizer.js";
 import {
@@ -33,7 +33,7 @@ function computeHoleLineYs(height) {
   return positions.map((p) => holesTop + p + rh / 2);
 }
 
-export default function Visualizer({
+const Visualizer = memo(function Visualizer({
   song,
   currentBeat = 0,
   durationBeats = 0,
@@ -235,6 +235,7 @@ export default function Visualizer({
           touchAction: "none",
           opacity: isReady && song?.id === displaySong?.id ? 1 : 0,
           transition: `opacity ${FADE_MS}ms ease`,
+          willChange: "transform",
         }}
         tabIndex={0}
         onKeyDown={(e) => {
@@ -456,4 +457,5 @@ export default function Visualizer({
       </div>
     </div>
   );
-}
+});
+export default Visualizer;
