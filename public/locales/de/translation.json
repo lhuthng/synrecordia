@@ -21,6 +21,8 @@
     "ambient": "Ambiente",
     "scrollToTop": "Nach oben",
     "close": "Schließen",
+    "ecoMode": "Eco-Modus",
+    "ecoModeAuto": "(automatisch erkannt)",
     "tips": {
       "bpm": "Wiedergabegeschwindigkeit in Schlägen pro Minute.",
       "transpose": "Alle Noten um diese Anzahl Halbtöne nach oben oder unten verschieben.",
@@ -29,7 +31,8 @@
       "latency": "Audio-Latenz-Ausgleich. Erhöhen, wenn die Visualisierung dem Audio voraus ist.",
       "particles": "Partikeleffekte, die von aktiven Noten ausgehen, anzeigen oder verbergen.",
       "pulse": "Instrumenten-Buttons animieren, wenn sie eine Note auslösen.",
-      "ambient": "Zeigt ein farbiges Leuchten hinter der Seite, das auf Notenauslöser reagiert."
+      "ambient": "Zeigt ein farbiges Leuchten hinter der Seite, das auf Notenauslöser reagiert.",
+      "ecoMode": "Reduziert Audio-Effekte (Hall, Vibrato, Chorus) und visuelle Effekte (Glow, Partikel, Anti-Aliasing) für bessere Leistung auf schwächeren und mobilen Geräten. Wird automatisch anhand der Hardware-Eigenschaften erkannt."
     },
     "rangeWarning": {
       "default": "Einige Noten in diesem Track liegen außerhalb des spielbaren Bereichs des Instruments.",

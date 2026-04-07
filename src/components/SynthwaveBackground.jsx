@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from "react";
+import { useEcoMode } from "../context/EcoModeContext";
 
 // ── Seeded LCG → deterministic star field ─────────────────────────────────────
 const STARS = (() => {
@@ -62,6 +63,7 @@ const H_LINE_YS = Array.from({ length: 7 }, (_, i) => {
 
 export default memo(function SynthwaveBackground() {
   const svgRef = useRef(null);
+  const { ecoMode } = useEcoMode();
 
   useEffect(() => {
     let raf = null;
@@ -192,7 +194,7 @@ export default memo(function SynthwaveBackground() {
         <rect x="0" y="0" width="160" height="67.5" fill="url(#syn-sky)" />
 
         {/* ───────────────────── Stars ───────────────────── */}
-        {STARS.map((star) => (
+        {(ecoMode ? STARS.slice(0, 12) : STARS).map((star) => (
           <g key={star.id} opacity={star.o}>
             <polygon
               points={getFourPointStarPoints(star.cx, star.cy, star.size)}

@@ -272,13 +272,18 @@ export default function usePlayer() {
 
     const getSecondsPerBeatLocalized = () => 60 / (bpmRef.current || 120);
 
+    let frameCount = 0;
     const tick = () => {
       const secondsPerBeat = getSecondsPerBeatLocalized();
       const beat =
         startBeatRef.current +
         (Tone.now() - startToneTimeRef.current) / secondsPerBeat;
       cursorBeatsRef.current = beat;
-      setCurrentBeat(beat);
+      // Throttle React state updates to ~30 fps; the PixiJS ticker
+      // projects ahead with elapsed-time interpolation so visuals stay smooth.
+      if (++frameCount % 2 === 0) {
+        setCurrentBeat(beat);
+      }
 
       // ── Play-mode gate: pause BEFORE firing notes at this beat ───────────
       // Checked every tick so play-mode can halt the scheduler before any

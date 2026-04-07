@@ -21,6 +21,8 @@
     "ambient": "Ambient Glow",
     "scrollToTop": "To Top",
     "close": "Close",
+    "ecoMode": "Eco Mode",
+    "ecoModeAuto": "(auto-detected)",
     "tips": {
       "bpm": "Playback speed in beats per minute.",
       "transpose": "Shift all notes up or down by this many semitones.",
@@ -29,7 +31,8 @@
       "latency": "Audio latency compensation. Increase if the visuals appear ahead of the audio.",
       "particles": "Show or hide the particle effects that emit from active notes.",
       "pulse": "Animate instrument buttons when they trigger a note.",
-      "ambient": "Shows a coloured glow behind the page that reacts to note triggers."
+      "ambient": "Shows a coloured glow behind the page that reacts to note triggers.",
+      "ecoMode": "Reduces audio effects (reverb, vibrato, chorus) and visual effects (glow, particles, anti-aliasing) for better performance on lower-end and mobile devices. Automatically detected based on your device's hardware."
     },
     "rangeWarning": {
       "default": "Some notes in this track fall outside the instrument's playable range.",

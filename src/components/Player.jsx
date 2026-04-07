@@ -24,12 +24,14 @@ import {
 import * as Tone from "tone";
 import SelectDeviceModal from "./SelectDeviceModal";
 import { useMobileMenu } from "../context/useMobileMenu";
+import { useEcoMode } from "../context/EcoModeContext";
 
 export default function Player() {
   // URL param — present when route is /songs/:songId
   const songMatch = useMatch("/songs/:songId");
   const urlSongId = songMatch?.params?.songId;
   const { t } = useTranslation();
+  const { ecoMode, autoDetected: autoEcoMode, setManualEcoMode } = useEcoMode();
 
   // player hook encapsulates audio/playback logic
   const {
@@ -851,6 +853,9 @@ export default function Player() {
         onPulseToggle={setPulseEnabled}
         ambientEnabled={ambientEnabled}
         onAmbientToggle={setAmbientEnabled}
+        ecoMode={ecoMode}
+        autoEcoMode={autoEcoMode}
+        onEcoModeToggle={setManualEcoMode}
       />
 
       {/* Floating scroll-to-top button */}
@@ -889,6 +894,7 @@ export default function Player() {
           bpm={bpm}
           noteWidth={noteWidth}
           particlesEnabled={particlesEnabled}
+          ecoMode={ecoMode}
           playBarPosition={playBarPosition}
           rangeWarning={rangeWarning}
           onReady={() => {

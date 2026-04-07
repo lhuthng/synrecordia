@@ -8,20 +8,28 @@ const MAX_DB = 0;
 const DEFAULT_DB = -10;
 const MIN_DB = -40;
 
+const REVERB_WET = 0.15;
+const VIBRATO_WET = 1.0;
+
 export default class RecorderSampler extends PackedSampler {
   constructor(urls, baseUrl, callback, addition) {
     super(addition);
 
-    this.vibrato = new Tone.Vibrato(5, 0.1).toDestination();
-    this.reverb = new Tone.Reverb({
-      decay: 5,
-      preDelay: 0.02,
-      wet: 0.15,
-    }).connect(this.vibrato);
+    const ecoMode = addition?.ecoMode ?? false;
 
-    this.filter = new Tone.Filter(1600, "lowpass").connect(this.reverb);
-
-    this.volume = new Tone.Volume(DEFAULT_DB).connect(this.reverb);
+    if (!ecoMode) {
+      this.vibrato = new Tone.Vibrato(5, 0.1).toDestination();
+      this.reverb = new Tone.Reverb({
+        decay: 5,
+        preDelay: 0.02,
+        wet: REVERB_WET,
+      }).connect(this.vibrato);
+      this.volume = new Tone.Volume(DEFAULT_DB).connect(this.reverb);
+    } else {
+      this.vibrato = null;
+      this.reverb = null;
+      this.volume = new Tone.Volume(DEFAULT_DB).toDestination();
+    }
 
     this.samplerData = { urls, baseUrl };
     this.sampler = new Tone.Sampler({
@@ -32,10 +40,11 @@ export default class RecorderSampler extends PackedSampler {
   }
 
   dispose() {
-    [this.sampler, this.volume, this.filter, this.reverb, this.vibrato].forEach(
-      (node) => node.dispose(),
-    );
+    [this.sampler, this.volume, this.reverb, this.vibrato]
+      .filter(Boolean)
+      .forEach((node) => node.dispose());
   }
+
   getPresentation() {
     return Recorder;
   }
@@ -93,15 +102,27 @@ export default class RecorderSampler extends PackedSampler {
   }
 
   getVibrato() {
+    if (!this.vibrato) return 10; // default depth % when eco mode (no vibrato node)
     const depth = this.vibrato.depth.value;
     return Math.round(depth * 100);
   }
 
   setVibrato(value) {
+    if (!this.vibrato) return;
     if (value < 0) value = 0;
     if (value > 100) value = 100;
 
     const depth = value / 100; // convert to 0–1 range
     this.vibrato.depth.rampTo(depth, 0.1);
+  }
+
+  /** Smoothly bypass (or restore) reverb + vibrato for runtime eco mode toggling. */
+  setEcoMode(enabled) {
+    if (this.reverb) {
+      this.reverb.wet.rampTo(enabled ? 0 : REVERB_WET, 0.5);
+    }
+    if (this.vibrato) {
+      this.vibrato.wet.rampTo(enabled ? 0 : VIBRATO_WET, 0.5);
+    }
   }
 }

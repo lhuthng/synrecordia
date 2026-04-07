@@ -21,6 +21,8 @@
     "ambient": "Ánh nền",
     "scrollToTop": "Lên đầu",
     "close": "Đóng",
+    "ecoMode": "Chế độ Eco",
+    "ecoModeAuto": "(tự động phát hiện)",
     "tips": {
       "bpm": "Tốc độ phát trong nhịp mỗi phút.",
       "transpose": "Dịch chuyển tất cả các nốt lên hoặc xuống bấy nhiêu nửa cung.",
@@ -29,7 +31,8 @@
       "latency": "Bù độ trễ âm thanh. Tăng nếu hình ảnh chạy trước âm thanh.",
       "particles": "Bật hoặc tắt hiệu ứng hạt phát ra từ các nốt đang phát.",
       "pulse": "Tạo hiệu ứng cho nút nhạc cụ khi nó kích hoạt một nốt.",
-      "ambient": "Hiển thị ánh sáng màu phía sau trang, phản ứng theo các nốt nhạc."
+      "ambient": "Hiển thị ánh sáng màu phía sau trang, phản ứng theo các nốt nhạc.",
+      "ecoMode": "Giảm hiệu ứng âm thanh (reverb, vibrato, chorus) và hiệu ứng hình ảnh (glow, hạt, khử răng cưa) để cải thiện hiệu suất trên thiết bị yếu và di động. Tự động phát hiện dựa trên phần cứng của thiết bị."
     },
     "rangeWarning": {
       "default": "Một số nốt trong bài nằm ngoài tầm chơi của nhạc cụ.",

@@ -94,6 +94,7 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
       hasDraggedRef,
       onNoteClickRef,
       setIsHoveringNote,
+      ecoMode = false,
     },
   ) {
     const fingeringColors = getFingeringColors();
@@ -128,9 +129,13 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
 
     // ── Outer container + brightness filter ─────────────────────────────────
     const container = new PIXI.Container();
-    const brightnessFilter = new ColorMatrixFilter();
-    graphics.filters = [brightnessFilter];
-    const brightnessState = { current: 1.0, target: 1.0 };
+    let brightnessFilter = null;
+    let brightnessState = null;
+    if (!ecoMode) {
+      brightnessFilter = new ColorMatrixFilter();
+      graphics.filters = [brightnessFilter];
+      brightnessState = { current: 1.0, target: 1.0 };
+    }
 
     const scaledGraphicsWidth = dims.width;
     const containerOffsetY = (height - dims.height) / 2;

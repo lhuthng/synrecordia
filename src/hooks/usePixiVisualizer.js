@@ -54,6 +54,7 @@ export function usePixiVisualizer({
   interactionLocked = false,
   latencyMs = 0,
   particlesEnabled = true,
+  ecoMode = false,
 }) {
   // ─── DOM refs ────────────────────────────────────────────────────────────────
   const wrapperRef = useRef(null);
@@ -86,6 +87,7 @@ export function usePixiVisualizer({
   const buildPlayBarRef = useRef(null);
   const buildSpritesRef = useRef(null);
   const buildZonesRef = useRef(null);
+  const buildGuidesDebounceRef = useRef(null);
 
   // ─── Playback / scroll state refs ────────────────────────────────────────────
   // targetBeatRef: the external target the ticker interpolates displayBeatRef toward.
@@ -120,6 +122,7 @@ export function usePixiVisualizer({
 
   // ─── Particles enabled ref ───────────────────────────────────────────────────
   const particlesEnabledRef = useRef(particlesEnabled);
+  const ecoModeRef = useRef(ecoMode);
 
   // ─── Lazy allocation refs ────────────────────────────────────────────────────
   // maxSpriteWidthRef: widest note sprite (px) – used as conservative left-boundary buffer.
@@ -237,6 +240,10 @@ export function usePixiVisualizer({
   }, [particlesEnabled]);
 
   useEffect(() => {
+    ecoModeRef.current = ecoMode;
+  }, [ecoMode]);
+
+  useEffect(() => {
     bpmRef.current = bpm;
   }, [bpm]);
 
@@ -321,7 +328,12 @@ export function usePixiVisualizer({
   // ─── Note width changes → full scene rebuild + scroll correction ──────────────
   useEffect(() => {
     pixelsPerBeatRef.current = noteWidth;
-    buildGuidesRef.current?.();
+    // Debounce guide rebuild so dragging the zoom handle doesn't create/destroy
+    // hundreds of PIXI objects on every pointer-move event.
+    clearTimeout(buildGuidesDebounceRef.current);
+    buildGuidesDebounceRef.current = setTimeout(() => {
+      buildGuidesRef.current?.();
+    }, 60);
     buildZonesRef.current?.();
     buildSpritesRef.current?.();
 
@@ -360,7 +372,7 @@ export function usePixiVisualizer({
         width,
         height,
         backgroundAlpha: 0,
-        antialias: true,
+        antialias: !ecoModeRef.current,
         canvas: canvasEl,
       });
 
@@ -633,16 +645,18 @@ export function usePixiVisualizer({
         pb.moveTo(barXRef.current, 0);
         pb.lineTo(barXRef.current, height);
         pb.stroke();
-        pb.filters = [
-          new GlowFilter({
-            distance: 14,
-            outerStrength: 2.2,
-            innerStrength: 0.4,
-            color: 0xffffff,
-            quality: 0.2,
-            knockout: false,
-          }),
-        ];
+        if (!ecoModeRef.current) {
+          pb.filters = [
+            new GlowFilter({
+              distance: 14,
+              outerStrength: 2.2,
+              innerStrength: 0.4,
+              color: 0xffffff,
+              quality: 0.2,
+              knockout: false,
+            }),
+          ];
+        }
         pb.eventMode = "static";
         pb.hitArea = new PIXI.Rectangle(barXRef.current - 12, 0, 24, height);
         pb.on("pointerover", () => {
@@ -669,6 +683,7 @@ export function usePixiVisualizer({
           hasDraggedRef,
           onNoteClickRef,
           setIsHoveringNote,
+          ecoMode: ecoModeRef.current,
         }) ?? null;
 
       // ── Builder: lazy note allocation ─────────────────────────────────────────

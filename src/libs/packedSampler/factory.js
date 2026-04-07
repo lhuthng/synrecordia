@@ -28,10 +28,10 @@ export function getSampleDir(name) {
   return SAMPLE_DIR[name] ?? name;
 }
 
-export function createSynthInstrument(name, callback) {
+export function createSynthInstrument(name, callback, ecoMode = false) {
   switch (name) {
     case "waveform":
-      return new WaveformSynth(callback);
+      return new WaveformSynth(callback, ecoMode);
     default:
       return null;
   }

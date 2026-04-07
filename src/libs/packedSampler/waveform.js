@@ -6,18 +6,29 @@ const MAX_DB = -10;
 const DEFAULT_DB = -20;
 const MIN_DB = -80;
 
+const REVERB_WET = 0.2;
+const CHORUS_WET = 0.5;
+
 export default class WaveformSynth {
-  constructor(callback) {
+  constructor(callback, ecoMode = false) {
     this.name = "waveform";
     this.version = "sine";
 
-    this.reverb = new Tone.Reverb({
-      decay: 2.5,
-      preDelay: 0.01,
-      wet: 0.2,
-    }).toDestination();
-    this.chorus = new Tone.Chorus(4, 2.5, 0.5).connect(this.reverb).start();
-    this.volume = new Tone.Volume(DEFAULT_DB).connect(this.chorus);
+    if (!ecoMode) {
+      this.reverb = new Tone.Reverb({
+        decay: 2.5,
+        preDelay: 0.01,
+        wet: REVERB_WET,
+      }).toDestination();
+      this.chorus = new Tone.Chorus(4, 2.5, CHORUS_WET)
+        .connect(this.reverb)
+        .start();
+      this.volume = new Tone.Volume(DEFAULT_DB).connect(this.chorus);
+    } else {
+      this.reverb = null;
+      this.chorus = null;
+      this.volume = new Tone.Volume(DEFAULT_DB).toDestination();
+    }
 
     this.synth = new Tone.PolySynth(Tone.Synth, {
       oscillator: { type: "sine" },
@@ -30,15 +41,19 @@ export default class WaveformSynth {
   getSampler() {
     return this.synth;
   }
+
   getVersion() {
     return this.version;
   }
+
   getAlternatives() {
     return WAVEFORMS;
   }
+
   getNoteRange() {
     return { min: 21, max: 108 };
   }
+
   getPresentation() {
     return WaveformComponent;
   }
@@ -65,10 +80,20 @@ export default class WaveformSynth {
     callback?.();
   }
 
+  /** Smoothly bypass (or restore) reverb + chorus for runtime eco mode toggling. */
+  setEcoMode(enabled) {
+    if (this.reverb) {
+      this.reverb.wet.rampTo(enabled ? 0 : REVERB_WET, 0.5);
+    }
+    if (this.chorus) {
+      this.chorus.wet.rampTo(enabled ? 0 : CHORUS_WET, 0.5);
+    }
+  }
+
   dispose() {
-    [this.synth, this.volume, this.chorus, this.reverb].forEach((n) =>
-      n?.dispose(),
-    );
+    [this.synth, this.volume, this.chorus, this.reverb]
+      .filter(Boolean)
+      .forEach((n) => n.dispose());
     this.synth = null;
     this.volume = null;
     this.chorus = null;

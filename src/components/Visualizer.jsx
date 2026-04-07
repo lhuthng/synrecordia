@@ -47,6 +47,7 @@ export default function Visualizer({
   transpose = 0,
   latencyMs = 0,
   particlesEnabled = true,
+  ecoMode = false,
   rangeWarning = null,
   onReady,
   onScrubStart,
@@ -136,7 +137,8 @@ export default function Visualizer({
     onPlayBarPositionChange,
     onScrollHint: handleScrollHint,
     interactionLocked: showInstrument,
-    particlesEnabled,
+    particlesEnabled: particlesEnabled && !ecoMode,
+    ecoMode,
   });
 
   /** Playbar X in pixels from the left edge of the wrapper. */

@@ -5,11 +5,11 @@ export const DEFAULT_HEIGHT = 400;
 export const FADE_MS = 500;
 
 export const ZONE_COLOR = 0x444444;
-export const MAX_PARTICLES = 400;
+export const MAX_PARTICLES = 150;
 export const PARTICLE_RADIUS = 2.5;
 export const PARTICLE_LIFETIME_MIN = 0.5;
 export const PARTICLE_LIFETIME_MAX = 0.9;
-export const PARTICLE_SPAWN_CHANCE = 0.2;
+export const PARTICLE_SPAWN_CHANCE = 0.12;
 
 export const NUM_HOLES = 8;
 export const NOTE_GLOW_PADDING = 16;

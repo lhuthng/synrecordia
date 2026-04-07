@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useMatch } from "react-router-dom";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
@@ -10,9 +10,11 @@ import SongTimeline from "./SongTimeline";
 import InstrumentManager from "./instruments/InstrumentManager";
 import usePlayer from "../hooks/usePlayer.js";
 import { computeNoteRangeFromActions } from "../libs/utils.js";
+import { useEcoMode } from "../context/EcoModeContext";
 
 export default function CompactPlayer() {
   const { t } = useTranslation();
+  const { ecoMode } = useEcoMode();
 
   // Resolve songId from /compact/songs/:songId — null when at /compact
   const songMatch = useMatch("/compact/songs/:songId");
@@ -46,6 +48,16 @@ export default function CompactPlayer() {
     handleNoteWidthChange,
     handleAudioReady,
   } = usePlayer();
+
+  // Pre-compute per-track note ranges so they aren't recalculated on every render
+  const trackNoteRanges = useMemo(
+    () =>
+      song?.tracks?.map(
+        (track) =>
+          track.noteRange ?? computeNoteRangeFromActions(track.actions),
+      ) ?? [],
+    [song?.tracks],
+  );
 
   // ── Visual readiness ─────────────────────────────────────────────────────
   const [isVisualReady, setIsVisualReady] = useState(false);
@@ -178,9 +190,7 @@ export default function CompactPlayer() {
             handleAudioReady={(value) => handleAudioReady(index, value)}
             onReady={() => handleAudioReady(index, true)}
             offReady={() => handleAudioReady(index, false)}
-            trackNoteRange={
-              track.noteRange ?? computeNoteRangeFromActions(track.actions)
-            }
+            trackNoteRange={trackNoteRanges[index]}
             transpose={transposeSemitones}
             fingeringSystem={fingeringSystem}
             recorderType={recorderType}
@@ -277,6 +287,7 @@ export default function CompactPlayer() {
         bpm={bpm}
         noteWidth={noteWidth}
         particlesEnabled={true}
+        ecoMode={ecoMode}
         playBarPosition={playBarPosition}
         rangeWarning={null}
         onReady={() => {

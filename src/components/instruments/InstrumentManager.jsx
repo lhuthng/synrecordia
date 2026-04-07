@@ -10,6 +10,7 @@ import { motion as Motion, AnimatePresence, useAnimate } from "motion/react";
 import { cn, midiToNoteName } from "../../libs/utils";
 import DuoSelect from "../DuoSelect";
 import { useTranslation } from "react-i18next";
+import { useEcoMode } from "../../context/EcoModeContext";
 
 // ── NoteRangeBar ─────────────────────────────────────────────────────────────
 function NoteRangeBar({ instrumentRange, trackRange, transpose }) {
@@ -129,6 +130,7 @@ export default function InstrumentManager({
   const [samplerInstance, setSamplerInstance] = useState(null);
   const [scope, animate] = useAnimate();
   const { t } = useTranslation();
+  const { ecoMode } = useEcoMode();
 
   const isReadyRef = useRef(false);
   const packedSamplerRef = useRef(null);
@@ -249,12 +251,16 @@ export default function InstrumentManager({
 
       // ── Synthesizer instruments (no sample files needed) ─────────────────
       if (isSynthInstrument(name)) {
-        const packedSampler = createSynthInstrument(name, () => {
-          if (!isCancelled) {
-            handleAudioReady?.(true);
-            isReadyRef.current = true;
-          }
-        });
+        const packedSampler = createSynthInstrument(
+          name,
+          () => {
+            if (!isCancelled) {
+              handleAudioReady?.(true);
+              isReadyRef.current = true;
+            }
+          },
+          ecoMode,
+        );
         if (!packedSampler) return;
 
         packedSamplerRef.current = packedSampler;
@@ -297,6 +303,7 @@ export default function InstrumentManager({
             name,
             alternatives: data,
             version,
+            ecoMode,
           },
         );
 
@@ -328,6 +335,11 @@ export default function InstrumentManager({
       handleAudioReady?.(isReadyRef.current);
     }
   }, [initialReady, handleAudioReady]);
+
+  // ── Sync eco mode to the running sampler when the user toggles it ─────────
+  useEffect(() => {
+    samplerInstance?.setEcoMode?.(ecoMode);
+  }, [ecoMode, samplerInstance]);
 
   // Build i18n-labelled options for the swap select
   const swapOptions = swappableInstruments

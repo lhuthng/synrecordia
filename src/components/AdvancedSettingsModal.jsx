@@ -18,6 +18,9 @@ export default function AdvancedSettingsModal({
   onPulseToggle,
   ambientEnabled,
   onAmbientToggle,
+  ecoMode,
+  autoEcoMode,
+  onEcoModeToggle,
 }) {
   const { t } = useTranslation();
   const panelRef = useRef(null);
@@ -151,6 +154,38 @@ export default function AdvancedSettingsModal({
                   text: "text-main",
                 }}
               />
+            </div>
+
+            {/* Eco mode toggle */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 shrink-0 min-w-28">
+                <label className="text-sm">{t("player.ecoMode")}:</label>
+                <SettingTooltip>{t("player.tips.ecoMode")}</SettingTooltip>
+              </div>
+              <div className="flex items-center gap-2">
+                <DuoToggleButton
+                  value={ecoMode}
+                  onToggle={() => onEcoModeToggle(true)}
+                  offToggle={() => onEcoModeToggle(false)}
+                  onColors={{
+                    background: "bg-note-full",
+                    shadowBackground: "bg-note-full-dark",
+                    border: "border-note-full-dark",
+                    text: "text-dark",
+                  }}
+                  offColors={{
+                    background: "bg-note-half",
+                    shadowBackground: "bg-note-half-dark",
+                    border: "border-note-half-dark",
+                    text: "text-main",
+                  }}
+                />
+                {autoEcoMode && (
+                  <span className="text-xs opacity-60 italic">
+                    {t("player.ecoModeAuto")}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Divider */}
