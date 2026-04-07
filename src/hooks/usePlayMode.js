@@ -86,21 +86,51 @@ function detectPitch(buffer, sampleRate) {
     nsdf[tau] = denom > 1e-12 ? (2 * num) / denom : 0;
   }
 
-  // ── Find global maximum above threshold ─────────────────────────────────
-  // The global maximum corresponds to the fundamental period for most
-  // instruments (including recorder) where the fundamental is dominant.
+  // ── Find first key maximum above threshold ───────────────────────────────
+  // A periodic signal at frequency F has NSDF peaks at lags T, 2T, 3T, …
+  // (all near 1.0 for a pure tone).  Taking the GLOBAL maximum is essentially
+  // random between those peaks — which is why playing G5 sometimes returns G4
+  // or G3.  The correct fix is to take the FIRST local maximum above a
+  // threshold (smallest lag = highest frequency = the fundamental).
+  //
+  // Algorithm (McLeod & Wyvill, 2005):
+  //   1. Compute the global max to establish a relative acceptance floor.
+  //   2. Walk from minLag upward; the first local max that clears the floor
+  //      is the fundamental period.
+  //   3. Fall back to the global max lag if no clean local max is found
+  //      (e.g. very flat peak on a pure sine).
   const NSDF_THRESHOLD = 0.8;
-  let bestLag = -1;
-  let bestVal = NSDF_THRESHOLD;
 
+  // Pass 1 – global max (sets the relative cutoff).
+  let globalMax = 0;
+  let globalMaxLag = -1;
   for (let tau = minLag; tau <= maxLag; tau++) {
-    if (nsdf[tau] > bestVal) {
-      bestVal = nsdf[tau];
-      bestLag = tau;
+    if (nsdf[tau] > globalMax) {
+      globalMax = nsdf[tau];
+      globalMaxLag = tau;
     }
   }
 
-  if (bestLag === -1) return null;
+  if (globalMax < NSDF_THRESHOLD) return null;
+
+  // Pass 2 – first local maximum above 85 % of the global peak.
+  // 85 % is loose enough to find the fundamental even when the harmonic
+  // series makes the first peak slightly lower than a sub-harmonic peak.
+  const cutoff = 0.85 * globalMax;
+  let bestLag = -1;
+  for (let tau = minLag + 1; tau < maxLag; tau++) {
+    if (
+      nsdf[tau] >= cutoff &&
+      nsdf[tau] >= nsdf[tau - 1] &&
+      nsdf[tau] >= nsdf[tau + 1]
+    ) {
+      bestLag = tau;
+      break;
+    }
+  }
+
+  // Fallback – no clean local max found; use the global max lag.
+  if (bestLag === -1) bestLag = globalMaxLag;
 
   // ── Parabolic interpolation for sub-sample lag accuracy ─────────────────
   let refinedLag = bestLag;
@@ -497,12 +527,13 @@ export default function usePlayMode({
     };
 
     // Run the stability accumulator for a detected MIDI value.
+    // Uses exact MIDI comparison (not pitch-class) so that frames returning
+    // G4 and G5 do NOT count toward each other — each must be individually
+    // stable.  The improved NSDF now returns a consistent octave, so exact
+    // comparison is reliable.
     // Returns true when a note was confirmed and fired.
     const accumulate = (midi) => {
-      const pc = midi % 12;
-      // Use pitch-class for stability so octave wobble doesn't reset the counter.
-      const pendingPc = pendingMidi !== null ? pendingMidi % 12 : -1;
-      if (pc === pendingPc) {
+      if (midi === pendingMidi) {
         pendingCount++;
         if (pendingCount >= MIC_STABLE_FRAMES) {
           confirmNote(midi);
@@ -514,6 +545,12 @@ export default function usePlayMode({
       }
       return false;
     };
+
+    // How many consecutive silent frames are required before the state resets.
+    // Prevents a brief mid-breath RMS dip from unlocking and re-firing at a
+    // different octave during a sustained note.
+    const SILENCE_DEBOUNCE_FRAMES = 3;
+    let silenceFrames = 0;
 
     const tick = () => {
       if (!micContextRef.current || micContextRef.current.state === "closed")
@@ -527,15 +564,23 @@ export default function usePlayMode({
       const rms = Math.sqrt(sumSq / buffer.length);
       const isSilent = rms < MIC_SILENCE_THRESHOLD;
 
-      // ── Silence: full reset ───────────────────────────────────────────────
+      // ── Silence: debounced reset ──────────────────────────────────────────
+      // Require SILENCE_DEBOUNCE_FRAMES consecutive silent frames before
+      // resetting so that a brief mid-breath RMS dip does not unlock the
+      // detector and allow the same note to re-fire at a wrong octave.
       if (isSilent) {
-        detectState = "idle";
-        lockedPc = -1;
-        pendingMidi = null;
-        pendingCount = 0;
+        silenceFrames++;
+        if (silenceFrames >= SILENCE_DEBOUNCE_FRAMES) {
+          detectState = "idle";
+          lockedPc = -1;
+          pendingMidi = null;
+          pendingCount = 0;
+          silenceFrames = 0;
+        }
         requestAnimationFrame(tick);
         return;
       }
+      silenceFrames = 0; // non-silent frame resets the silence counter
 
       // ── Detect pitch ──────────────────────────────────────────────────────
       const midi = detectPitch(buffer, context.sampleRate);
