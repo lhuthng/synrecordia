@@ -68,6 +68,16 @@
       "system": "Selects the fingering chart system. 'Simple' is the layout used by most electronic woodwind instruments and, together with tenor, covers the widest playable range."
     }
   },
+  "brecorder": {
+    "volume": "Volume",
+    "vibrato": "Vibrato",
+    "variant": "Variant",
+    "tips": {
+      "volume": "Adjusts the accompaniment recorder playback volume.",
+      "vibrato": "Adjusts the vibrato depth of the accompaniment recorder.",
+      "variant": "Switches between different recorder sample sets."
+    }
+  },
   "fingeringSystem": {
     "baroque": "Baroque",
     "german": "German",
@@ -230,10 +240,20 @@
       "variant": "Switches between different guitar sample sets."
     }
   },
+  "harpsichord": {
+    "volume": "Volume",
+    "variant": "Variant",
+    "tips": {
+      "volume": "Adjusts the harpsichord playback volume.",
+      "variant": "Switches between different harpsichord sample sets."
+    }
+  },
   "instruments": {
-    "recorder": "Recorder",
+    "recorder": "VRecorder",
+    "brecorder": "Recorder",
     "piano": "Piano",
     "guitar": "Guitar",
+    "harpsichord": "Harpsichord",
     "waveform": "Waveform",
     "swap": "Swap"
   }

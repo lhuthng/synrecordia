@@ -142,7 +142,7 @@ function DifficultyExpression({ className, difficulty }) {
       viewBox="0 0 32 32"
       className={cn(
         className,
-        "absolute w-18 h-18 -translate-y-1 -translate-x-10 fill-none stroke-2 pointer-events-none",
+        "absolute w-18 h-18 -translate-y-1/2 -translate-x-10 fill-none stroke-2 pointer-events-none",
       )}
     >
       {svg}
@@ -189,6 +189,7 @@ function SongEntry({ song, onSelect }) {
           "cursor-pointer transition-all duration-75",
           "overflow-hidden",
           "hover:brightness-110 active:translate-y-0.5 focus:outline-main",
+          "hover:[&>.expression]:animate-spin",
         )}
       >
         <div className="relative z-10">
@@ -206,7 +207,7 @@ function SongEntry({ song, onSelect }) {
           </div>
         </div>
         <DifficultyExpression
-          className="right-0 top-0 stroke-note-half-dark/40 translate-x-3 translate-y-4 -rotate-30 pointer-events-none z-0"
+          className="expression right-0 top-1/2 stroke-note-half-dark/40 translate-x-3 -rotate-30 pointer-events-none z-0"
           difficulty={song.difficulty}
         />
       </button>
@@ -378,7 +379,7 @@ export default function Directory({
             role="dialog"
             aria-label={t("directory.ariaLabel")}
             className={cn(
-              "absolute mt-2 w-80 border-2 border-note-half-dark bg-dark rounded-2xl",
+              "absolute mt-2 w-80 max-w-[calc(100dvw-2rem)] border-2 border-note-half-dark bg-dark rounded-2xl",
               "shadow-[0_8px_32px_rgba(0,0,0,0.55)] p-3 z-50",
               position,
             )}

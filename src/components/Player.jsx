@@ -206,7 +206,7 @@ export default function Player() {
   useEffect(() => {
     setExtraContent(
       <div className="flex flex-col gap-2">
-        <div className="flex gap-2 items-center flex-wrap">
+        <div className="flex gap-2 items-center flex-wrap *:mx-auto">
           <DuoButton
             background="bg-note-half"
             shadowBackground="bg-note-half-dark"
@@ -237,7 +237,7 @@ export default function Player() {
             {t("playMode.title")}
           </DuoToggleButton>
         </div>
-        <div className="flex flex-col gap-0.5 text-xs opacity-60">
+        <div className="flex flex-col items-end gap-0.5 text-xs text-main opacity-60">
           <span>
             {t("playMode.deviceStatus.microphone")}:{" "}
             {micStatus === "granted"
@@ -757,7 +757,7 @@ export default function Player() {
           </div>
 
           {/* Playback buttons */}
-          <div className="flex gap-2 justify-end not-md:ml-auto items-center *:h-8">
+          <div className="flex gap-2 justify-end not-md:ml-auto items-center">
             <DuoToggleButton
               value={isPlaying || countdown !== null || isWaiting}
               onToggle={handlePlay}

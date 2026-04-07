@@ -68,6 +68,16 @@
       "system": "Wählt das Griffsystem aus. 'Einfach' ist das Layout der meisten elektronischen Blasinstrumente und deckt zusammen mit Tenor den größten spielbaren Bereich ab."
     }
   },
+  "brecorder": {
+    "volume": "Lautstärke",
+    "vibrato": "Vibrato",
+    "variant": "Variante",
+    "tips": {
+      "volume": "Passt die Wiedergabelautstärke der Begleitblockflöte an.",
+      "vibrato": "Passt die Vibrato-Tiefe der Begleitblockflöte an.",
+      "variant": "Wechselt zwischen verschiedenen Blockflötensamplesätzen."
+    }
+  },
   "fingeringSystem": {
     "baroque": "Barock",
     "german": "Deutsch",
@@ -230,10 +240,20 @@
       "variant": "Wechselt zwischen verschiedenen Gitarrensamplesätzen."
     }
   },
+  "harpsichord": {
+    "volume": "Lautstärke",
+    "variant": "Variante",
+    "tips": {
+      "volume": "Passt die Wiedergabelautstärke des Cembalos an.",
+      "variant": "Wechselt zwischen verschiedenen Cembalosamplesätzen."
+    }
+  },
   "instruments": {
-    "recorder": "Blockflöte",
+    "recorder": "VBlockflöte",
+    "brecorder": "Blockflöte",
     "piano": "Klavier",
     "guitar": "Gitarre",
+    "harpsichord": "Cembalo",
     "waveform": "Wellenform",
     "swap": "Wechseln"
   }

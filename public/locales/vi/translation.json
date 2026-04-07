@@ -68,6 +68,16 @@
       "system": "Chọn hệ thống bảng bấm ngón. 'Đơn giản' là bố cục mà hầu hết các nhạc cụ hơi điện tử sử dụng mặc định và, cùng với tenor, có tầm âm rộng nhất có thể chơi được."
     }
   },
+  "brecorder": {
+    "volume": "Âm lượng",
+    "vibrato": "Rung",
+    "variant": "Phiên bản",
+    "tips": {
+      "volume": "Điều chỉnh âm lượng phát của sáo đệm.",
+      "vibrato": "Điều chỉnh độ sâu của rung sáo đệm.",
+      "variant": "Chuyển đổi giữa các bộ mẫu sáo recorder khác nhau."
+    }
+  },
   "fingeringSystem": {
     "baroque": "Baroque",
     "german": "Đức",
@@ -230,10 +240,20 @@
       "variant": "Chuyển đổi giữa các bộ mẫu guitar khác nhau."
     }
   },
+  "harpsichord": {
+    "volume": "Âm lượng",
+    "variant": "Phiên bản",
+    "tips": {
+      "volume": "Điều chỉnh âm lượng phát của đàn harpsichord.",
+      "variant": "Chuyển đổi giữa các bộ mẫu harpsichord khác nhau."
+    }
+  },
   "instruments": {
-    "recorder": "Sáo Recorder",
+    "recorder": "VSáo Recorder",
+    "brecorder": "Sáo Recorder",
     "piano": "Piano",
     "guitar": "Guitar",
+    "harpsichord": "Đàn Harpsichord",
     "waveform": "Sóng tổng hợp",
     "swap": "Đổi nhạc cụ"
   }

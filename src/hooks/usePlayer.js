@@ -19,6 +19,28 @@ const computeSongEndBeat = (songData) => {
   }, 0);
 };
 
+/* Utility: compute an ideal note width from song BPM and average note duration in track 0.
+   Formula: 80 / (avgDurationBeats * sqrt(bpm / 120)), clamped to [40, 400].
+   Lower BPM and shorter notes both push noteWidth higher. */
+const computeIdealNoteWidth = (song) => {
+  if (!song) return 100;
+
+  const bpm = song.bpm ?? 120;
+  const track0 = Array.isArray(song.tracks) ? song.tracks[0] : null;
+  const notes = track0?.actions?.filter((a) => a.type === "note") ?? [];
+
+  if (notes.length === 0) return 100;
+
+  const avgDuration =
+    notes.reduce((sum, a) => sum + (a.duration ?? 0), 0) / notes.length;
+
+  if (avgDuration <= 0) return 100;
+
+  const bpmFactor = Math.sqrt(bpm / 120);
+  const raw = 80 / (avgDuration * bpmFactor);
+  return Math.round(Math.max(40, Math.min(400, raw)));
+};
+
 /* Hook */
 export default function usePlayer() {
   const [song, setSong] = useState(null);
@@ -26,6 +48,7 @@ export default function usePlayer() {
   const [currentBeat, setCurrentBeat] = useState(0);
   const [bpm, setBpm] = useState(() => song?.bpm ?? 120);
   const [noteWidth, setNoteWidth] = useState(100);
+  const [idealNoteWidth, setIdealNoteWidth] = useState(100);
   const [latencyMs, setLatencyMs] = useState(0);
   const [repeat, setRepeat] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState(null);
@@ -423,6 +446,10 @@ export default function usePlayer() {
       setBpm(newSong?.bpm ?? 120);
       bpmRef.current = newSong?.bpm ?? 120;
 
+      const computed = computeIdealNoteWidth(newSong);
+      setNoteWidth(computed);
+      setIdealNoteWidth(computed);
+
       clearTimeout(resetTimeoutRef.current);
 
       pausePlayback();
@@ -479,6 +506,7 @@ export default function usePlayer() {
     currentBeat,
     bpm,
     noteWidth,
+    idealNoteWidth,
     latencyMs,
     repeat,
     selectedTrack,

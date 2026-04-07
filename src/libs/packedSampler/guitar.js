@@ -3,7 +3,7 @@ import * as Tone from "tone";
 import Guitar from "../../components/instruments/Guitar";
 
 const MAX_DB = 6;
-const DEFAULT_DB = 0;
+const DEFAULT_DB = -5;
 const MIN_DB = -60;
 
 export default class GuitarSampler extends PackedSampler {

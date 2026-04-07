@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "../libs/utils";
 
 const NOTE_WIDTH_MIN = 40;
-const NOTE_WIDTH_MAX = 200;
+const NOTE_WIDTH_MAX = 400;
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
