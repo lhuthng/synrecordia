@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { noteNameToMidi, transposeNote, midiToNoteName } from "../libs/utils.js";
+import {
+  noteNameToMidi,
+  transposeNote,
+  midiToNoteName,
+} from "../libs/utils.js";
 import { getHighestNote } from "../components/utils/fingeringUtils.js";
 
 // ─── Timing windows ───────────────────────────────────────────────────────────
@@ -463,23 +467,53 @@ export default function usePlayMode({
 
     // ── State machine ─────────────────────────────────────────────────────
     // 'idle'   — listening; looking for a stable pitch above the silence floor.
-    // 'locked' — note already fired; ignoring signal until silence returns.
+    // 'locked' — a note has just fired; same-pitch-class re-fire is blocked
+    //            until silence, but a DIFFERENT pitch class can fire immediately
+    //            once it is stable (allows smooth breath-blend between notes).
     //
-    // This completely replaces the EMA-based onset detector.  The old approach
-    // kept a slow moving-average of background energy and required the current
-    // energy to exceed it by ONSET_RISE_RATIO.  In practice the slow average
-    // stays elevated after each note, so the ratio never reaches the threshold
-    // for the NEXT note — forcing the user to blow many times before a second
-    // consecutive note is registered.
-    //
-    // The state-machine approach is simpler and more reliable:
-    //   • Any silence gap between notes resets to 'idle'.
-    //   • MIC_STABLE_FRAMES consecutive matching frames are required before
-    //     the pitch is accepted, which rejects single-frame noise spikes.
-    //   • No cooldown, no EMA, no external reset flags needed.
+    // Rules:
+    //   • Silence always resets everything → 'idle'.
+    //   • In 'idle': MIC_STABLE_FRAMES consecutive identical pitch-class frames
+    //     → fire, enter 'locked'.
+    //   • In 'locked':
+    //       – Same pitch class as the locked note → ignore (no double-fire).
+    //       – Different pitch class → run the same stability check; on confirm
+    //         fire and update the locked pitch class (no silence gap needed).
+    //       – Silence → back to 'idle' (same note can be re-attacked).
     let detectState = "idle"; // 'idle' | 'locked'
-    let pendingMidi = null;
-    let pendingCount = 0;
+    let lockedPc = -1; // pitch class (midi % 12) of the currently-locked note
+    let pendingMidi = null; // candidate MIDI being accumulated for stability
+    let pendingCount = 0; // consecutive frames matching pendingMidi
+
+    // Fire a confirmed MIDI note, update lock, reset pending state.
+    const confirmNote = (midi) => {
+      detectState = "locked";
+      lockedPc = midi % 12;
+      pendingMidi = null;
+      pendingCount = 0;
+      const beat = currentBeatRef?.current ?? 0;
+      console.log("confirmed midi:", midi);
+      onNoteInputRef.current?.(midi, beat);
+    };
+
+    // Run the stability accumulator for a detected MIDI value.
+    // Returns true when a note was confirmed and fired.
+    const accumulate = (midi) => {
+      const pc = midi % 12;
+      // Use pitch-class for stability so octave wobble doesn't reset the counter.
+      const pendingPc = pendingMidi !== null ? pendingMidi % 12 : -1;
+      if (pc === pendingPc) {
+        pendingCount++;
+        if (pendingCount >= MIC_STABLE_FRAMES) {
+          confirmNote(midi);
+          return true;
+        }
+      } else {
+        pendingMidi = midi;
+        pendingCount = 1;
+      }
+      return false;
+    };
 
     const tick = () => {
       if (!micContextRef.current || micContextRef.current.state === "closed")
@@ -493,43 +527,38 @@ export default function usePlayMode({
       const rms = Math.sqrt(sumSq / buffer.length);
       const isSilent = rms < MIC_SILENCE_THRESHOLD;
 
-      // ── Locked state: wait for silence before accepting next note ─────────
-      if (detectState === "locked") {
-        if (isSilent) {
-          detectState = "idle";
-          pendingMidi = null;
-          pendingCount = 0;
-        }
-        requestAnimationFrame(tick);
-        return;
-      }
-
-      // ── Idle state: detect pitch once signal is present ───────────────────
+      // ── Silence: full reset ───────────────────────────────────────────────
       if (isSilent) {
+        detectState = "idle";
+        lockedPc = -1;
         pendingMidi = null;
         pendingCount = 0;
         requestAnimationFrame(tick);
         return;
       }
 
+      // ── Detect pitch ──────────────────────────────────────────────────────
       const midi = detectPitch(buffer, context.sampleRate);
+      if (midi === null) {
+        // Ambiguous frame — don't reset pending, just wait.
+        requestAnimationFrame(tick);
+        return;
+      }
 
-      if (midi !== null && midi === pendingMidi) {
-        pendingCount++;
-        if (pendingCount >= MIC_STABLE_FRAMES) {
-          // Stable pitch confirmed — fire and lock until next silence.
-          detectState = "locked";
-          const confirmedMidi = midi;
+      const detectedPc = midi % 12;
+
+      if (detectState === "locked") {
+        if (detectedPc === lockedPc) {
+          // Same pitch class — still on the same note, nothing to do.
           pendingMidi = null;
           pendingCount = 0;
-          const beat = currentBeatRef?.current ?? 0;
-          console.log("confirmed midi:", confirmedMidi);
-          onNoteInputRef.current?.(confirmedMidi, beat);
+        } else {
+          // Different pitch class — try to confirm a blend transition.
+          accumulate(midi);
         }
       } else {
-        // New or inconsistent result — restart stability counter.
-        pendingMidi = midi;
-        pendingCount = midi !== null ? 1 : 0;
+        // 'idle' — accumulate toward first confirmation.
+        accumulate(midi);
       }
 
       requestAnimationFrame(tick);
