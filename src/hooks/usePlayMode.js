@@ -16,10 +16,19 @@ const EARLY_BEATS = 1.0;
 
 /**
  * How many beats *after* a note's scheduled beat before the gate fires and
- * checks whether the user played.  Gives the onset detector time to finish
- * confirming a note that was played exactly on the beat.
+ * checks whether the user played.
+ *
+ * Set to 0 so the gate fires at exactly the note's scheduled beat, BEFORE
+ * the tick loop triggers any notes at that beat for any track (including
+ * accompaniment).  This means other instruments are silent while waiting —
+ * they only play once the user has already played (gate accepts) or after
+ * the user plays in the paused-waiting state.
+ *
+ * Users who play early (within EARLY_BEATS) are accepted normally through
+ * the gate.  Users who play right on the beat or slightly late are handled
+ * by the isWaiting / onNoteInput waiting path.
  */
-const GATE_DELAY_BEATS = 0.3;
+const GATE_DELAY_BEATS = 0;
 
 // ─── Mic detector parameters ─────────────────────────────────────────────────
 
