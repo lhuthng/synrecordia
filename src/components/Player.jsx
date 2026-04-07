@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { computeNoteRangeFromActions, midiToNoteName } from "../libs/utils.js";
 import {
   VISUALIZABLE_INSTRUMENTS,
+  NON_VISUALIZABLE_INSTRUMENTS,
   ALL_INSTRUMENTS,
 } from "../libs/packedSampler/factory";
 import * as Tone from "tone";
@@ -37,6 +38,7 @@ export default function Player() {
     currentBeat,
     bpm,
     noteWidth,
+    idealNoteWidth,
     repeat,
     setRepeat,
     setNoteTriggerListener,
@@ -551,7 +553,7 @@ export default function Player() {
             <div className="flex-1 ml-4 mr-8">
               <DuoSlideBar
                 min={40}
-                max={200}
+                max={400}
                 step={1}
                 value={noteWidth}
                 onChange={(v) => handleNoteWidthChange(v)}
@@ -570,8 +572,8 @@ export default function Player() {
               padding="px-1.5"
               shadowBackground="bg-note-half-dark"
               border="border-note-half-dark"
-              onClick={() => handleNoteWidthChange(160)}
-              disabled={noteWidth === 160}
+              onClick={() => handleNoteWidthChange(idealNoteWidth)}
+              disabled={noteWidth === idealNoteWidth}
             >
               {t("player.reset")}
             </DuoButton>
@@ -891,9 +893,11 @@ export default function Player() {
         {song?.tracks?.map((track, index) => {
           const effectiveInstrument =
             instrumentOverrides[index] ?? track.instrument;
-          // Track 0 can only be swapped to visualizable instruments; others can use any
+          // Track 0 can only be swapped to visualizable instruments; others can only use non-visualizable
           const swappable =
-            index === 0 ? VISUALIZABLE_INSTRUMENTS : ALL_INSTRUMENTS;
+            index === 0
+              ? VISUALIZABLE_INSTRUMENTS
+              : NON_VISUALIZABLE_INSTRUMENTS;
           return (
             <InstrumentManager
               controllerNode={controllerNode}

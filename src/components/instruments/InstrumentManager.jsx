@@ -4,6 +4,7 @@ import {
   isSynthInstrument,
   createSynthInstrument,
   VISUALIZABLE_INSTRUMENTS,
+  getSampleDir,
 } from "../../libs/packedSampler/factory";
 import { motion as Motion, AnimatePresence, useAnimate } from "motion/react";
 import { cn, midiToNoteName } from "../../libs/utils";
@@ -267,14 +268,15 @@ export default function InstrumentManager({
 
       // ── Sampler instruments (load from /samples/) ─────────────────────────
       try {
-        const response = await fetch(`/samples/${name}/index.json`);
+        const sampleDir = getSampleDir(name);
+        const response = await fetch(`/samples/${sampleDir}/index.json`);
         if (!response.ok) return;
 
         const data = await response.json();
         const version = data.default || data.current;
         if (!version) return;
 
-        const baseUrl = `/samples/${name}/${version}/`;
+        const baseUrl = `/samples/${sampleDir}/${version}/`;
         const urlsResponse = await fetch(`${baseUrl}index.json`);
         if (!urlsResponse.ok) return;
 
