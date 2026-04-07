@@ -190,7 +190,6 @@ export default function usePlayer() {
     if (!song) return;
 
     await Tone.start();
-    await Tone.loaded();
 
     const getSecondsPerBeat = () => 60 / (bpmRef.current || 120);
 
@@ -321,6 +320,7 @@ export default function usePlayer() {
           if (
             durationSeconds > 0 &&
             state.synth &&
+            state.synth.loaded !== false &&
             !suppressAudioRef.current.has(trackIndex)
           ) {
             try {
@@ -495,10 +495,30 @@ export default function usePlayer() {
     };
   }, []);
 
+  // Pre-warm the AudioContext on first user gesture so that the play button
+  // response is immediate. Tone.start() is idempotent; calling it early on
+  // touchstart/mousedown is safe and required by browsers to unlock audio.
+  useEffect(() => {
+    const unlock = () => {
+      Tone.start().catch(() => {});
+      document.removeEventListener("touchstart", unlock, true);
+      document.removeEventListener("mousedown", unlock, true);
+      document.removeEventListener("keydown", unlock, true);
+    };
+    document.addEventListener("touchstart", unlock, true);
+    document.addEventListener("mousedown", unlock, true);
+    document.addEventListener("keydown", unlock, true);
+    return () => {
+      document.removeEventListener("touchstart", unlock, true);
+      document.removeEventListener("mousedown", unlock, true);
+      document.removeEventListener("keydown", unlock, true);
+    };
+  }, []); // empty deps — register once on mount, self-removes after first gesture
+
   const isReady =
-    /* visual ready is owned by visualizer; hook can't know that.
-       Expose audio readiness info consumers can combine with visual readiness. */
-    isAudioReady.length > 0 && isAudioReady.every(Boolean);
+    /* Only track 0 needs to be ready before allowing playback.
+       Tracks 1-N load in background; their notes are silently skipped until decoded. */
+    isAudioReady.length > 0 && isAudioReady[0] === true;
 
   return {
     // state

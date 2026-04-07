@@ -58,3 +58,21 @@ Items are ordered by impact (highest first).
 ### 🟠 High — Particle GC Pressure
 
 - [x] **Particle object pool pre-allocated at init** (`usePixiVisualizer.js`, `RecorderVisualizerInstrument.js`) — Previously every particle spawn did `new PIXI.Sprite(texture)` + `particleLayer.addChild()` and every particle death did `spr.destroy()` + `removeChild()`. With `MAX_PARTICLES = 150` particles and up to 60 fps, this was up to ~9 000 alloc/dealloc cycles per second during active playback. The pool pre-allocates all 150 sprites at canvas init time (`visible: false`), permanently parented to `particleLayer`. `acquire()` flips `visible = true` and returns a sprite; `release()` flips `visible = false` and returns it to the free stack. No per-frame JS object allocation or GPU texture upload.
+
+---
+
+## Batch 3 — Loading UX & GPU Fill-Rate
+
+### 🔴 Critical — Canvas Render Resolution
+
+- [x] **Canvas resolution capped at 2× (1× in eco mode)** (`usePixiVisualizer.js`) — PixiJS defaults to `window.devicePixelRatio`, which is 3× on modern iPhones and high-end Androids. A 3× DPR device previously rendered 9× as many pixels as a 1× device; capping at 2× (normal) cuts pixel count to 4× — a **44% GPU fill-rate reduction** on 3× devices. Eco mode drops to 1× for an **89% reduction**. Implemented via `resolution: ecoModeRef.current ? 1 : Math.min(window.devicePixelRatio || 1, 2)` in `app.init()`.
+
+### 🔴 Critical — Play Button Latency
+
+- [x] **Progressive sample loading — play allowed once track 0 is ready** (`usePlayer.js`) — `isReady` previously required all tracks to finish decoding (`isAudioReady.every(Boolean)`). Changed to `isAudioReady[0] === true`. The main instrument (track 0) unlocks the play button immediately; secondary tracks load in the background. Notes from still-loading samplers are silently skipped in the RAF tick (`state.synth.loaded !== false` guard) so there are no errors or crashes.
+- [x] **`await Tone.loaded()` removed from `startPlayback`** (`usePlayer.js`) — This call blocked the play action until every `ToneAudioBuffer` across all tracks finished decoding — sometimes several seconds on mobile. Removed entirely; track-0 readiness is already guaranteed by the `isReady` guard above.
+- [x] **AudioContext pre-warm on first user gesture** (`usePlayer.js`) — `Tone.start()` is now called on the first `touchstart`, `mousedown`, or `keydown` event (whichever comes first), via a self-removing one-shot listener mounted in a `useEffect`. Previously the AudioContext was only unlocked when the play button was pressed, adding a ~200 ms unlock delay. Pre-warming eliminates this delay: by the time the user reaches the play button the context is already running.
+
+### 🟠 High — PixiJS Hit-Test Cost
+
+- [x] **`eventMode = 'none'` on non-interactive Pixi layers** (`usePixiVisualizer.js`) — Set on `guideLayer` (hundreds of bar/beat `Graphics` objects), `holesLayer` (static instrument decorations), `particleLayer` (150 sprites), and `zonesLayer` (gray overlay rectangles). PixiJS traverses the full scene graph on every pointer event to find hit targets; marking these subtrees as `'none'` eliminates their traversal entirely. `notesLayer` and `playBarLayer` are left at their defaults since they host interactive children.

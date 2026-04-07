@@ -217,7 +217,7 @@ export default function SongTimeline({
       >
         {/* Left handle — moves the high-beat (future) boundary */}
         <div
-          className={`absolute top-0 bottom-0 right-full cursor-ew-resize touch-none flex items-center justify-center px-1`}
+          className={`absolute top-0 bottom-0 right-full cursor-ew-resize touch-none flex items-center justify-center px-1 hover:scale-120`}
           onPointerDown={(e) => startDrag("left", e)}
         >
           <svg
@@ -238,7 +238,7 @@ export default function SongTimeline({
         />
         {/* Right handle — moves the low-beat (past) boundary */}
         <div
-          className={`absolute top-0 bottom-0 left-full cursor-ew-resize touch-none flex items-center justify-center px-1`}
+          className={`absolute top-0 bottom-0 left-full cursor-ew-resize touch-none flex items-center justify-center px-1 hover:scale-120`}
           onPointerDown={(e) => startDrag("right", e)}
         >
           <svg

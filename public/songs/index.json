@@ -23,6 +23,13 @@
     "difficulty": "easy"
   },
   {
+    "id": "departure",
+    "title": "Departure! - HxH Opening",
+    "bpm": 160,
+    "file": "departure.json",
+    "difficulty": "medium"
+  },
+  {
     "id": "erika",
     "title": "Erika",
     "composer": "Heinz Schnaufer",

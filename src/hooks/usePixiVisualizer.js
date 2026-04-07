@@ -329,7 +329,21 @@ export function usePixiVisualizer({
 
   // ─── Note width changes → full scene rebuild + scroll correction ──────────────
   useEffect(() => {
+    const prevPpb = pixelsPerBeatRef.current;
     pixelsPerBeatRef.current = noteWidth;
+
+    // Immediately rescale existing guide bar/beat line positions by the zoom
+    // ratio so they stay aligned with notes and the scroll layer during the
+    // 60 ms debounce window before the full rebuild fires.
+    // (Text label positions scale with their parent Graphics, so no separate pass needed.)
+    const guideLayer = guideLayerRef.current;
+    if (guideLayer && prevPpb > 0 && prevPpb !== noteWidth) {
+      const ratio = noteWidth / prevPpb;
+      for (let i = 0; i < guideLayer.children.length; i++) {
+        guideLayer.children[i].x *= ratio;
+      }
+    }
+
     // Debounce guide rebuild so dragging the zoom handle doesn't create/destroy
     // hundreds of PIXI objects on every pointer-move event.
     clearTimeout(buildGuidesDebounceRef.current);
@@ -375,6 +389,9 @@ export function usePixiVisualizer({
         height,
         backgroundAlpha: 0,
         antialias: !ecoModeRef.current,
+        resolution: ecoModeRef.current
+          ? 1
+          : Math.min(window.devicePixelRatio || 1, 2),
         canvas: canvasEl,
       });
 
@@ -400,9 +417,11 @@ export function usePixiVisualizer({
 
       // ── Layers ──────────────────────────────────────────────────────────────
       const guideLayer = new PIXI.Container();
+      guideLayer.eventMode = "none";
       guideLayerRef.current = guideLayer;
 
       const holesLayer = new PIXI.Container();
+      holesLayer.eventMode = "none";
       holesLayerRef.current = holesLayer;
 
       const notesLayer = new PIXI.Container();
@@ -412,6 +431,7 @@ export function usePixiVisualizer({
       playBarLayerRef.current = playBarLayer;
 
       const particleLayer = new PIXI.Container();
+      particleLayer.eventMode = "none";
       particleLayerRef.current = particleLayer;
 
       // ── Particle texture (shared circle sprite) ──────────────────────────────
@@ -453,6 +473,7 @@ export function usePixiVisualizer({
       scrollLayerRef.current = scrollLayer;
 
       const zonesLayer = new PIXI.Container();
+      zonesLayer.eventMode = "none";
       const leftZone = new PIXI.Graphics();
       const rightZone = new PIXI.Graphics();
       zonesLayer.addChild(leftZone);
