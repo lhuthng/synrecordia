@@ -137,8 +137,9 @@ const SongTimeline = memo(function SongTimeline({
       cancelAnimationFrame(animRef.current);
       animRef.current = null;
     }
-    // Only pause playback for scrub (thumb) drags, not zoom (left/right) drags.
-    if (type === "thumb") {
+    // Pause playback for thumb scrubs and right-handle drags (both shift
+    // currentBeat). Left-handle drags are pure zoom — no pause needed.
+    if (type === "thumb" || type === "right") {
       cbRef.current.onScrubStart?.();
     }
     dragRef.current = {
