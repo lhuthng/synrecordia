@@ -184,13 +184,18 @@
   "header": {
     "changeLanguage": "Đổi ngôn ngữ"
   },
+  "ecoToast": {
+    "message": "Hiệu ứng hình ảnh và âm thanh đã được giảm để thiết bị hoạt động tốt hơn."
+  },
   "visualizer": {
     "pickSong": "Chọn bài hát để bắt đầu",
     "scrollHint": "Ctrl + lăn chuột để di chuyển",
     "showFingering": "Hiện hướng dẫn bấm",
     "hideFingering": "Ẩn hướng dẫn bấm",
     "legendFull": "Kín",
-    "legendHalf": "Hở/nửa"
+    "legendHalf": "Hở/nửa",
+    "qHint": "Bấm vào đây để xem thêm thông tin",
+    "dismissHint": "Đóng gợi ý"
   },
   "piano": {
     "volume": "Âm lượng",

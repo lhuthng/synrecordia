@@ -141,6 +141,41 @@ const Visualizer = memo(function Visualizer({
     ecoMode,
   });
 
+  // ── First-load "?" onboarding hint ──────────────────────────────────────────
+  const Q_HINT_KEY = "synrecordia:qHintShown";
+  const qHintShownRef = useRef(false);
+  const [showQHint, setShowQHint] = useState(false);
+
+  const dismissQHint = useCallback(() => {
+    setShowQHint(false);
+    try {
+      sessionStorage.setItem(Q_HINT_KEY, "true");
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isReady || song?.id !== displaySong?.id) return;
+    if (qHintShownRef.current) return;
+    try {
+      if (sessionStorage.getItem(Q_HINT_KEY) === "true") {
+        qHintShownRef.current = true;
+        return;
+      }
+    } catch {
+      /* storage unavailable */
+    }
+    qHintShownRef.current = true;
+    // Defer setState out of the synchronous effect body (avoids cascading-render lint warning).
+    const rafId = requestAnimationFrame(() => setShowQHint(true));
+    const timerId = setTimeout(dismissQHint, 5000);
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
+    };
+  }, [isReady, song?.id, displaySong?.id, dismissQHint]);
+
   /** Playbar X in pixels from the left edge of the wrapper. */
   const barX = playBarPosition * width;
 
@@ -220,7 +255,7 @@ const Visualizer = memo(function Visualizer({
   // ── Main render ─────────────────────────────────────────────────────────────
   return (
     <div
-      className="relative w-full rounded-xl bg-transparent overflow-x-hidden"
+      className="relative w-full rounded-xl bg-transparent overflow-hidden"
       ref={wrapperRef}
       style={{ height }}
     >
@@ -384,6 +419,38 @@ const Visualizer = memo(function Visualizer({
           ?
         </button>
       )}
+
+      {/* ── First-load "?" onboarding hint with curved arrow ───────────────── */}
+      <AnimatePresence>
+        {showQHint && (
+          <Motion.div
+            key="q-hint"
+            className="absolute right-10 bottom-1 z-35 select-none"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ type: "spring", stiffness: 280, damping: 24 }}
+          >
+            <button
+              className="flex items-center gap-1.5 rounded-lg bg-dark/90 border border-note-full/50 px-3 py-1.5 text-xs text-note-full backdrop-blur-sm shadow-lg whitespace-nowrap cursor-pointer hover:border-note-full transition-colors"
+              onClick={dismissQHint}
+              aria-label={t("visualizer.dismissHint")}
+            >
+              <svg
+                className="w-4 h-4 fill-note-full"
+                viewBox="0 0 489.242 489.242"
+              >
+                <path d="M416.321,171.943c0-97.8-82.2-176.9-181-171.7c-89.5,5.2-160.3,79.1-162.4,168.6c0,44.7,16.6,86.3,45.8,118.6 c47.7,51.1,41.6,110.3,41.6,110.3c0,11.4,9.4,20.8,20.8,20.8h126.9c11.4,0,20.8-9.4,21.8-20.8c0,0-7-57.7,40.6-109.2 C399.621,257.243,416.321,215.643,416.321,171.943z M288.321,377.943h-87.4c-2.1-42.7-20.8-84.3-51-116.5 c-22.9-25-34.3-57.2-34.3-90.5c1-68.7,54.1-124.8,122.8-129c74.9-4.2,137.3,56.2,137.3,130c0,32.3-12.5,64.5-35.4,88.4 C309.121,293.643,290.421,335.243,288.321,377.943z"></path>{" "}
+                <path d="M281.021,447.643h-73.9c-11.4,0-20.8,9.4-20.8,20.8s9.4,20.8,20.8,20.8h73.9c11.4,0,20.8-9.4,20.8-20.8 C301.821,457.043,292.521,447.643,281.021,447.643z"></path>
+              </svg>
+              <span>
+                {t("visualizer.qHint")}
+                {" >>"}
+              </span>
+            </button>
+          </Motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Interaction hint overlay ────────────────────────────────────────── */}
       <AnimatePresence>

@@ -444,6 +444,8 @@ export default function Player() {
   useEffect(() => {
     if (!urlSongId) {
       setUrlError(null);
+      selectSong(null);
+      setIsVisualReady(false);
       return;
     }
 
@@ -559,7 +561,32 @@ export default function Player() {
                 )}
               </>
             ) : (
-              t("player.selectSong")
+              <Motion.span className="inline-flex items-center gap-1.5 select-none">
+                {/* Bouncing left arrow drawing attention to the Directory folder button */}
+                <Motion.span
+                  className="text-note-full font-bold leading-none"
+                  animate={{ x: [-3, 1, -3] }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 1.0,
+                    ease: "easeInOut",
+                  }}
+                  aria-hidden="true"
+                >
+                  ←
+                </Motion.span>
+                {/* Pulsing text */}
+                <Motion.span
+                  animate={{ opacity: [0.65, 1, 0.65] }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 2.5,
+                    ease: "easeInOut",
+                  }}
+                >
+                  {t("player.selectSong")}
+                </Motion.span>
+              </Motion.span>
             )}
           </span>
         )}
@@ -921,7 +948,7 @@ export default function Player() {
             transition={{ type: "spring", stiffness: 320, damping: 26 }}
           >
             <button
-              className="inline-flex items-center gap-2 rounded-lg bg-note-half border-2 border-note-full-dark px-3 py-2 text-base text-main shadow-lg cursor-pointer hover:brightness-125 transition-[filter]"
+              className="inline-flex items-center gap-2 rounded-lg bg-note-half border-2 border-note-half-dark px-3 py-2 font-semibold text-base text-note-half-dark shadow-lg cursor-pointer hover:brightness-125 transition-[filter]"
               onClick={clearPendingHint}
             >
               <span>♪</span>

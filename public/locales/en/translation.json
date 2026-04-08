@@ -184,13 +184,18 @@
   "header": {
     "changeLanguage": "Change language"
   },
+  "ecoToast": {
+    "message": "Reduced visual and audio effects are active for better performance on this device."
+  },
   "visualizer": {
     "pickSong": "Pick a song to get started",
     "scrollHint": "Ctrl + scroll to scrub",
     "showFingering": "Show fingering guide",
     "hideFingering": "Hide fingering guide",
     "legendFull": "Full",
-    "legendHalf": "Half"
+    "legendHalf": "Half",
+    "qHint": "Click here for more information",
+    "dismissHint": "Dismiss hint"
   },
   "piano": {
     "volume": "Volume",

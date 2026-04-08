@@ -184,13 +184,18 @@
   "header": {
     "changeLanguage": "Sprache ändern"
   },
+  "ecoToast": {
+    "message": "Visuelle und Audio-Effekte sind für bessere Leistung auf diesem Gerät reduziert."
+  },
   "visualizer": {
     "pickSong": "Song auswählen und loslegen",
     "scrollHint": "Strg + scrollen zum Scrubben",
     "showFingering": "Griffdiagramm anzeigen",
     "hideFingering": "Griffdiagramm ausblenden",
     "legendFull": "Ganz",
-    "legendHalf": "Halb"
+    "legendHalf": "Halb",
+    "qHint": "Hier klicken für mehr Informationen",
+    "dismissHint": "Hinweis schließen"
   },
   "piano": {
     "volume": "Lautstärke",

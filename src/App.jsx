@@ -6,11 +6,13 @@ import CompactPlayer from "./components/CompactPlayer";
 import Header from "./components/Header";
 import Details from "./components/Details";
 import SynthwaveBackground from "./components/SynthwaveBackground";
+import EcoModeToast from "./components/EcoModeToast";
 
 function MainLayout() {
   return (
     <MobileMenuProvider>
       <Header />
+      <EcoModeToast />
       <div className="w-cap min-h-screen bg-dark/70 px-4 shadow-md">
         <Player />
         <Details />

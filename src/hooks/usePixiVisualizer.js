@@ -838,6 +838,13 @@ export function usePixiVisualizer({
 
         if (Math.abs(diff) > 120) {
           scrollLayer.x = desiredX;
+          // Large jump (restart / big scrub): the neighbour-walk window can't
+          // catch up in one step, so reset it and hide every guide child now.
+          // The culling block below will re-reveal the correct slice this frame.
+          guideVisWinRef.current = { left: 0, right: -1 };
+          for (let _i = 0; _i < guideLayer.children.length; _i++) {
+            guideLayer.children[_i].visible = false;
+          }
         } else {
           scrollLayer.x = currentX + diff * 0.18;
         }

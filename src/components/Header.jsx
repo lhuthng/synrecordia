@@ -63,7 +63,7 @@ export default function Header() {
 
           {/* Tagline */}
           <span
-            className="text-dim font-iosevka uppercase"
+            className="text-main/80 font-iosevka uppercase"
             style={{ fontSize: "0.58rem", letterSpacing: "0.28em" }}
           >
             recorder visualizer
