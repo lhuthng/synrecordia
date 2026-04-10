@@ -19,7 +19,7 @@ export const HOLE_SIZE = { x: 12, y: 18 };
 // [thumb→L1, L1→L2, L2→L3, L3→L4, L4→R1, R1→R2, R2→R3]
 export const FINGERING_GAPS = [2, 0.25, 0.25, 2, 0.25, 0.25, 0.25];
 
-export const HOLE_PLAY_SCALE = 1.18;
+export const HOLE_PLAY_SCALE = 1.1;
 export const HOLE_SCALE_ALPHA = 0.18;
 
 // ── Lazy note-sprite allocation ───────────────────────────────────────────────

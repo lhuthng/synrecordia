@@ -1,27 +1,40 @@
 import * as PIXI from "pixi.js";
 import { ColorMatrixFilter } from "pixi.js";
-import { NOTE_GLOW_PADDING } from "../../components/utils/constants.js";
+import {
+  NOTE_GLOW_PADDING,
+  HOLE_PLAY_SCALE,
+  HOLE_SCALE_ALPHA,
+  MAX_PARTICLES,
+  PARTICLE_LIFETIME_MIN,
+  PARTICLE_LIFETIME_MAX,
+  PARTICLE_SPAWN_CHANCE,
+} from "../../components/utils/constants.js";
 import {
   cssColorToPixiHex,
   lerpColor,
   darken,
+  brightenColor,
 } from "../../components/utils/colorUtils.js";
 import { BaseVisualizerInstrument } from "./BaseVisualizerInstrument.js";
 import GuitarMapper from "../guitar/GuitarMapper.js";
 
+// ── Guitar-specific layout constants ─────────────────────────────────────────
 const NUM_STRINGS = 6;
-const STRING_PADDING = 0.12;
+const STRING_PADDING = 0.8; // fraction of height reserved as top+bottom gutter
 const NOTE_HEIGHT = 30;
 const NOTE_SHADOW_OFFSET = 3;
 const MIN_NOTE_WIDTH = 6;
 const MIN_LABEL_WIDTH = 18;
 const MAX_FRET = 24;
+const X_PADDING = 1;
 
 const TECH_PREFIX = { "hammer-on": "h", "pull-off": "p", tap: "t" };
 
+// ── Time-quantisation helpers (align mapper slices to track durations) ────────
 const QUANT = 0.125;
 const quantize = (t) => Math.round(t / QUANT) * QUANT;
 
+// ── CSS-variable → PIXI colour helpers ───────────────────────────────────────
 function cssVar(name, fallback) {
   if (typeof window === "undefined") return fallback;
   return cssColorToPixiHex(
@@ -53,18 +66,34 @@ function getWhiteColor() {
   return cssVar("--color-playhead", 0xffffff);
 }
 
+// String 1 = thinnest (top of neck diagram), string 6 = thickest (bottom).
 function stringCenterY(s, height) {
   const pad = STRING_PADDING * height;
   return pad + ((s - 1) / (NUM_STRINGS - 1)) * (height - 2 * pad);
 }
 
+/**
+ * GuitarVisualizerInstrument
+ *
+ * Concrete implementation of BaseVisualizerInstrument for the guitar.
+ *
+ * Responsibilities:
+ *   – computeNoteEvents : map track actions to string/fret positions via GuitarMapper
+ *   – buildStaticLayer  : draw guitar string guide lines across the canvas
+ *   – createSprite      : render a two-layer pill on the correct string line
+ *   – onTickSprite      : animate note scale bounce and emit particles
+ */
 export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
+  // ─── computeNoteEvents ─────────────────────────────────────────────────────
+
   // eslint-disable-next-line no-unused-vars
   computeNoteEvents(track, _fingeringSystem, _transpose, _recorderType) {
     if (!track || !Array.isArray(track.actions)) return [];
 
     const result = new GuitarMapper({ mode: "balanced" }).map(track.actions);
 
+    // Build a duration map so each mapper slice can look up the original
+    // pitch/duration from the track actions (mapper only stores positions).
     const durationMap = new Map();
     for (const action of track.actions) {
       if (action.type !== "note") continue;
@@ -106,10 +135,13 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
     return events;
   }
 
+  // ─── buildStaticLayer ──────────────────────────────────────────────────────
+
   buildStaticLayer(holesLayer, { width, height }) {
     const white = getWhiteColor();
     for (let s = 1; s <= NUM_STRINGS; s++) {
       const cy = stringCenterY(s, height);
+      // Outer strings slightly more opaque; thickness increases toward bass strings.
       const alpha = s === 1 || s === NUM_STRINGS ? 0.8 : 0.5;
       const thickness = 0.5 + (s - 1) * 0.18;
       const line = new PIXI.Graphics();
@@ -118,6 +150,8 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       holesLayer.addChild(line);
     }
   }
+
+  // ─── createSprite ──────────────────────────────────────────────────────────
 
   createSprite(
     event,
@@ -143,13 +177,26 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
     const cy = stringCenterY(event.string ?? 1, height);
     const containerY = cy - NOTE_HEIGHT / 2;
 
-    // Two-layer pill: shadow beneath, main on top
+    // ── Two-layer pill: shadow beneath, colour body on top ───────────────────
     const noteGraphics = new PIXI.Graphics();
-    noteGraphics.roundRect(0, NOTE_SHADOW_OFFSET, noteWidth, NOTE_HEIGHT, 6);
+    noteGraphics.roundRect(
+      X_PADDING,
+      NOTE_SHADOW_OFFSET,
+      noteWidth - 2 * X_PADDING,
+      NOTE_HEIGHT,
+      6,
+    );
     noteGraphics.fill({ color: shadowColor });
-    noteGraphics.roundRect(0, 0, noteWidth, NOTE_HEIGHT, 4);
+    noteGraphics.roundRect(
+      X_PADDING,
+      0,
+      noteWidth - 2 * X_PADDING,
+      NOTE_HEIGHT,
+      4,
+    );
     noteGraphics.fill({ color });
 
+    // ── Fret / technique label (right-aligned inside pill) ───────────────────
     if (noteWidth >= MIN_LABEL_WIDTH) {
       const fretText = `${TECH_PREFIX[event.technique] ?? ""}${event.fret}`;
       const fretLabel = new PIXI.Text({
@@ -166,6 +213,7 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       noteGraphics.addChild(fretLabel);
     }
 
+    // ── Brightness filter (non-eco only) ─────────────────────────────────────
     let brightnessFilter = null;
     let brightnessState = null;
     if (!ecoMode) {
@@ -174,10 +222,17 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       brightnessState = { current: 1.0, target: 1.0 };
     }
 
+    // ── Scale-bounce pivot ───────────────────────────────────────────────────
+    // Set the transform origin to the pill's visual centre so the scale
+    // animation expands/contracts symmetrically (same technique as hole
+    // sprites in the recorder visualizer).
+    noteGraphics.pivot.set(noteWidth / 2, NOTE_HEIGHT / 2);
+    noteGraphics.position.set(noteWidth / 2, NOTE_HEIGHT / 2);
+
     const graphics = new PIXI.Container();
     graphics.addChild(noteGraphics);
 
-    // Note-name label above the rect — hidden until hover
+    // ── Note-name label (hover-only, above pill) ─────────────────────────────
     const noteLabelFontSize = noteWidth < 28 ? 9 : 11;
     const noteLabel = new PIXI.Text({
       text: event.note ?? "",
@@ -191,16 +246,26 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
     noteLabel.y = -(noteLabelFontSize + 5);
     noteLabel.alpha = 0;
 
+    // ── Hover highlight background (full string column height) ───────────────
     const hoverBg = new PIXI.Graphics();
     hoverBg.rect(0, -containerY, noteWidth, height);
     hoverBg.fill({ color: subColor, alpha: 1 });
     hoverBg.alpha = 0;
 
+    // ── Active-note position for particle emission ───────────────────────────
+    // Pre-computed once; particles spawn at (barX, activeNote.y) each frame.
+    const activeNote = {
+      y: cy,
+      color: brightenColor(color, 1.2),
+    };
+
+    // ── Outer container ──────────────────────────────────────────────────────
     const container = new PIXI.Container();
     container.addChild(hoverBg);
     container.addChild(noteLabel);
     container.addChild(graphics);
 
+    // ── Pointer interaction ──────────────────────────────────────────────────
     const hoverState = { targetAlpha: 0 };
     container.eventMode = "static";
     container.hitArea = new PIXI.Rectangle(0, -containerY, noteWidth, height);
@@ -221,6 +286,7 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       onNoteClickRef.current?.({ note: event.note, duration: event.duration });
     });
 
+    // ── Position + alpha (fade-in handled by hook each frame) ────────────────
     container.x = -noteWidth - event.time * ppb;
     container.y = containerY;
     container.alpha = 0;
@@ -232,16 +298,76 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       width: noteWidth,
       duration: event.duration ?? 0,
       graphics,
+      noteGraphics, // pill sprite — scaled by onTickSprite for bounce animation
       brightnessFilter,
       brightnessState,
       noteLabel,
       hoverBg,
       hoverState,
+      activeNote, // { y, color } — particle spawn anchor on the string
       glowPadding: NOTE_GLOW_PADDING,
       fadeAlpha: 0,
     };
   }
 
-  // eslint-disable-next-line no-unused-vars
-  onTickSprite(_sprite, _params) {}
+  // ─── onTickSprite ──────────────────────────────────────────────────────────
+
+  onTickSprite(
+    sprite,
+    {
+      isActive,
+      particleRefs,
+      particleTextureRef,
+      isPlayingRef,
+      particlesEnabledRef,
+      barXRef,
+    },
+  ) {
+    // ── Note scale bounce ────────────────────────────────────────────────────
+    // Smoothly lerp the pill scale toward the play-scale target each frame.
+    // The pivot is pre-set to the pill centre so expansion is symmetrical.
+    if (sprite.noteGraphics) {
+      const target = isActive ? HOLE_PLAY_SCALE : 1.0;
+      sprite.noteGraphics.scale.y +=
+        (target - sprite.noteGraphics.scale.y) * HOLE_SCALE_ALPHA;
+    }
+
+    // ── Particle emission from the active string while playing ───────────────
+    const { particleLayerRef, particlesRef, particlePoolRef } = particleRefs;
+
+    if (
+      sprite.activeNote &&
+      particleLayerRef.current &&
+      particleTextureRef.current &&
+      isActive &&
+      isPlayingRef.current &&
+      particlesEnabledRef.current &&
+      particlesRef.current.length < MAX_PARTICLES
+    ) {
+      if (Math.random() > PARTICLE_SPAWN_CHANCE) return;
+      if (particlesRef.current.length >= MAX_PARTICLES) return;
+
+      const spr = particlePoolRef?.current?.acquire();
+      if (!spr) return;
+
+      const { y, color } = sprite.activeNote;
+      const spawnX = barXRef.current + (Math.random() - 0.5) * 10;
+      const spawnY = y + (Math.random() - 0.5) * 5;
+      spr.x = spawnX;
+      spr.y = spawnY;
+
+      particlesRef.current.push({
+        spr,
+        x: spawnX,
+        y: spawnY,
+        vx: -(Math.random() * 3 + 1),
+        vy: (Math.random() - 0.5) * 2,
+        age: 0,
+        lifetime:
+          PARTICLE_LIFETIME_MIN +
+          Math.random() * (PARTICLE_LIFETIME_MAX - PARTICLE_LIFETIME_MIN),
+        targetColor: color,
+      });
+    }
+  }
 }
