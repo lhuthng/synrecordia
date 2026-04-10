@@ -145,6 +145,14 @@
     "difficulty": "beginner"
   },
   {
+    "id": "once-upon-a-time",
+    "title": "Once upon a time",
+    "composer": "Toby Fox",
+    "bpm": 120,
+    "file": "once-upon-a-time.json",
+    "difficulty": "easy"
+  },
+  {
     "id": "recorder-sonata-in-f-major",
     "title": "Recorder Sonata in F Major",
     "composer": "Handel",
