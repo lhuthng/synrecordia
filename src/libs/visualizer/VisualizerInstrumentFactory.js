@@ -1,4 +1,5 @@
 import { RecorderVisualizerInstrument } from "./RecorderVisualizerInstrument.js";
+import { GuitarVisualizerInstrument } from "./GuitarVisualizerInstrument.js";
 
 /**
  * VisualizerInstrumentFactory
@@ -16,6 +17,8 @@ import { RecorderVisualizerInstrument } from "./RecorderVisualizerInstrument.js"
 
 const INSTRUMENT_MAP = {
   recorder: RecorderVisualizerInstrument,
+  guitar: GuitarVisualizerInstrument,
+  bguitar: GuitarVisualizerInstrument,
   // piano: PianoVisualizerInstrument,   ← add future instruments here
 };
 

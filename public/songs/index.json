@@ -23,6 +23,13 @@
     "difficulty": "easy"
   },
   {
+    "id": "blue",
+    "title": "Blue",
+    "composer": "Yung Kai",
+    "bpm": 95,
+    "file": "blue.json"
+  },
+  {
     "id": "departure",
     "title": "Departure! - HxH Opening",
     "bpm": 160,

@@ -216,15 +216,21 @@ export default function usePlayer() {
         .map((action) => ({
           time: (action.time ?? 0) + delayBeats,
           duration: action.duration ?? 0,
-          notes:
-            index === 0
-              ? // for first track take highest pitch name string (if multiple)
-                Array.isArray(action.pitches)
+          notes: (() => {
+            // Monophonic instruments (recorder family) take a single pitch.
+            // Every other instrument (guitar, piano, …) plays all pitches.
+            const isMonophonic =
+              track.instrument === "recorder" ||
+              track.instrument === "brecorder";
+            if (isMonophonic) {
+              return Array.isArray(action.pitches)
                 ? action.pitches[0]
-                : (action.pitch ?? action.pitches)
-              : Array.isArray(action.pitches)
-                ? action.pitches
-                : (action.pitches ?? action.pitch),
+                : (action.pitch ?? action.pitches);
+            }
+            return Array.isArray(action.pitches)
+              ? action.pitches
+              : (action.pitches ?? action.pitch);
+          })(),
           velocity: Math.min(Math.max((action.velocity ?? 80) / 100, 0), 1),
         }))
         .filter((action) => action.notes)

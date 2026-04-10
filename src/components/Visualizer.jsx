@@ -141,6 +141,14 @@ const Visualizer = memo(function Visualizer({
     ecoMode,
   });
 
+  // Derive instrument type from displaySong (the confirmed-rendered song) so
+  // these flags are never stale while song prop transitions.  Falls back to
+  // song prop during the initial render before displaySong is populated.
+  const trackInstrument =
+    (displaySong ?? song)?.tracks?.[0]?.instrument ?? "recorder";
+  const isRecorderFamily =
+    trackInstrument === "recorder" || trackInstrument === "brecorder";
+
   // ── First-load "?" onboarding hint ──────────────────────────────────────────
   const Q_HINT_KEY = "synrecordia:qHintShown";
   const qHintShownRef = useRef(false);
@@ -288,7 +296,7 @@ const Visualizer = memo(function Visualizer({
 
       {/* ── Dim overlay — tints the canvas, leaves a soft window at barX ────── */}
       <AnimatePresence>
-        {showInstrument && (
+        {showInstrument && isRecorderFamily && (
           <Motion.div
             key="dim-overlay"
             className="absolute inset-0 pointer-events-none z-5"
@@ -313,7 +321,7 @@ const Visualizer = memo(function Visualizer({
         )}
 
         {/* ── RecorderIllustration overlay panel ─────────────────────────────── */}
-        {showInstrument && (
+        {showInstrument && isRecorderFamily && (
           <Motion.div
             key="recorder-overlay"
             className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-fit flex items-center justify-center rounded-xl bg-radial-[at_50%_75%] from-dark via-transparent to-transparent px-4 z-10 pointer-events-none"
@@ -331,7 +339,7 @@ const Visualizer = memo(function Visualizer({
         )}
 
         {/* ── Connection lines: hole centres → playbar/hole-line intersections ── */}
-        {showInstrument && holePoints.length > 0 && (
+        {showInstrument && isRecorderFamily && holePoints.length > 0 && (
           <Motion.svg
             key="connection-lines"
             className="absolute inset-0 pointer-events-none z-20"
@@ -401,7 +409,7 @@ const Visualizer = memo(function Visualizer({
       </AnimatePresence>
 
       {/* ── "?" toggle circle at the bottom of the play bar ────────────────── */}
-      {isReady && song?.id === displaySong?.id && (
+      {isReady && song?.id === displaySong?.id && isRecorderFamily && (
         <button
           className="absolute flex items-center justify-center w-5 h-5 rounded-full text-dark text-sm font-bold leading-none cursor-pointer border border-main/70 bg-main hover:bg-main transition-all duration-150 z-30 select-none drop-shadow-2xl"
           style={{ right: 10, bottom: 10 }}
@@ -512,16 +520,18 @@ const Visualizer = memo(function Visualizer({
       </AnimatePresence>
 
       {/* ── Legend ─────────────────────────────────────────────────────────── */}
-      <div className="absolute p-4 bottom-0 text-main select-none pointer-events-none">
-        <p>
-          <span className="inline-block rounded-sm w-4 h-4 bg-note-full"></span>{" "}
-          {t("visualizer.legendFull")}
-        </p>
-        <p>
-          <span className="inline-block rounded-sm w-4 h-4 bg-note-half"></span>{" "}
-          {t("visualizer.legendHalf")}
-        </p>
-      </div>
+      {isRecorderFamily && (
+        <div className="absolute p-4 bottom-0 text-main select-none pointer-events-none">
+          <p>
+            <span className="inline-block rounded-sm w-4 h-4 bg-note-full"></span>{" "}
+            {t("visualizer.legendFull")}
+          </p>
+          <p>
+            <span className="inline-block rounded-sm w-4 h-4 bg-note-half"></span>{" "}
+            {t("visualizer.legendHalf")}
+          </p>
+        </div>
+      )}
     </div>
   );
 });

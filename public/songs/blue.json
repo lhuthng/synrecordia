@@ -1,0 +1,878 @@
+{
+  "id": "blue",
+  "title": "Blue",
+  "composer": "Yung Kai",
+  "bpm": 95,
+  "timeSignatures": [
+    {
+      "timeSignature": "6/8",
+      "length": 65
+    }
+  ],
+  "tracks": [
+    {
+      "id": "guitar",
+      "instrument": "guitar",
+      "noteRange": {
+        "min": 47,
+        "max": 83
+      },
+      "actions": [
+        {
+          "type": "note",
+          "time": 0,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 0.5,
+          "duration": 0.5,
+          "pitch": "D#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 1,
+          "duration": 0.5,
+          "pitch": "B3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 1.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 2,
+          "duration": 0.5,
+          "pitch": "D#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 2.5,
+          "duration": 0.5,
+          "pitch": "B3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 3,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 3.5,
+          "duration": 0.5,
+          "pitch": "D#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 4,
+          "duration": 0.5,
+          "pitch": "B3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 4.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 5,
+          "duration": 0.5,
+          "pitch": "F#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 5.5,
+          "duration": 0.5,
+          "pitch": "G#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 6,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 6.5,
+          "duration": 0.5,
+          "pitch": "C#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 7,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 7.5,
+          "duration": 0.5,
+          "pitch": "A5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 8,
+          "duration": 0.5,
+          "pitch": "G#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 8.5,
+          "duration": 0.5,
+          "pitch": "F#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 9,
+          "duration": 1,
+          "pitch": "D#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 10,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 10.5,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 11,
+          "duration": 0.5,
+          "pitch": "F#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 11.5,
+          "duration": 0.5,
+          "pitch": "D#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 12,
+          "duration": 1.5,
+          "pitch": "B4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 13.5,
+          "duration": 0.5,
+          "pitches": [
+            "E4",
+            "G#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 14,
+          "duration": 0.5,
+          "pitches": [
+            "F#4",
+            "A4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 14.5,
+          "duration": 0.5,
+          "pitches": [
+            "G#4",
+            "B4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 15,
+          "duration": 1.5,
+          "pitches": [
+            "B4",
+            "D#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 16.5,
+          "duration": 1.5,
+          "pitches": [
+            "B4",
+            "E5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 18,
+          "duration": 0.5,
+          "pitch": "B4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 18.5,
+          "duration": 0.5,
+          "pitch": "C#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 19,
+          "duration": 0.5,
+          "pitch": "E5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 19.5,
+          "duration": 0.5,
+          "pitch": "A5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 20,
+          "duration": 0.5,
+          "pitch": "G#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 20.5,
+          "duration": 0.5,
+          "pitch": "F#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 21,
+          "duration": 1.5,
+          "pitch": "D#5",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 22.5,
+          "duration": 0.5,
+          "pitches": [
+            "E5",
+            "B5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 23,
+          "duration": 0.5,
+          "pitches": [
+            "E5",
+            "A5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 23.5,
+          "duration": 0.5,
+          "pitches": [
+            "E5",
+            "G#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 24,
+          "duration": 0.5,
+          "pitches": [
+            "C#5",
+            "E5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 24.5,
+          "duration": 0.5,
+          "pitches": [
+            "C#5",
+            "E5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 25,
+          "duration": 0.5,
+          "pitches": [
+            "C#5",
+            "E5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 25.5,
+          "duration": 0.5,
+          "pitches": [
+            "D#5",
+            "F#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 26,
+          "duration": 0.5,
+          "pitches": [
+            "D#5",
+            "F#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 26.5,
+          "duration": 0.5,
+          "pitches": [
+            "D#5",
+            "F#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 27,
+          "duration": 0.5,
+          "pitches": [
+            "E5",
+            "G#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 27.5,
+          "duration": 0.5,
+          "pitches": [
+            "E5",
+            "G#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 28,
+          "duration": 0.5,
+          "pitches": [
+            "E5",
+            "G#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 28.5,
+          "duration": 0.5,
+          "pitches": [
+            "B4",
+            "D#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 29,
+          "duration": 0.5,
+          "pitches": [
+            "B4",
+            "D#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 29.5,
+          "duration": 0.5,
+          "pitches": [
+            "B4",
+            "D#5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 30,
+          "duration": 1.5,
+          "pitches": [
+            "B4",
+            "E5"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 33,
+          "duration": 0.5,
+          "pitch": "E3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 33.5,
+          "duration": 0.5,
+          "pitch": "D#3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 34,
+          "duration": 0.5,
+          "pitch": "B2",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 34.5,
+          "duration": 0.5,
+          "pitch": "E3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 35,
+          "duration": 0.5,
+          "pitch": "D#3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 35.5,
+          "duration": 0.5,
+          "pitch": "B2",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 36,
+          "duration": 0.5,
+          "pitch": "E3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 36.5,
+          "duration": 0.5,
+          "pitch": "D#3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 37,
+          "duration": 0.5,
+          "pitch": "B2",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 37.5,
+          "duration": 0.5,
+          "pitch": "E3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 38,
+          "duration": 0.5,
+          "pitch": "F#3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 38.5,
+          "duration": 0.5,
+          "pitch": "G#3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 39,
+          "duration": 0.5,
+          "pitch": "B3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 39.5,
+          "duration": 0.5,
+          "pitch": "C#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 40,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 40.5,
+          "duration": 0.5,
+          "pitch": "A4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 41,
+          "duration": 0.5,
+          "pitch": "G#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 41.5,
+          "duration": 0.5,
+          "pitch": "F#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 42,
+          "duration": 1,
+          "pitch": "D#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 43,
+          "duration": 0.5,
+          "pitch": "D#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 43.5,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 44,
+          "duration": 0.5,
+          "pitch": "F#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 44.5,
+          "duration": 0.5,
+          "pitch": "D#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 45,
+          "duration": 1.5,
+          "pitch": "B3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 46.5,
+          "duration": 0.5,
+          "pitches": [
+            "E3",
+            "G#3"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 47,
+          "duration": 0.5,
+          "pitches": [
+            "F#3",
+            "A3"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 47.5,
+          "duration": 0.5,
+          "pitches": [
+            "G#3",
+            "B3"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 48,
+          "duration": 1.5,
+          "pitches": [
+            "B3",
+            "D#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 49.5,
+          "duration": 1.5,
+          "pitches": [
+            "B3",
+            "E4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 51,
+          "duration": 0.5,
+          "pitch": "B3",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 51.5,
+          "duration": 0.5,
+          "pitch": "C#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 52,
+          "duration": 0.5,
+          "pitch": "E4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 52.5,
+          "duration": 0.5,
+          "pitch": "A4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 53,
+          "duration": 0.5,
+          "pitch": "G#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 53.5,
+          "duration": 0.5,
+          "pitch": "F#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 54,
+          "duration": 1.5,
+          "pitch": "D#4",
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 55.5,
+          "duration": 0.5,
+          "pitches": [
+            "E4",
+            "B4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 56,
+          "duration": 0.5,
+          "pitches": [
+            "E4",
+            "A4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 56.5,
+          "duration": 0.5,
+          "pitches": [
+            "E4",
+            "G#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 57,
+          "duration": 0.5,
+          "pitches": [
+            "C#4",
+            "E4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 57.5,
+          "duration": 0.5,
+          "pitches": [
+            "C#4",
+            "E4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 58,
+          "duration": 0.5,
+          "pitches": [
+            "C#4",
+            "E4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 58.5,
+          "duration": 0.5,
+          "pitches": [
+            "D#4",
+            "F#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 59,
+          "duration": 0.5,
+          "pitches": [
+            "D#4",
+            "F#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 59.5,
+          "duration": 0.5,
+          "pitches": [
+            "D#4",
+            "F#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 60,
+          "duration": 0.5,
+          "pitches": [
+            "E4",
+            "G#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 60.5,
+          "duration": 0.5,
+          "pitches": [
+            "E4",
+            "G#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 61,
+          "duration": 0.5,
+          "pitches": [
+            "E4",
+            "G#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 61.5,
+          "duration": 0.5,
+          "pitches": [
+            "B3",
+            "D#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 62,
+          "duration": 0.5,
+          "pitches": [
+            "B3",
+            "D#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 62.5,
+          "duration": 0.5,
+          "pitches": [
+            "B3",
+            "D#4"
+          ],
+          "velocity": 63
+        },
+        {
+          "type": "note",
+          "time": 63,
+          "duration": 1.5,
+          "pitches": [
+            "B3",
+            "E4"
+          ],
+          "velocity": 63
+        }
+      ]
+    }
+  ]
+}

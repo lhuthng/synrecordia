@@ -1,0 +1,52 @@
+Goal
+
+Take a time-ordered list of notes and produce a playable sequence of fret/string placements that balances left-hand comfort and right-hand economy/sustain.
+Inputs (conceptual)
+
+Notes: pitch, time, duration.
+Instrument: tuning, strings, fretboard limits.
+Two human-facing knobs: “left‑hand economy” (favor compact, low-movement shapes) and “right‑hand economy / sustain” (favor holding strings, minimizing pick travel, keeping notes ringing).
+Playstyle hint: pick vs fingerstyle (optional).
+High-level steps
+
+Normalize the music
+Turn the song into discrete time slices (group notes that sound together or nearly together).
+Keep note durations so you know which notes will still be ringing later.
+Produce plausible fingerings for each slice
+For every note in a slice, list the reasonable places on the neck it could be played.
+Combine those into a manageable set of candidate fingerings for that slice, discarding obviously impossible or unhelpful shapes.
+Evaluate each candidate in plain language
+For any single candidate ask:
+“Is this shape compact and comfortable for the left hand?”
+“Does it use open strings or barres in a way that helps or hurts?”
+“Will this shape let long notes keep ringing?”
+“Would the right hand need to move far to play from here?”
+Use the two knobs (left‑hand economy and right‑hand economy/sustain) to decide how much each of these questions matters.
+Evaluate transitions between consecutive slices
+For two neighboring shapes ask:
+“How far must the left hand move to get from A to B?”
+“Will choosing B mute notes that were supposed to keep ringing?”
+“Will the right hand have to jump to a very different string or region?”
+Prefer transitions that preserve useful holds, reduce big jumps, and fit the declared playstyle.
+Pick a globally good sequence
+Consider the whole song and choose the sequence of candidate shapes that gives the best overall balance of left‑hand comfort and right‑hand sustain across time. That means sometimes picking a slightly worse shape now to avoid a big move later, or holding a shape so a long note sustains.
+The selection is done by searching through the candidate shapes and their transitions to find the best overall path from start to finish.
+Post-process and label
+Clean up tiny impractical moves (small oscillations).
+Mark techniques like hammer‑on, pull‑off, tap when they naturally arise from the chosen fingerings and timing.
+Optionally produce a small set of alternatives that trade more sustain for less left‑hand motion or vice versa.
+Outputs
+
+A mapped song: each note annotated with string and fret, plus technique hints.
+A human summary: whether the result favors left‑hand comfort or sustain and any spots that required awkward compromises.
+Design notes (intended behavior, not implementation)
+
+Hard rules first: discard impossible fingerings early (you don’t try to make the impossible playable).
+Knobs guide priorities: turn up left‑hand economy to reduce hand travel; turn up sustain to keep notes ringing and reduce right‑hand movement.
+Global thinking beats local greed: sometimes accept a locally awkward shape if it saves big moves later or preserves long notes.
+Keep candidate sets small and sensible: you don’t try every theoretical possibility, only musically reasonable ones.
+Optional modes (user-facing)
+
+“Comfort mode” — maximize left‑hand ease; may sacrifice a bit of sustain.
+“Sustain mode” — keep long tones ringing and minimize right‑hand travel; may produce more barre shapes or larger left‑hand spans.
+“Balanced” — default compromise.

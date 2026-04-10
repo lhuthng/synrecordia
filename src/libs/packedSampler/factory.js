@@ -2,17 +2,19 @@ import PianoSampler from "./piano";
 import RecorderSampler from "./recorder";
 import BRecorderSampler from "./brecorder";
 import GuitarSampler from "./guitar";
+import BGuitarSampler from "./bguitar";
 import HarpsichordSampler from "./harpsichord";
 import WaveformSynth from "./waveform";
 
 export const SYNTH_INSTRUMENTS = ["waveform"];
-export const VISUALIZABLE_INSTRUMENTS = ["recorder"];
-export const SAMPLE_DIR = { brecorder: "recorder" };
+export const VISUALIZABLE_INSTRUMENTS = ["recorder", "bguitar"];
+export const SAMPLE_DIR = { brecorder: "recorder", bguitar: "guitar" };
 export const ALL_INSTRUMENTS = [
   "recorder",
   "brecorder",
   "piano",
   "guitar",
+  "bguitar",
   "harpsichord",
   "waveform",
 ];
@@ -47,6 +49,8 @@ export function createPackedSampler(name, urls, baseUrl, callback, addition) {
       return new PianoSampler(urls, baseUrl, callback, addition);
     case "guitar":
       return new GuitarSampler(urls, baseUrl, callback, addition);
+    case "bguitar":
+      return new BGuitarSampler(urls, baseUrl, callback, addition);
     case "harpsichord":
       return new HarpsichordSampler(urls, baseUrl, callback, addition);
     default:
