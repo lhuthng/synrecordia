@@ -17,6 +17,7 @@ import {
 } from "../../components/utils/colorUtils.js";
 import { BaseVisualizerInstrument } from "./BaseVisualizerInstrument.js";
 import GuitarMapper from "../guitar/GuitarMapper.js";
+import { transposeNote } from "../utils.js";
 import { drawGuitarNote } from "../../components/utils/geometryUtils.js";
 
 // ── Guitar-specific layout constants ─────────────────────────────────────────
@@ -88,15 +89,35 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
   // ─── computeNoteEvents ─────────────────────────────────────────────────────
 
   // eslint-disable-next-line no-unused-vars
-  computeNoteEvents(track, _fingeringSystem, _transpose, _recorderType) {
+  computeNoteEvents(track, _fingeringSystem, transpose, _recorderType) {
     if (!track || !Array.isArray(track.actions)) return [];
 
-    const result = new GuitarMapper({ mode: "balanced" }).map(track.actions);
+    // Transpose all note pitches before mapping so GuitarMapper resolves the
+    // correct string/fret positions for the transposed key, and event.note
+    // reflects the transposed pitch name shown in labels.
+    const actions = transpose
+      ? track.actions.map((action) => {
+          if (action.type !== "note") return action;
+          return {
+            ...action,
+            ...(action.pitches != null && {
+              pitches: action.pitches.map((p) =>
+                transposeNote(String(p), transpose),
+              ),
+            }),
+            ...(action.pitch != null && {
+              pitch: transposeNote(String(action.pitch), transpose),
+            }),
+          };
+        })
+      : track.actions;
+
+    const result = new GuitarMapper({ mode: "balanced" }).map(actions);
 
     // Build a duration map so each mapper slice can look up the original
     // pitch/duration from the track actions (mapper only stores positions).
     const durationMap = new Map();
-    for (const action of track.actions) {
+    for (const action of actions) {
       if (action.type !== "note") continue;
       const rawPitches = action.pitches
         ? action.pitches
