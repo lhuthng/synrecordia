@@ -88,9 +88,20 @@ function stringCenterY(s, height) {
 export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
   // ─── computeNoteEvents ─────────────────────────────────────────────────────
 
-  // eslint-disable-next-line no-unused-vars
-  computeNoteEvents(track, _fingeringSystem, transpose, _recorderType) {
+  computeNoteEvents(
+    track,
+    _fingeringSystem,
+    transpose,
+    _recorderType,
+    instrumentOptions = {},
+  ) {
     if (!track || !Array.isArray(track.actions)) return [];
+
+    const {
+      mode = "balanced",
+      leftHandWeight = null,
+      rightHandWeight = null,
+    } = instrumentOptions;
 
     // Transpose all note pitches before mapping so GuitarMapper resolves the
     // correct string/fret positions for the transposed key, and event.note
@@ -112,7 +123,11 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
         })
       : track.actions;
 
-    const result = new GuitarMapper({ mode: "balanced" }).map(actions);
+    const result = new GuitarMapper({
+      mode,
+      leftHandWeight,
+      rightHandWeight,
+    }).map(actions);
 
     // Build a duration map so each mapper slice can look up the original
     // pitch/duration from the track actions (mapper only stores positions).

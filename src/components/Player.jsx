@@ -170,6 +170,11 @@ export default function Player() {
   // visual readiness is owned by the Visualizer component
   const [isVisualReady, setIsVisualReady] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [guitarOptions, setGuitarOptions] = useState({
+    mode: "balanced",
+    leftHandWeight: 0.5,
+    rightHandWeight: 0.5,
+  });
 
   // Per-slot instrument overrides: { [slotIndex]: instrumentName }
   const [instrumentOverrides, setInstrumentOverrides] = useState({});
@@ -378,10 +383,16 @@ export default function Player() {
   );
 
   // Stable shared callbacks object for InstrumentManager → Presentation.
-  // pausePlayback is useCallback; setFingeringSystem/setRecorderType are state setters — all stable.
+  // pausePlayback is useCallback; setFingeringSystem/setRecorderType/setGuitarOptions are state
+  // setters — all stable references that never change between renders.
   const instrumentCallbacks = useMemo(
-    () => ({ pausePlayback, setFingeringSystem, setRecorderType }),
-    [pausePlayback, setFingeringSystem, setRecorderType],
+    () => ({
+      pausePlayback,
+      setFingeringSystem,
+      setRecorderType,
+      setGuitarOptions,
+    }),
+    [pausePlayback, setFingeringSystem, setRecorderType, setGuitarOptions],
   );
 
   // Cancel any in-progress countdown when the loaded song changes
@@ -1013,6 +1024,7 @@ export default function Player() {
           recorderType={recorderType}
           transpose={transposeSemitones}
           latencyMs={latencyMs}
+          guitarOptions={guitarOptions}
         />
 
         {/* Play-mode note-detection badge — flashes on every confirmed mic/MIDI onset */}

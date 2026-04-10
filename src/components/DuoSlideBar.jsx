@@ -15,6 +15,7 @@ export default function DuoSlideBar({
     text: "text-main",
   },
   barColor = "bg-note-full",
+  formatValue = (v) => Math.round(Number(v)),
 }) {
   const trackRef = useRef(null);
   const draggingRef = useRef(false);
@@ -135,7 +136,7 @@ export default function DuoSlideBar({
           )}
           style={{ left: `${pct}%` }}
         >
-          {Math.round(Number(internalValue))}
+          {formatValue(internalValue)}
         </button>
       </div>
     </div>

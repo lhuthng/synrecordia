@@ -56,6 +56,9 @@ export function usePixiVisualizer({
   latencyMs = 0,
   particlesEnabled = true,
   ecoMode = false,
+  // Instrument-specific overrides.  For the guitar, pass a stable (memoized)
+  // object so this reference only changes when the user actually edits a value.
+  guitarOptions = {},
 }) {
   // ─── DOM refs ────────────────────────────────────────────────────────────────
   const wrapperRef = useRef(null);
@@ -209,10 +212,11 @@ export function usePixiVisualizer({
         fingeringSystem,
         transpose,
         recorderType,
+        guitarOptions,
       ),
       instrument,
     };
-  }, [displaySong, fingeringSystem, transpose, recorderType]);
+  }, [displaySong, fingeringSystem, transpose, recorderType, guitarOptions]);
 
   // Extract the events array used as an effect dependency and captured by the
   // init closure.  Changing this reference is what triggers a scene rebuild.

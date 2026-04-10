@@ -3368,8 +3368,8 @@
       ]
     },
     {
-      "id": "guitar",
-      "instrument": "guitar",
+      "id": "bguitar",
+      "instrument": "bguitar",
       "noteRange": {
         "min": 41,
         "max": 69

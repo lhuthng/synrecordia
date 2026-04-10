@@ -31,11 +31,17 @@ export class BaseVisualizerInstrument {
    * @param {object}  track          - Raw track object from song.tracks[n].
    * @param {string}  fingeringSystem - Active fingering system name.
    * @param {number}  transpose       - Semitone offset (positive = up).
-   * @param {string}  recorderType   - Recorder type: "soprano"|"alto"|"tenor"|"bass". Defaults to "tenor".
+   * @param {string}  recorderType      - Recorder type: "soprano"|"alto"|"tenor"|"bass". Defaults to "tenor".
+   * @param {object}  instrumentOptions - Instrument-specific overrides (e.g. guitarOptions).
    * @returns {Array<{time: number, duration: number, note: string}>}
    */
-  // eslint-disable-next-line no-unused-vars
-  computeNoteEvents(track, fingeringSystem, transpose, recorderType = "tenor") {
+  computeNoteEvents(
+    _track,
+    _fingeringSystem,
+    _transpose,
+    _recorderType = "tenor",
+    _instrumentOptions = {},
+  ) {
     return [];
   }
 

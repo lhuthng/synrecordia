@@ -2,6 +2,13 @@ import PackedSampler from ".";
 import * as Tone from "tone";
 import Guitar from "../../components/instruments/Guitar";
 
+// Balanced-mode preset defaults — mirrors GuitarMapper.js PRESETS.balanced.
+const DEFAULT_MAPPER_OPTIONS = {
+  mode: "balanced",
+  leftHandWeight: 0.5,
+  rightHandWeight: 0.5,
+};
+
 const MAX_DB = 6;
 const DEFAULT_DB = -5;
 const MIN_DB = -60;
@@ -11,6 +18,7 @@ const REVERB_WET = 0.2;
 export default class GuitarSampler extends PackedSampler {
   constructor(urls, baseUrl, callback, addition) {
     super(addition);
+    this._mapperOptions = { ...DEFAULT_MAPPER_OPTIONS };
 
     const ecoMode = addition?.ecoMode ?? false;
 
@@ -46,6 +54,21 @@ export default class GuitarSampler extends PackedSampler {
 
   getPresentation() {
     return Guitar;
+  }
+
+  /** Returns a shallow copy of the current fret-mapper options. */
+  getMapperOptions() {
+    return { ...this._mapperOptions };
+  }
+
+  /**
+   * Merges the supplied options into the stored mapper config so the Guitar
+   * panel can restore the last-used values when reopened.
+   *
+   * @param {{ mode?: string, leftHandWeight?: number, rightHandWeight?: number }} opts
+   */
+  setMapperOptions(opts) {
+    this._mapperOptions = { ...this._mapperOptions, ...opts };
   }
 
   getVolume() {

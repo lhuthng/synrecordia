@@ -55,6 +55,7 @@ const Visualizer = memo(function Visualizer({
   onNoteClick,
   onPlayPause,
   onPlayBarPositionChange,
+  guitarOptions = {},
 }) {
   const { t } = useTranslation();
 
@@ -139,6 +140,7 @@ const Visualizer = memo(function Visualizer({
     interactionLocked: showInstrument,
     particlesEnabled: particlesEnabled && !ecoMode,
     ecoMode,
+    guitarOptions,
   });
 
   // Derive instrument type from displaySong (the confirmed-rendered song) so

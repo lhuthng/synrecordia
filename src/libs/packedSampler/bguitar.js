@@ -1,5 +1,5 @@
 import GuitarSampler from "./guitar.js";
-import Guitar from "../../components/instruments/Guitar.jsx";
+import BGuitar from "../../components/instruments/BGuitar.jsx";
 
 export default class BGuitarSampler extends GuitarSampler {
   constructor(urls, baseUrl, callback, addition) {
@@ -7,6 +7,6 @@ export default class BGuitarSampler extends GuitarSampler {
   }
 
   getPresentation() {
-    return Guitar;
+    return BGuitar;
   }
 }

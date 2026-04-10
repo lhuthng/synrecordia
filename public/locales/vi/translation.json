@@ -246,9 +246,39 @@
   "guitar": {
     "volume": "Âm lượng",
     "variant": "Phiên bản",
+    "mapperMode": "Chế độ",
+    "leftHandPriority": "Ưu tiên tay trái",
+    "rightHandPriority": "Ưu tiên tay phải",
+    "modes": {
+      "balanced": "Cân bằng",
+      "comfort": "Thoải mái",
+      "sustain": "Vang"
+    },
     "tips": {
       "volume": "Điều chỉnh âm lượng phát của guitar.",
-      "variant": "Chuyển đổi giữa các bộ mẫu guitar khác nhau."
+      "variant": "Chuyển đổi giữa các bộ mẫu guitar khác nhau.",
+      "mapperMode": "Chọn chiến lược xếp phím. Cân bằng chọn vị trí tự nhiên, Thoải mái giảm căng tay, Vang ưu tiên dây buông và legato.",
+      "leftHandPriority": "Mức độ ưu tiên của bộ lập bản đồ cho sự thoải mái của tay trái (bấm phím) khi chọn vị trí.",
+      "rightHandPriority": "Mức độ ưu tiên của bộ lập bản đồ cho sự đồng đều của tay phải (gảy) khi chọn vị trí."
+    }
+  },
+  "bguitar": {
+    "volume": "Âm lượng",
+    "variant": "Phiên bản",
+    "mapperMode": "Chế độ",
+    "leftHandPriority": "Ưu tiên tay trái",
+    "rightHandPriority": "Ưu tiên tay phải",
+    "modes": {
+      "balanced": "Cân bằng",
+      "comfort": "Thoải mái",
+      "sustain": "Vang"
+    },
+    "tips": {
+      "volume": "Điều chỉnh âm lượng phát của guitar.",
+      "variant": "Chuyển đổi giữa các bộ mẫu guitar khác nhau.",
+      "mapperMode": "Chọn chiến lược xếp phím. Cân bằng chọn vị trí tự nhiên, Thoải mái giảm căng tay, Vang ưu tiên dây buông và legato.",
+      "leftHandPriority": "Mức độ ưu tiên của bộ lập bản đồ cho sự thoải mái của tay trái (bấm phím) khi chọn vị trí.",
+      "rightHandPriority": "Mức độ ưu tiên của bộ lập bản đồ cho sự đồng đều của tay phải (gảy) khi chọn vị trí."
     }
   },
   "harpsichord": {

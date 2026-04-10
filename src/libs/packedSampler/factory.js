@@ -7,7 +7,7 @@ import HarpsichordSampler from "./harpsichord";
 import WaveformSynth from "./waveform";
 
 export const SYNTH_INSTRUMENTS = ["waveform"];
-export const VISUALIZABLE_INSTRUMENTS = ["recorder", "bguitar"];
+export const VISUALIZABLE_INSTRUMENTS = ["recorder", "guitar"];
 export const SAMPLE_DIR = { brecorder: "recorder", bguitar: "guitar" };
 export const ALL_INSTRUMENTS = [
   "recorder",

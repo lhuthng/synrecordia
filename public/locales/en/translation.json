@@ -246,9 +246,39 @@
   "guitar": {
     "volume": "Volume",
     "variant": "Variant",
+    "mapperMode": "Mode",
+    "leftHandPriority": "Left Hand Priority",
+    "rightHandPriority": "Right Hand Priority",
+    "modes": {
+      "balanced": "Balanced",
+      "comfort": "Comfort",
+      "sustain": "Sustain"
+    },
     "tips": {
       "volume": "Adjusts the guitar playback volume.",
-      "variant": "Switches between different guitar sample sets."
+      "variant": "Switches between different guitar sample sets.",
+      "mapperMode": "Sets the fret-mapping strategy. Balanced targets natural positions, Comfort minimises hand stretching, Sustain favours open strings and legato runs.",
+      "leftHandPriority": "How much weight the mapper gives to left-hand (fretting) comfort when choosing fret positions.",
+      "rightHandPriority": "How much weight the mapper gives to right-hand (picking) consistency when choosing fret positions."
+    }
+  },
+  "bguitar": {
+    "volume": "Volume",
+    "variant": "Variant",
+    "mapperMode": "Mode",
+    "leftHandPriority": "Left Hand Priority",
+    "rightHandPriority": "Right Hand Priority",
+    "modes": {
+      "balanced": "Balanced",
+      "comfort": "Comfort",
+      "sustain": "Sustain"
+    },
+    "tips": {
+      "volume": "Adjusts the guitar playback volume.",
+      "variant": "Switches between different guitar sample sets.",
+      "mapperMode": "Sets the fret-mapping strategy. Balanced targets natural positions, Comfort minimises hand stretching, Sustain favours open strings and legato runs.",
+      "leftHandPriority": "How much weight the mapper gives to left-hand (fretting) comfort when choosing fret positions.",
+      "rightHandPriority": "How much weight the mapper gives to right-hand (picking) consistency when choosing fret positions."
     }
   },
   "harpsichord": {

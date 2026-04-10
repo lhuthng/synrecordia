@@ -248,7 +248,37 @@
     "variant": "Variante",
     "tips": {
       "volume": "Passt die Wiedergabelautstärke der Gitarre an.",
-      "variant": "Wechselt zwischen verschiedenen Gitarrensamplesätzen."
+      "variant": "Wechselt zwischen verschiedenen Gitarrensamplesätzen.",
+      "mapperMode": "Legt die Strategie für die Bund-Zuordnung fest. Ausgewogen zielt auf natürliche Positionen, Komfort minimiert Handstreckungen, Ausdauer bevorzugt leere Saiten und Legato-Läufe.",
+      "leftHandPriority": "Gewichtung der linken Hand (Greifen) bei der Positionswahl.",
+      "rightHandPriority": "Gewichtung der rechten Hand (Anschlag) bei der Positionswahl."
+    },
+    "mapperMode": "Modus",
+    "leftHandPriority": "Linke-Hand-Priorität",
+    "rightHandPriority": "Rechte-Hand-Priorität",
+    "modes": {
+      "balanced": "Ausgewogen",
+      "comfort": "Komfort",
+      "sustain": "Ausdauer"
+    }
+  },
+  "bguitar": {
+    "volume": "Lautstärke",
+    "variant": "Variante",
+    "mapperMode": "Modus",
+    "leftHandPriority": "Linke-Hand-Priorität",
+    "rightHandPriority": "Rechte-Hand-Priorität",
+    "modes": {
+      "balanced": "Ausgewogen",
+      "comfort": "Komfort",
+      "sustain": "Ausdauer"
+    },
+    "tips": {
+      "volume": "Passt die Wiedergabelautstärke der Gitarre an.",
+      "variant": "Wechselt zwischen verschiedenen Gitarrensamplesätzen.",
+      "mapperMode": "Legt die Strategie für die Bund-Zuordnung fest. Ausgewogen zielt auf natürliche Positionen, Komfort minimiert Handstreckungen, Ausdauer bevorzugt leere Saiten und Legato-Läufe.",
+      "leftHandPriority": "Gewichtung der linken Hand (Greifen) bei der Positionswahl.",
+      "rightHandPriority": "Gewichtung der rechten Hand (Anschlag) bei der Positionswahl."
     }
   },
   "harpsichord": {
