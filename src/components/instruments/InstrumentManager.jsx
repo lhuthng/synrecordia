@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, memo } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  memo,
+} from "react";
 import {
   createPackedSampler,
   isSynthInstrument,
@@ -9,6 +16,7 @@ import {
 import { motion as Motion, AnimatePresence, useAnimate } from "motion/react";
 import { cn, midiToNoteName } from "../../libs/utils";
 import DuoSelect from "../DuoSelect";
+import DuoButton from "../DuoButton";
 import { useTranslation } from "react-i18next";
 import { useEcoMode } from "../../context/EcoModeContext";
 
@@ -116,7 +124,6 @@ const InstrumentManager = memo(function InstrumentManager({
   deregister,
   initialReady,
   handleAudioReady,
-  controllerNode,
   flashCount = 0,
   trackNoteRange = null,
   transpose = 0,
@@ -139,6 +146,14 @@ const InstrumentManager = memo(function InstrumentManager({
   const [Presentation, setPresentation] = useState(null);
 
   const prevVolumeRef = useRef(null);
+
+  // Popup panel
+  const panelContainerRef = useRef(null);
+  const [panelContentNode, setPanelContentNode] = useState(null);
+
+  // Popup viewport clamping
+  const panelRef = useRef(null);
+  const [panelMarginLeft, setPanelMarginLeft] = useState(0);
 
   // ── Mute / unmute the sampler when the `muted` prop changes ──────────────
   useEffect(() => {
@@ -215,6 +230,47 @@ const InstrumentManager = memo(function InstrumentManager({
       },
     );
   }, [flashCount, animate, scope]);
+
+  // Close popup when clicking outside the entire InstrumentManager container
+  useEffect(() => {
+    if (!toggle) return;
+    const handleOutside = (e) => {
+      if (
+        panelContainerRef.current &&
+        !panelContainerRef.current.contains(e.target)
+      ) {
+        onToggleChanged(slot, false);
+      }
+    };
+    document.addEventListener("pointerdown", handleOutside);
+    return () => document.removeEventListener("pointerdown", handleOutside);
+  }, [toggle, slot, onToggleChanged]);
+
+  // Clamp the popup panel to stay within the viewport.
+  // Runs synchronously after render (useLayoutEffect) so the correction is
+  // applied before the browser paints — no visible jump.
+  // Calling setState inside useLayoutEffect is the canonical pattern for
+  // measurement-based layout corrections — the update is batched into the
+  // same paint, so there is no cascading render or visible jump.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useLayoutEffect(() => {
+    if (!toggle) {
+      setPanelMarginLeft(0);
+      return;
+    }
+    if (!panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    const margin = 8;
+    const vw = window.innerWidth;
+    if (rect.left < margin) {
+      setPanelMarginLeft(margin - rect.left);
+    } else if (rect.right > vw - margin) {
+      setPanelMarginLeft(vw - margin - rect.right);
+    } else {
+      setPanelMarginLeft(0);
+    }
+  }, [toggle]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSamplerChanged = () => {
     const sampler = packedSamplerRef.current.getSampler();
@@ -359,8 +415,11 @@ const InstrumentManager = memo(function InstrumentManager({
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -5 }}
         >
-          {/* Flex column: button on top, range bar below */}
-          <div className="inline-flex flex-col items-center gap-2">
+          {/* Outer container — positioning anchor for the popup panel */}
+          <div
+            ref={panelContainerRef}
+            className="relative inline-flex flex-col items-center gap-2"
+          >
             {/* Instrument button with optional ⚠ badge */}
             <Motion.div
               key="button"
@@ -372,8 +431,6 @@ const InstrumentManager = memo(function InstrumentManager({
               ref={scope}
               className="relative inline-block"
             >
-              {/* Swap selector — only visible when this instrument is selected */}
-
               <Presentation
                 packedSampler={samplerInstance}
                 label={slot + 1}
@@ -386,28 +443,13 @@ const InstrumentManager = memo(function InstrumentManager({
                 onToggleChanged={(value) => onToggleChanged(slot, value)}
                 callbacks={callbacks}
                 onSamplerChanged={handleSamplerChanged}
-                controllerNode={controllerNode}
+                controllerNode={panelContentNode}
                 trackNoteRange={trackNoteRange}
                 transpose={transpose}
                 fingeringSystem={fingeringSystem}
                 recorderType={recorderType}
                 muted={muted}
-              >
-                {toggle && canSwap && (
-                  <div className="flex items-center">
-                    <label className="whitespace-nowrap w-auto!">
-                      {t("instruments.swap")}
-                      {"->"}
-                    </label>
-                    <DuoSelect
-                      options={swapOptions}
-                      value={name}
-                      padding="px-1.5 py-0.5"
-                      onChange={onSwapInstrument}
-                    />
-                  </div>
-                )}
-              </Presentation>
+              />
               {outOfRange && (
                 <span
                   className="absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-black text-xs font-bold leading-none cursor-help z-10 select-none shadow"
@@ -426,6 +468,67 @@ const InstrumentManager = memo(function InstrumentManager({
                 transpose={transpose}
               />
             )}
+
+            {/* ── Popup panel ── */}
+            <AnimatePresence>
+              {toggle && (
+                <Motion.div
+                  key="panel"
+                  ref={panelRef}
+                  style={{
+                    marginLeft:
+                      panelMarginLeft !== 0
+                        ? `${panelMarginLeft}px`
+                        : undefined,
+                  }}
+                  className={cn(
+                    "absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-50",
+                    "w-80 max-w-[calc(100dvw-2rem)]",
+                    "border-2 border-note-half-dark bg-dark rounded-2xl",
+                    "shadow-[0_8px_32px_rgba(0,0,0,0.55)] p-3",
+                  )}
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                >
+                  {/* Panel header: name | swap selector | close */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="font-bold uppercase text-main tracking-wide text-sm select-none flex-1 truncate">
+                      {t(`instruments.${name}`)}
+                    </span>
+                    {canSwap && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-xs text-main/50 select-none whitespace-nowrap">
+                          {t("instruments.swap")}
+                          {"→"}
+                        </span>
+                        <DuoSelect
+                          options={swapOptions}
+                          value={name}
+                          padding="px-1.5 py-0.5"
+                          onChange={onSwapInstrument}
+                        />
+                      </div>
+                    )}
+                    <DuoButton
+                      padding="px-2 py-0.5"
+                      background="bg-note-half"
+                      shadowBackground="bg-note-half-dark"
+                      border="border-note-half-dark"
+                      text="text-main"
+                      onClick={() => onToggleChanged(slot, false)}
+                      aria-label="Close"
+                    >
+                      ✕
+                    </DuoButton>
+                  </div>
+
+                  {/* Portal target — Presentation portals its controls here */}
+                  <div ref={setPanelContentNode} />
+                </Motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </Motion.div>
       ) : (

@@ -539,9 +539,6 @@ export default function Player() {
   // play bar position is a UI concern kept locally
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
 
-  // instrument controller DOM node
-  const [controllerNode, setControllerNode] = useState(null);
-
   const isReady = isVisualReady && isAudioReadyAll;
 
   // ── render ────────────────────────────────────────────────────────────────
@@ -1093,7 +1090,6 @@ export default function Player() {
               : NON_VISUALIZABLE_INSTRUMENTS;
           return (
             <InstrumentManager
-              controllerNode={controllerNode}
               key={`${index}-${effectiveInstrument}`}
               slot={index}
               muted={
@@ -1124,18 +1120,6 @@ export default function Player() {
           );
         })}
       </div>
-
-      {!!song && (
-        <div className="space-y-2">
-          <h2>
-            {t("player.instrumentController")}:
-            {selectedTrack === null && (
-              <span> {t("player.selectInstrumentHint")}</span>
-            )}
-          </h2>
-          <div className="pl-2" ref={(node) => setControllerNode(node)}></div>
-        </div>
-      )}
     </div>
   );
 }

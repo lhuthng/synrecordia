@@ -76,8 +76,7 @@ export default function BRecorder({
         toggle={toggle}
         onToggleChanged={onToggleChanged}
       />
-      {toggle &&
-        controllerNode &&
+      {controllerNode &&
         createPortal(
           <div className="flex flex-col gap-2 max-w-full sm:max-w-100">
             {children}

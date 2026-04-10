@@ -60,8 +60,7 @@ export default function Guitar({
         toggle={toggle}
         onToggleChanged={onToggleChanged}
       />
-      {toggle &&
-        controllerNode &&
+      {controllerNode &&
         createPortal(
           <div className="flex flex-col gap-2 max-w-100">
             {children}
