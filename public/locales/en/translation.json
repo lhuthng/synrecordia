@@ -260,10 +260,11 @@
     }
   },
   "instruments": {
-    "recorder": "VRecorder",
+    "recorder": "Recorder",
     "brecorder": "Recorder",
     "piano": "Piano",
     "guitar": "Guitar",
+    "bguitar": "Guitar",
     "harpsichord": "Harpsichord",
     "waveform": "Waveform",
     "swap": "Swap"

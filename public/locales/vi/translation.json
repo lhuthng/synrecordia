@@ -260,10 +260,11 @@
     }
   },
   "instruments": {
-    "recorder": "VSáo Recorder",
+    "recorder": "Sáo Recorder",
     "brecorder": "Sáo Recorder",
     "piano": "Piano",
     "guitar": "Guitar",
+    "bguitar": "Guitar",
     "harpsichord": "Đàn Harpsichord",
     "waveform": "Sóng tổng hợp",
     "swap": "Đổi nhạc cụ"

@@ -260,10 +260,11 @@
     }
   },
   "instruments": {
-    "recorder": "VBlockflöte",
+    "recorder": "Blockflöte",
     "brecorder": "Blockflöte",
     "piano": "Klavier",
     "guitar": "Gitarre",
+    "bguitar": "Gitarre",
     "harpsichord": "Cembalo",
     "waveform": "Wellenform",
     "swap": "Wechseln"

@@ -156,7 +156,7 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
         text: fretText,
         style: {
           fill: darkColor,
-          fontSize: 12,
+          fontSize: 18,
           fontWeight: "bold",
           fontFamily: "Iosevka Charon",
         },

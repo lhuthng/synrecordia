@@ -56,7 +56,10 @@ export default function Player() {
     // handlers
     registerSampler,
     deregisterSampler,
-    _internal: { samplersRef: internalSamplersRef },
+    _internal: {
+      samplersRef: internalSamplersRef,
+      instrumentOverridesRef: internalInstrumentOverridesRef,
+    },
     startPlayback,
     pausePlayback,
     stopPlayback,
@@ -170,6 +173,24 @@ export default function Player() {
 
   // Per-slot instrument overrides: { [slotIndex]: instrumentName }
   const [instrumentOverrides, setInstrumentOverrides] = useState({});
+
+  // Keep the usePlayer instrumentOverridesRef in sync so startPlayback can
+  // use the correct monophonic/polyphonic behaviour after a swap.
+  useEffect(() => {
+    internalInstrumentOverridesRef.current = instrumentOverrides;
+  }, [instrumentOverrides, internalInstrumentOverridesRef]);
+
+  // Song seen by the Visualizer — track 0's instrument is replaced by any
+  // active override so the correct visualizer renderer is used immediately.
+  const visualizerSong = useMemo(() => {
+    if (!song) return song;
+    const override = instrumentOverrides[0];
+    if (!override || override === song.tracks?.[0]?.instrument) return song;
+    const newTracks = song.tracks.map((track, i) =>
+      i === 0 ? { ...track, instrument: override } : track,
+    );
+    return { ...song, tracks: newTracks };
+  }, [song, instrumentOverrides]);
 
   // Visual-effect preferences
   const [particlesEnabled, setParticlesEnabled] = useState(true);
@@ -966,7 +987,7 @@ export default function Player() {
       {/* Visualizer with countdown overlay */}
       <div className="relative">
         <Visualizer
-          song={song}
+          song={visualizerSong}
           currentBeat={currentBeat}
           durationBeats={durationBeats}
           isPlaying={isPlaying}

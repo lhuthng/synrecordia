@@ -135,6 +135,10 @@ export function usePixiVisualizer({
   // that is currently visible. Children are sorted by .x descending (0, -ppb, -2ppb…)
   // so the visible slice is always contiguous — we only touch edges each frame.
   const guideVisWinRef = useRef({ left: 0, right: -1 });
+  // heightRef: current canvas height, kept in sync for use by rebuildStaticLayerRef.
+  const heightRef = useRef(height);
+  // rebuildStaticLayerRef: registered by init to allow in-place static-layer rebuilds.
+  const rebuildStaticLayerRef = useRef(null);
 
   // ─── React state ─────────────────────────────────────────────────────────────
   const [isDragging, setIsDragging] = useState(false);
@@ -219,6 +223,11 @@ export function usePixiVisualizer({
   // useEffect, guaranteeing the ref is updated before init() runs.
   useLayoutEffect(() => {
     instrumentRef.current = instrumentMemo.instrument;
+    // Pre-sort events into noteEventsRef so buildSprites can read from it
+    // without relying on a stale closure-captured noteEvents variable.
+    noteEventsRef.current = [...(instrumentMemo.events ?? [])].sort(
+      (a, b) => a.time - b.time,
+    );
   }, [instrumentMemo]);
 
   // ─── Sync simple props into refs ─────────────────────────────────────────────
@@ -268,15 +277,30 @@ export function usePixiVisualizer({
     canvasWidthRef.current = canvasWidth;
   }, [canvasWidth]);
 
+  useEffect(() => {
+    heightRef.current = height;
+  }, [height]);
+
   // ─── Song fade / transition ───────────────────────────────────────────────────
   useEffect(() => {
-    if (song?.id && displaySong?.id === song.id) return;
+    const sameId = !!(song?.id && displaySong?.id === song.id);
+    const sameInstrument =
+      displaySong?.tracks?.[0]?.instrument === song?.tracks?.[0]?.instrument;
+    // Fully identical — nothing to do.
+    if (sameId && sameInstrument) return;
+    if (sameId && !sameInstrument) {
+      // Same song, instrument swapped: update displaySong in-place, no opacity flash.
+      // The noteEvents useEffect will immediately rebuild sprites and static layer.
+      setSongState((prev) => ({ ...prev, displaySong: song }));
+      return;
+    }
+    // Different song — full fade transition.
     const t = setTimeout(() => {
       setSongState({ displaySong: song, isReady: false });
       onReady?.();
     }, FADE_MS);
     return () => clearTimeout(t);
-  }, [song, displaySong?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [song, displaySong?.id, displaySong?.tracks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Beat tracking ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -764,14 +788,10 @@ export function usePixiVisualizer({
         }
         activeSpriteMapRef.current.clear();
 
-        // Store sorted raw events — PIXI containers are built lazily by the ticker.
-        const sorted = [...noteEvents].sort((a, b) => a.time - b.time);
-        noteEventsRef.current = sorted;
-
-        // Estimate the widest possible sprite from max note duration so the ticker's
-        // conservative left-boundary formula stays correct without real sprite widths.
+        // noteEventsRef.current is pre-sorted by the instrumentMemo useLayoutEffect.
+        // Do NOT re-sort or overwrite here — the ref is the single source of truth.
         const ppb = pixelsPerBeatRef.current || 1;
-        const maxDuration = sorted.reduce(
+        const maxDuration = noteEventsRef.current.reduce(
           (m, e) => Math.max(m, e.duration ?? 0),
           0,
         );
@@ -780,8 +800,13 @@ export function usePixiVisualizer({
         // Reset the allocation window so the ticker starts fresh.
         visWinRef.current = { start: 0, end: 0 };
 
+        // Only update isReady if it isn't already true (instrument-swap case keeps it
+        // at true the whole time to avoid an opacity flash).
         requestAnimationFrame(() => {
-          if (!cancelled) setSongState((prev) => ({ ...prev, isReady: true }));
+          if (!cancelled)
+            setSongState((prev) =>
+              prev.isReady ? prev : { ...prev, isReady: true },
+            );
         });
       };
 
@@ -790,6 +815,15 @@ export function usePixiVisualizer({
       buildPlayBarRef.current = buildPlayBar;
       buildSpritesRef.current = buildSprites;
       buildZonesRef.current = buildZones;
+      // Lightweight static-layer rebuild for in-place instrument swaps.
+      rebuildStaticLayerRef.current = () => {
+        if (!holesLayerRef.current) return;
+        holesLayerRef.current.removeChildren();
+        instrumentRef.current?.buildStaticLayer(holesLayerRef.current, {
+          width: canvasWidthRef.current,
+          height: heightRef.current,
+        });
+      };
       buildGuides();
       buildZones();
       buildPlayBar();
@@ -1087,6 +1121,7 @@ export function usePixiVisualizer({
       buildPlayBarRef.current = null;
       buildSpritesRef.current = null;
       buildZonesRef.current = null;
+      rebuildStaticLayerRef.current = null;
       if (ticker && tick) ticker.remove(tick);
       if (scrollLayerRef.current) scrollLayerRef.current = null;
       appRef.current?.destroy(true, { children: true });
@@ -1094,12 +1129,21 @@ export function usePixiVisualizer({
       // activeSpriteMapRef entries are already destroyed by app.destroy above;
       // just clear the map so stale refs don't linger.
       activeMap.clear();
-      noteEventsRef.current = [];
       particlesRef.current = [];
       particleTextureRef.current = null;
       particlePoolRef.current = null;
     };
-  }, [noteEvents, width, height, effectiveTimeSignature]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [width, height, effectiveTimeSignature]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Lightweight sprite rebuild on note-events / instrument change ────────────
+  // Replaces what used to be a full PIXI teardown (init rerun) with an in-place
+  // clear-and-rebuild.  This keeps isReady true throughout, avoiding the opacity
+  // flash that occurred when simply switching the visualizer instrument.
+  useEffect(() => {
+    if (!buildSpritesRef.current) return; // PIXI not yet initialised — init handles it
+    rebuildStaticLayerRef.current?.();
+    buildSpritesRef.current();
+  }, [noteEvents]);
 
   // ─── Renderer resize on dimension changes ────────────────────────────────────
   useEffect(() => {

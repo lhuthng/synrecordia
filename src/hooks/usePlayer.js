@@ -79,6 +79,10 @@ export default function usePlayer() {
   const latencyMsRef = useRef(latencyMs);
   const noteTriggerListenerRef = useRef(null);
 
+  // External instrument overrides — set from Player.jsx when track 0 is swapped.
+  // Used by startPlayback to correctly determine monophonic vs polyphonic behaviour.
+  const instrumentOverridesRef = useRef({});
+
   // Keep bpmRef up-to-date for the running tick
   useEffect(() => {
     bpmRef.current = bpm;
@@ -219,9 +223,11 @@ export default function usePlayer() {
           notes: (() => {
             // Monophonic instruments (recorder family) take a single pitch.
             // Every other instrument (guitar, piano, …) plays all pitches.
+            const effectiveInstrument =
+              instrumentOverridesRef.current[index] ?? track.instrument;
             const isMonophonic =
-              track.instrument === "recorder" ||
-              track.instrument === "brecorder";
+              effectiveInstrument === "recorder" ||
+              effectiveInstrument === "brecorder";
             if (isMonophonic) {
               return Array.isArray(action.pitches)
                 ? action.pitches[0]
@@ -608,6 +614,7 @@ export default function usePlayer() {
       trackStatesRef,
       endBeatRef,
       bpmRef,
+      instrumentOverridesRef,
     },
   };
 }
