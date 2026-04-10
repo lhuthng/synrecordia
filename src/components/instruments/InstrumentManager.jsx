@@ -258,14 +258,23 @@ const InstrumentManager = memo(function InstrumentManager({
       setPanelMarginLeft(0);
       return;
     }
-    if (!panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
+    // Measure from the button container (always in the DOM when toggle is true).
+    // Avoids the panelRef.current null-timing issue with AnimatePresence, and
+    // avoids measuring a panel that is mid-Framer-Motion initial transform
+    // (scale / y offsets would skew getBoundingClientRect on the panel itself).
+    if (!panelContainerRef.current) return;
+    const containerRect = panelContainerRef.current.getBoundingClientRect();
+    // w-80 = 320 px; cap at viewport minus 2× gutter to match the CSS max-w rule.
     const margin = 8;
     const vw = window.innerWidth;
-    if (rect.left < margin) {
-      setPanelMarginLeft(margin - rect.left);
-    } else if (rect.right > vw - margin) {
-      setPanelMarginLeft(vw - margin - rect.right);
+    const panelWidth = Math.min(320, vw - margin * 2);
+    // Natural left edge of the panel when perfectly centered over the button.
+    const naturalLeft =
+      containerRect.left + containerRect.width / 2 - panelWidth / 2;
+    if (naturalLeft < margin) {
+      setPanelMarginLeft(margin - naturalLeft);
+    } else if (naturalLeft + panelWidth > vw - margin) {
+      setPanelMarginLeft(vw - margin - naturalLeft - panelWidth);
     } else {
       setPanelMarginLeft(0);
     }
@@ -482,14 +491,18 @@ const InstrumentManager = memo(function InstrumentManager({
                         : undefined,
                   }}
                   className={cn(
-                    "absolute bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2 z-50",
+                    // -translate-x-1/2 is intentionally omitted here: Framer Motion
+                    // owns the transform property (it writes an inline style that
+                    // overrides the Tailwind CSS-class transform).  The centering is
+                    // handled via x:"-50%" in the animation props below instead.
+                    "absolute bottom-[calc(100%+10px)] left-1/2 z-50",
                     "w-80 max-w-[calc(100dvw-2rem)]",
                     "border-2 border-note-half-dark bg-dark rounded-2xl",
                     "shadow-[0_8px_32px_rgba(0,0,0,0.55)] p-3",
                   )}
-                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.97, x: "-50%" }}
+                  animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97, x: "-50%" }}
                   transition={{ type: "spring", stiffness: 320, damping: 28 }}
                 >
                   {/* Panel header: name | swap selector | close */}
@@ -507,7 +520,10 @@ const InstrumentManager = memo(function InstrumentManager({
                           options={swapOptions}
                           value={name}
                           padding="px-1.5 py-0.5"
-                          onChange={onSwapInstrument}
+                          onChange={(val) => {
+                            onToggleChanged(slot, false);
+                            onSwapInstrument?.(val);
+                          }}
                         />
                       </div>
                     )}
