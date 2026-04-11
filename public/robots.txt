@@ -6,7 +6,7 @@ User-agent: *
 Allow: /
 
 # Preferred sitemap location (used by search engines)
-Sitemap: https://synrecordia.netlify.app/sitemap.xml
+Sitemap: https://synrecordia.site/sitemap.xml
 
 # Optional hints (uncomment to enable)
 # Crawl-delay: 5

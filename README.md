@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  Try the live <a href="https://synrecordia.netlify.app/">demo</a> right in your browser.
+  Try the live <a href="https://synrecordia.site/">demo</a> right in your browser.
 </p>
 
 SynRecordia is an interactive browser-based **music visualizer and sampler** built with React. Inspired by [![](https://cdn.synthesia.app/images/headerIcon.png) Synthesia](https://synthesiagame.com/), it pairs a scrolling note timeline with fingering diagrams, note labels, and sampled audio playback so you can see and hear each note as it plays. Everything runs client-side - no server required - using Tone.js for audio and PIXI.js for visuals.

@@ -9,7 +9,7 @@
  *
  * Options:
  *   BASE_URL   First positional argument or SITEMAP_BASE env var.
- *              Falls back to https://synrecordia.netlify.app
+ *              Falls back to https://synrecordia.site
  *
  * For each song in index.json the sitemap includes:
  *   - A page URL   /?song=<id>    (when `id` is present)
@@ -22,7 +22,7 @@ import path from "path";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const DEFAULT_BASE = "https://synrecordia.netlify.app";
+const DEFAULT_BASE = "https://synrecordia.site";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
