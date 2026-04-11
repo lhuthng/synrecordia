@@ -4,7 +4,7 @@ import {
   transposeNote,
   midiToNoteName,
 } from "../libs/utils.js";
-import { getHighestNote } from "../components/utils/fingeringUtils.js";
+import { getHighestNote } from "../libs/pixi/fingeringUtils.js";
 
 // ─── Timing windows ───────────────────────────────────────────────────────────
 

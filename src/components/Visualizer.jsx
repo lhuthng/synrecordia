@@ -7,8 +7,8 @@ import {
   NUM_HOLES,
   HOLE_SIZE,
   FINGERING_GAPS,
-} from "./utils/constants.js";
-import RecorderIllustration from "./instruments/RecorderIllustration.jsx";
+} from "../libs/pixi/constants.js";
+import RecorderIllustration from "../instruments/recorder/RecorderIllustration.jsx";
 import fingeringChart from "../assets/references/fingering-chart.json";
 import { motion as Motion, AnimatePresence } from "motion/react";
 

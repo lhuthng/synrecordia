@@ -317,7 +317,7 @@ def main() -> None:
     print("     • Leave tails OFF (or set tail to 0 ms)")
     print("  5. Note the output path, then run:")
     print()
-    print(f"     python fl_sample_slicer.py <exported.wav> \\")
+    print("     python fl_sample_slicer.py <exported.wav> \\")
     print(
         f"       --mode {args.mode} --bpm {args.bpm:.0f} --interval {args.interval} --duration {hold_sec + 1.0:.1f}"
     )

@@ -1,11 +1,11 @@
 import { Routes, Route } from "react-router-dom";
 import { MobileMenuProvider } from "./context/MobileMenuContext";
 import { EcoModeProvider } from "./context/EcoModeContext";
-import Player from "./components/Player";
-import CompactPlayer from "./components/CompactPlayer";
-import Header from "./components/Header";
+import Player from "./components/player/Player";
+import CompactPlayer from "./components/player/CompactPlayer";
+import Header from "./components/layout/Header";
 import Details from "./components/Details";
-import SynthwaveBackground from "./components/SynthwaveBackground";
+import SynthwaveBackground from "./components/layout/SynthwaveBackground";
 import EcoModeToast from "./components/EcoModeToast";
 
 function MainLayout() {

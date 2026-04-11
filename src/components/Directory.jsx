@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import DuoToggleButton from "./DuoToggleButton";
-import DuoButton from "./DuoButton";
+import DuoToggleButton from "./ui/DuoToggleButton";
+import DuoButton from "./ui/DuoButton";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import { cn } from "../libs/utils";
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
-import { PIANO_DELAY_MS, FADE_MS } from "../components/utils/constants.js";
+import { PIANO_DELAY_MS, FADE_MS } from "../libs/pixi/constants.js";
 import { transposeNotes } from "../libs/utils.js";
 
 /* Utility: compute end beat for a song */

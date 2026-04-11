@@ -52,34 +52,57 @@ from typing import NamedTuple
 # Note definitions
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class Note(NamedTuple):
     """One entry in a sample pack."""
-    json_key: str   # key used in index.json  e.g. "D#3"
+
+    json_key: str  # key used in index.json  e.g. "D#3"
     file_stem: str  # MP3 filename stem        e.g. "Ds3v1"
 
 
 # Salamander-style: A, C, D#, F# per octave — 30 notes total.
 # Matches the Salamander Grand Piano v2 layout exactly.
 SALAMANDER_NOTES: list[Note] = [
-    Note("A0",  "A0v1"),
-    Note("C1",  "C1v1"),  Note("D#1", "Ds1v1"), Note("F#1", "Fs1v1"), Note("A1",  "A1v1"),
-    Note("C2",  "C2v1"),  Note("D#2", "Ds2v1"), Note("F#2", "Fs2v1"), Note("A2",  "A2v1"),
-    Note("C3",  "C3v1"),  Note("D#3", "Ds3v1"), Note("F#3", "Fs3v1"), Note("A3",  "A3v1"),
-    Note("C4",  "C4v1"),  Note("D#4", "Ds4v1"), Note("F#4", "Fs4v1"), Note("A4",  "A4v1"),
-    Note("C5",  "C5v1"),  Note("D#5", "Ds5v1"), Note("F#5", "Fs5v1"), Note("A5",  "A5v1"),
-    Note("C6",  "C6v1"),  Note("D#6", "Ds6v1"), Note("F#6", "Fs6v1"), Note("A6",  "A6v1"),
-    Note("C7",  "C7v1"),  Note("D#7", "Ds7v1"), Note("F#7", "Fs7v1"), Note("A7",  "A7v1"),
-    Note("C8",  "C8v1"),
+    Note("A0", "A0v1"),
+    Note("C1", "C1v1"),
+    Note("D#1", "Ds1v1"),
+    Note("F#1", "Fs1v1"),
+    Note("A1", "A1v1"),
+    Note("C2", "C2v1"),
+    Note("D#2", "Ds2v1"),
+    Note("F#2", "Fs2v1"),
+    Note("A2", "A2v1"),
+    Note("C3", "C3v1"),
+    Note("D#3", "Ds3v1"),
+    Note("F#3", "Fs3v1"),
+    Note("A3", "A3v1"),
+    Note("C4", "C4v1"),
+    Note("D#4", "Ds4v1"),
+    Note("F#4", "Fs4v1"),
+    Note("A4", "A4v1"),
+    Note("C5", "C5v1"),
+    Note("D#5", "Ds5v1"),
+    Note("F#5", "Fs5v1"),
+    Note("A5", "A5v1"),
+    Note("C6", "C6v1"),
+    Note("D#6", "Ds6v1"),
+    Note("F#6", "Fs6v1"),
+    Note("A6", "A6v1"),
+    Note("C7", "C7v1"),
+    Note("D#7", "Ds7v1"),
+    Note("F#7", "Fs7v1"),
+    Note("A7", "A7v1"),
+    Note("C8", "C8v1"),
 ]
 
 # Chromatic: every semitone C1 → C8 (85 notes).
-_DISPLAY  = ["C",  "C#", "D",  "D#", "E",  "F",  "F#", "G",  "G#", "A",  "A#", "B"]
-_FILENAME = ["C",  "Cs", "D",  "Ds", "E",  "F",  "Fs", "G",  "Gs", "A",  "As", "B"]
+_DISPLAY = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+_FILENAME = ["C", "Cs", "D", "Ds", "E", "F", "Fs", "G", "Gs", "A", "As", "B"]
 
 CHROMATIC_NOTES: list[Note] = [
     Note(
-        json_key  = f"{_DISPLAY[n % 12]}{(n // 12) - 1}",
-        file_stem = f"{_FILENAME[n % 12]}{(n // 12) - 1}v1",
+        json_key=f"{_DISPLAY[n % 12]}{(n // 12) - 1}",
+        file_stem=f"{_FILENAME[n % 12]}{(n // 12) - 1}v1",
     )
     for n in range(24, 109)  # C1 (MIDI 24) → C8 (MIDI 108)
 ]
@@ -89,17 +112,18 @@ CHROMATIC_NOTES: list[Note] = [
 # Defaults — keep in sync with fl_midi_generator.py
 # ──────────────────────────────────────────────────────────────────────────────
 
-DEFAULT_BPM       = 60.0   # beats per minute used in FL Studio
-DEFAULT_INTERVAL  = 4.0    # beats between consecutive note onsets
-DEFAULT_DURATION  = 3.0    # seconds to keep per slice  (< slot length → discards tail)
-DEFAULT_OFFSET    = 0.0    # seconds before the very first note
-DEFAULT_BITRATE   = "128k" # MP3 quality: 96k / 128k / 192k / 256k / 320k
-DEFAULT_OUT       = "output"
+DEFAULT_BPM = 60.0  # beats per minute used in FL Studio
+DEFAULT_INTERVAL = 4.0  # beats between consecutive note onsets
+DEFAULT_DURATION = 3.0  # seconds to keep per slice  (< slot length → discards tail)
+DEFAULT_OFFSET = 0.0  # seconds before the very first note
+DEFAULT_BITRATE = "128k"  # MP3 quality: 96k / 128k / 192k / 256k / 320k
+DEFAULT_OUT = "output"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 # ffmpeg helpers
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def check_ffmpeg() -> None:
     """Abort early if ffmpeg is not on PATH."""
@@ -118,9 +142,12 @@ def get_audio_duration(path: str) -> float | None:
     """Return the total duration of an audio file in seconds using ffprobe."""
     cmd = [
         "ffprobe",
-        "-v", "error",
-        "-show_entries", "format=duration",
-        "-of", "csv=p=0",
+        "-v",
+        "error",
+        "-show_entries",
+        "format=duration",
+        "-of",
+        "csv=p=0",
         path,
     ]
     try:
@@ -140,9 +167,13 @@ def detect_silence_end(path: str, threshold_db: float = -50.0) -> float | None:
     """
     cmd = [
         "ffmpeg",
-        "-i", path,
-        "-af", f"silencedetect=noise={threshold_db}dB:d=0.1",
-        "-f", "null", "-",
+        "-i",
+        path,
+        "-af",
+        f"silencedetect=noise={threshold_db}dB:d=0.1",
+        "-f",
+        "null",
+        "-",
     ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -193,15 +224,24 @@ def slice_note(
         )
 
     cmd = [
-        "ffmpeg", "-y",
-        "-ss", f"{start_sec:.6f}",
-        "-t",  f"{duration_sec:.6f}",
-        "-i",  input_file,
-        "-ar", "44100",
-        "-ac", str(channels),
-        "-b:a", bitrate,
-        "-map_metadata", "-1",   # strip embedded metadata / artwork
-        "-id3v2_version", "3",
+        "ffmpeg",
+        "-y",
+        "-ss",
+        f"{start_sec:.6f}",
+        "-t",
+        f"{duration_sec:.6f}",
+        "-i",
+        input_file,
+        "-ar",
+        "44100",
+        "-ac",
+        str(channels),
+        "-b:a",
+        bitrate,
+        "-map_metadata",
+        "-1",  # strip embedded metadata / artwork
+        "-id3v2_version",
+        "3",
     ]
 
     if audio_filters:
@@ -215,7 +255,9 @@ def slice_note(
         snippet = result.stderr.decode(errors="replace")
         # Show only the last few lines to avoid flooding the terminal
         last_lines = "\n".join(snippet.splitlines()[-6:])
-        print(f"\n    ⚠️  ffmpeg error for {os.path.basename(output_path)}:\n{last_lines}\n")
+        print(
+            f"\n    ⚠️  ffmpeg error for {os.path.basename(output_path)}:\n{last_lines}\n"
+        )
         return False
 
     return True
@@ -224,6 +266,7 @@ def slice_note(
 # ──────────────────────────────────────────────────────────────────────────────
 # Argument parsing
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
@@ -263,34 +306,44 @@ OUTPUT STRUCTURE
         help="Master WAV file exported from FL Studio",
     )
     p.add_argument(
-        "--out", "-o",
+        "--out",
+        "-o",
         default=DEFAULT_OUT,
         help=f"Output directory  (default: {DEFAULT_OUT!r})",
     )
     p.add_argument(
-        "--mode", "-m",
+        "--mode",
+        "-m",
         choices=["salamander", "chromatic"],
         default="salamander",
         help="Note layout — must match the mode used in fl_midi_generator.py  (default: salamander)",
     )
     p.add_argument(
-        "--bpm", "-b",
-        type=float, default=DEFAULT_BPM,
+        "--bpm",
+        "-b",
+        type=float,
+        default=DEFAULT_BPM,
         help=f"BPM of the FL Studio project  (default: {DEFAULT_BPM})",
     )
     p.add_argument(
-        "--interval", "-i",
-        type=float, default=DEFAULT_INTERVAL,
+        "--interval",
+        "-i",
+        type=float,
+        default=DEFAULT_INTERVAL,
         help=f"Beats between consecutive note starts  (default: {DEFAULT_INTERVAL})",
     )
     p.add_argument(
-        "--duration", "-d",
-        type=float, default=DEFAULT_DURATION,
+        "--duration",
+        "-d",
+        type=float,
+        default=DEFAULT_DURATION,
         help=f"Seconds to extract per note slice  (default: {DEFAULT_DURATION})",
     )
     p.add_argument(
-        "--offset", "-s",
-        type=float, default=DEFAULT_OFFSET,
+        "--offset",
+        "-s",
+        type=float,
+        default=DEFAULT_OFFSET,
         help=f"Seconds before the very first note  (default: {DEFAULT_OFFSET})",
     )
     p.add_argument(
@@ -299,7 +352,8 @@ OUTPUT STRUCTURE
         help="Keep stereo output (default: convert to mono to save ~50%% file size)",
     )
     p.add_argument(
-        "--bitrate", "-q",
+        "--bitrate",
+        "-q",
         default=DEFAULT_BITRATE,
         help=f"MP3 bit-rate, e.g. 96k / 128k / 192k / 320k  (default: {DEFAULT_BITRATE!r})",
     )
@@ -310,7 +364,8 @@ OUTPUT STRUCTURE
     )
     p.add_argument(
         "--silence-db",
-        type=float, default=-50.0,
+        type=float,
+        default=-50.0,
         help="Silence threshold in dBFS used with --trim-silence  (default: -50.0)",
     )
     p.add_argument(
@@ -335,6 +390,7 @@ OUTPUT STRUCTURE
 # ──────────────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def main() -> None:
     args = parse_args()
@@ -365,9 +421,9 @@ def main() -> None:
     ]
 
     # ── Timing math ───────────────────────────────────────────────────────────
-    sec_per_beat   = 60.0 / args.bpm
-    interval_sec   = args.interval * sec_per_beat
-    channels       = 2 if args.stereo else 1
+    sec_per_beat = 60.0 / args.bpm
+    interval_sec = args.interval * sec_per_beat
+    channels = 2 if args.stereo else 1
 
     # Sanity check: does duration fit inside the slot?
     if args.duration >= interval_sec:
@@ -381,12 +437,14 @@ def main() -> None:
     file_duration = get_audio_duration(input_path)
 
     print()
-    print(f"  🎹  Sample Pack Slicer")
+    print("  🎹  Sample Pack Slicer")
     print(f"  {'─' * 54}")
     print(f"  Input       : {input_path}")
     if file_duration is not None:
         needed_flag = " ✅" if file_duration >= total_sec else " ⚠️  FILE TOO SHORT!"
-        print(f"  File length : {file_duration:.1f}s  (need ≥ {total_sec:.1f}s){needed_flag}")
+        print(
+            f"  File length : {file_duration:.1f}s  (need ≥ {total_sec:.1f}s){needed_flag}"
+        )
     print(f"  Mode        : {args.mode}  ({len(notes)} notes)")
     print(f"  BPM         : {args.bpm}  →  {interval_sec:.2f}s per slot")
     print(f"  Slice len   : {args.duration}s")
@@ -394,7 +452,9 @@ def main() -> None:
     print(f"  Output      : {args.out}/")
     print(f"  Channels    : {'stereo' if channels == 2 else 'mono'}")
     print(f"  Bitrate     : {args.bitrate}")
-    print(f"  Trim silence: {'yes  (threshold ' + str(args.silence_db) + ' dBFS)' if args.trim_silence else 'no'}")
+    print(
+        f"  Trim silence: {'yes  (threshold ' + str(args.silence_db) + ' dBFS)' if args.trim_silence else 'no'}"
+    )
     if args.dry_run:
         print(f"\n  ⚡  DRY RUN — no files will be written.\n")
     print()
@@ -402,9 +462,9 @@ def main() -> None:
     if args.dry_run:
         for i, note in enumerate(notes):
             start = args.offset + i * interval_sec
-            end   = start + args.duration
+            end = start + args.duration
             print(
-                f"  [{i+1:02d}/{len(notes)}]  "
+                f"  [{i + 1:02d}/{len(notes)}]  "
                 f"{note.json_key:5s}  "
                 f"{start:7.2f}s – {end:.2f}s  →  {note.file_stem}.mp3"
             )
@@ -420,22 +480,26 @@ def main() -> None:
     errors: list[str] = []
 
     for i, note in enumerate(notes):
-        start    = args.offset + i * interval_sec
+        start = args.offset + i * interval_sec
         filename = f"{note.file_stem}.mp3"
         out_path = str(out_dir / filename)
 
-        progress = f"[{i+1:02d}/{len(notes)}]"
-        print(f"  {progress}  {note.json_key:5s}  @ {start:7.2f}s  →  {filename}", end="", flush=True)
+        progress = f"[{i + 1:02d}/{len(notes)}]"
+        print(
+            f"  {progress}  {note.json_key:5s}  @ {start:7.2f}s  →  {filename}",
+            end="",
+            flush=True,
+        )
 
         success = slice_note(
-            input_file          = input_path,
-            start_sec           = start,
-            duration_sec        = args.duration,
-            output_path         = out_path,
-            bitrate             = args.bitrate,
-            channels            = channels,
-            trim_silence        = args.trim_silence,
-            silence_threshold_db= args.silence_db,
+            input_file=input_path,
+            start_sec=start,
+            duration_sec=args.duration,
+            output_path=out_path,
+            bitrate=args.bitrate,
+            channels=channels,
+            trim_silence=args.trim_silence,
+            silence_threshold_db=args.silence_db,
         )
 
         if success:
@@ -453,8 +517,8 @@ def main() -> None:
         fh.write("\n")
 
     # ── Summary ───────────────────────────────────────────────────────────────
-    ok_count  = len(notes) - len(errors)
-    total_kb  = sum(
+    ok_count = len(notes) - len(errors)
+    total_kb = sum(
         os.path.getsize(str(out_dir / f"{n.file_stem}.mp3")) / 1024
         for n in notes
         if n.json_key not in errors
@@ -463,27 +527,31 @@ def main() -> None:
     print()
     print(f"  {'─' * 54}")
     if not errors:
-        print(f"  ✅  {ok_count}/{len(notes)} notes  •  index.json  •  {total_kb:.0f} KB total")
+        print(
+            f"  ✅  {ok_count}/{len(notes)} notes  •  index.json  •  {total_kb:.0f} KB total"
+        )
     else:
-        print(f"  ⚠️  {ok_count}/{len(notes)} notes OK  •  {len(errors)} failed: {', '.join(errors)}")
+        print(
+            f"  ⚠️  {ok_count}/{len(notes)} notes OK  •  {len(errors)} failed: {', '.join(errors)}"
+        )
     print()
 
     # ── Installation instructions ─────────────────────────────────────────────
-    folder_name  = out_dir.name
-    instrument   = args.instrument or "<instrument>"
+    folder_name = out_dir.name
+    instrument = args.instrument or "<instrument>"
     version_name = folder_name
 
     print("  ── Install into Synrecordia ─────────────────────────────────")
     print()
-    print(f"  1. Copy output folder into the project:")
+    print("  1. Copy output folder into the project:")
     print(f"       public/samples/{instrument}/{version_name}/")
     print()
     print(f"  2. Create (or update)  public/samples/{instrument}/index.json :")
     print()
-    print(f"       {{")
+    print("       {{")
     print(f'         "versions": ["{version_name}"],')
     print(f'         "default":  "{version_name}"')
-    print(f"       }}")
+    print("       }}")
     print()
     print("  3. Restart the dev server and select your instrument in the app.")
     print()

@@ -17,13 +17,10 @@ import {
   NOTE_LAZY_BUFFER_PX,
   NOTE_FADE_SPEED,
   MAX_PARTICLES,
-} from "../components/utils/constants.js";
-import {
-  cssColorToPixiHex,
-  lerpColor,
-} from "../components/utils/colorUtils.js";
-import { getBeatsPerBar } from "../components/utils/fingeringUtils.js";
-import { createVisualizerInstrument } from "../libs/visualizer/VisualizerInstrumentFactory.js";
+} from "../libs/pixi/constants.js";
+import { cssColorToPixiHex, lerpColor } from "../libs/pixi/colorUtils.js";
+import { getBeatsPerBar } from "../libs/pixi/fingeringUtils.js";
+import { createVisualizerInstrument } from "../instruments/core/InstrumentRegistry.js";
 
 /**
  * Encapsulates all PixiJS initialisation, the animation ticker, and pointer/wheel
