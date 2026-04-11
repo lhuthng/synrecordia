@@ -129,6 +129,14 @@
     "difficulty": "easy"
   },
   {
+    "id": "my-time",
+    "title": "My Time",
+    "composer": "Bo En",
+    "bpm": 180,
+    "file": "my-time.json",
+    "difficulty": "medium"
+  },
+  {
     "id": "never-give-you-up",
     "title": "Never give you up",
     "composer": "Rick Astley",

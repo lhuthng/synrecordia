@@ -98,7 +98,10 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
     },
   ) {
     const fingeringColors = getFingeringColors();
-    const durationForWidth = Math.max(event.duration ?? 0, 0);
+    const durationForWidth = Math.max(
+      event.visualDuration ?? event.duration ?? 0,
+      0,
+    );
     const targetWidth = Math.max(durationForWidth * ppb, 6);
 
     // ── Fingering diagram ────────────────────────────────────────────────────
@@ -187,7 +190,7 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
     });
 
     // ── Position + alpha (fade-in handled by hook each frame) ────────────────
-    container.x = -scaledGraphicsWidth - event.time * ppb;
+    container.x = -scaledGraphicsWidth - (event.visualTime ?? event.time) * ppb;
     container.y = containerY;
     container.alpha = 0;
     container.visible = true;

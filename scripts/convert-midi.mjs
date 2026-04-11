@@ -370,6 +370,7 @@ function parseMidi(buf) {
   const tracks = [];
   let firstTempo = null;
   const timeSignatures = [];
+  const tempoChanges = []; // all tempo change events
 
   for (let t = 0; t < numTracks; t++) {
     const chunkType = readString(buf, offset, 4);
@@ -420,10 +421,11 @@ function parseMidi(buf) {
         if (metaType === 0x03) {
           // Track name
           trackName = data.toString("ascii").replace(/\0/g, "").trim();
-        } else if (metaType === 0x51 && length === 3 && firstTempo === null) {
-          // Tempo (first occurrence)
+        } else if (metaType === 0x51 && length === 3) {
+          // Tempo event – collect all changes, not just the first
           const tempo = (data[0] << 16) | (data[1] << 8) | data[2];
-          firstTempo = tempo;
+          if (firstTempo === null) firstTempo = tempo;
+          tempoChanges.push({ ticks: absTicks, tempo });
         } else if (metaType === 0x58 && length >= 2) {
           // Time signature
           const numerator = data[0];
@@ -516,7 +518,7 @@ function parseMidi(buf) {
   }
 
   const bpm = firstTempo ? Math.round(60_000_000 / firstTempo) : 120;
-  return { format, ppq, tracks, bpm, timeSignatures };
+  return { format, ppq, tracks, bpm, timeSignatures, tempoChanges };
 }
 
 // ── Music helpers ─────────────────────────────────────────────────────────────
@@ -815,6 +817,23 @@ function buildTimeSignatures(parsed, songEndTick) {
   return [{ timeSignature: "4/4", length: Math.ceil(songEndBeats) }];
 }
 
+function buildBpms(tempoChanges, ppq) {
+  if (!tempoChanges || tempoChanges.length === 0) return null;
+  // Deduplicate: same tick → keep last tempo (some DAWs write duplicates)
+  const byTick = new Map();
+  for (const tc of tempoChanges) byTick.set(tc.ticks, tc.tempo);
+  const sorted = [...byTick.entries()].sort(([a], [b]) => a - b);
+  const entries = sorted.map(([ticks, tempo]) => ({
+    beat: Math.round((ticks / ppq) * 1000) / 1000,
+    bpm: Math.round(60_000_000 / tempo),
+  }));
+  // Ensure there is always an entry at beat 0
+  if (entries.length > 0 && entries[0].beat > 0) {
+    entries.unshift({ beat: 0, bpm: 120 });
+  }
+  return entries;
+}
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 const args = parseArgs(process.argv);
 
@@ -921,11 +940,14 @@ const songEndTick =
 
 const outTimeSignatures = buildTimeSignatures(parsed, songEndTick);
 
+const bpmsArr = buildBpms(parsed.tempoChanges, parsed.ppq);
 const song = {
   id: songId,
   title: songTitle,
   ...(songComposer && { composer: songComposer }),
   bpm: parsed.bpm,
+  // Include bpms only when there are actual tempo changes (>1 entry means at least one change)
+  ...(bpmsArr && bpmsArr.length > 1 && { bpms: bpmsArr }),
   timeSignatures: outTimeSignatures,
   tracks: outputTracks,
 };

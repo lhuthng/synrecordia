@@ -210,7 +210,10 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
     const color = getFretColor(event.fret ?? 0);
     const shadowColor = darken(color, 0.45);
 
-    const noteWidth = Math.max((event.duration ?? 0) * ppb, MIN_NOTE_WIDTH);
+    const noteWidth = Math.max(
+      (event.visualDuration ?? event.duration ?? 0) * ppb,
+      MIN_NOTE_WIDTH,
+    );
     const cy = stringCenterY(event.string ?? 1, height);
     const containerY = cy - NOTE_HEIGHT / 2;
 
@@ -307,7 +310,7 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
     });
 
     // ── Position + alpha (fade-in handled by hook each frame) ────────────────
-    container.x = -noteWidth - event.time * ppb;
+    container.x = -noteWidth - (event.visualTime ?? event.time) * ppb;
     container.y = containerY;
     container.alpha = 0;
     notesLayer.addChild(container);
