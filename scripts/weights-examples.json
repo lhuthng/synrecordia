@@ -1,0 +1,192 @@
+{
+  "default": {
+    "description": "Balanced evaluation - equal weight to length, range, and other factors",
+    "weights": {
+      "length": 25,
+      "range": 25,
+      "actions": 15,
+      "avg_dur": 15,
+      "stdev": 10,
+      "min_dur": 10
+    },
+    "use_case": "General purpose evaluation balancing all difficulty aspects"
+  },
+  "speed-focused": {
+    "description": "Emphasizes tempo and speed - fast songs are much harder",
+    "weights": {
+      "length": 15,
+      "range": 15,
+      "actions": 15,
+      "avg_dur": 35,
+      "stdev": 15,
+      "min_dur": 5
+    },
+    "use_case": "When you want rapid-fire, fast-tempo songs to rank as harder",
+    "command": "python3 evaluate_difficulty.py --weights length:15 range:15 actions:15 avg_dur:35 stdev:15 min_dur:5"
+  },
+  "range-focused": {
+    "description": "Emphasizes wide note ranges - wide ranges are much harder",
+    "weights": {
+      "length": 20,
+      "range": 40,
+      "actions": 15,
+      "avg_dur": 15,
+      "stdev": 5,
+      "min_dur": 5
+    },
+    "use_case": "When vocal range is the primary difficulty factor",
+    "command": "python3 evaluate_difficulty.py --weights length:20 range:40 actions:15 avg_dur:15 stdev:5 min_dur:5"
+  },
+  "endurance-focused": {
+    "description": "Emphasizes song length and note count - long songs are much harder",
+    "weights": {
+      "length": 40,
+      "range": 15,
+      "actions": 30,
+      "avg_dur": 10,
+      "stdev": 3,
+      "min_dur": 2
+    },
+    "use_case": "When stamina and endurance are the primary difficulty factors",
+    "command": "python3 evaluate_difficulty.py --weights length:40 range:15 actions:30 avg_dur:10 stdev:3 min_dur:2"
+  },
+  "technical-focused": {
+    "description": "Emphasizes technical complexity - speed, range, and variability matter most",
+    "weights": {
+      "length": 10,
+      "range": 30,
+      "actions": 10,
+      "avg_dur": 25,
+      "stdev": 20,
+      "min_dur": 5
+    },
+    "use_case": "For technically challenging pieces with complex patterns",
+    "command": "python3 evaluate_difficulty.py --weights length:10 range:30 actions:10 avg_dur:25 stdev:20 min_dur:5"
+  },
+  "beginner-friendly": {
+    "description": "Simplified evaluation - only length and range matter significantly",
+    "weights": {
+      "length": 30,
+      "range": 40,
+      "actions": 10,
+      "avg_dur": 10,
+      "stdev": 5,
+      "min_dur": 5
+    },
+    "use_case": "For beginner programs where only melody range and duration matter",
+    "command": "python3 evaluate_difficulty.py --weights length:30 range:40 actions:10 avg_dur:10 stdev:5 min_dur:5"
+  },
+  "precision-focused": {
+    "description": "Emphasizes minimum note duration - very short notes are much harder",
+    "weights": {
+      "length": 15,
+      "range": 20,
+      "actions": 15,
+      "avg_dur": 20,
+      "stdev": 15,
+      "min_dur": 15
+    },
+    "use_case": "When precision and control are critical",
+    "command": "python3 evaluate_difficulty.py --weights length:15 range:20 actions:15 avg_dur:20 stdev:15 min_dur:15"
+  },
+  "action-focused": {
+    "description": "Emphasizes note count - more notes means more difficult",
+    "weights": {
+      "length": 20,
+      "range": 20,
+      "actions": 40,
+      "avg_dur": 10,
+      "stdev": 5,
+      "min_dur": 5
+    },
+    "use_case": "When complexity of sequences matters most",
+    "command": "python3 evaluate_difficulty.py --weights length:20 range:20 actions:40 avg_dur:10 stdev:5 min_dur:5"
+  },
+  "balanced-technical": {
+    "description": "Balanced but slightly emphasizing technical aspects (speed + variability)",
+    "weights": {
+      "length": 20,
+      "range": 25,
+      "actions": 15,
+      "avg_dur": 20,
+      "stdev": 12,
+      "min_dur": 8
+    },
+    "use_case": "General purpose with slight emphasis on technical difficulty",
+    "command": "python3 evaluate_difficulty.py --weights length:20 range:25 actions:15 avg_dur:20 stdev:12 min_dur:8"
+  },
+  "smooth-only": {
+    "description": "Ignores rapid notes - emphasizes only sustained, slow pieces",
+    "weights": {
+      "length": 30,
+      "range": 30,
+      "actions": 20,
+      "avg_dur": 10,
+      "stdev": 5,
+      "min_dur": 5
+    },
+    "use_case": "For slow, sustained vocal pieces",
+    "command": "python3 evaluate_difficulty.py --weights length:30 range:30 actions:20 avg_dur:10 stdev:5 min_dur:5"
+  },
+  "extreme-speed": {
+    "description": "Extreme - almost all weight on speed metrics",
+    "weights": {
+      "length": 5,
+      "range": 5,
+      "actions": 5,
+      "avg_dur": 50,
+      "stdev": 20,
+      "min_dur": 10
+    },
+    "use_case": "For extreme speed-focused evaluation",
+    "command": "python3 evaluate_difficulty.py --weights length:5 range:5 actions:5 avg_dur:50 stdev:20 min_dur:10"
+  },
+  "extreme-range": {
+    "description": "Extreme - almost all weight on note range",
+    "weights": {
+      "length": 5,
+      "range": 70,
+      "actions": 5,
+      "avg_dur": 10,
+      "stdev": 5,
+      "min_dur": 5
+    },
+    "use_case": "For extreme range-focused evaluation",
+    "command": "python3 evaluate_difficulty.py --weights length:5 range:70 actions:5 avg_dur:10 stdev:5 min_dur:5"
+  },
+  "equal-all": {
+    "description": "All metrics equally weighted",
+    "weights": {
+      "length": 16,
+      "range": 17,
+      "actions": 17,
+      "avg_dur": 17,
+      "stdev": 17,
+      "min_dur": 16
+    },
+    "use_case": "When all factors should be considered equally",
+    "command": "python3 evaluate_difficulty.py --weights length:16 range:17 actions:17 avg_dur:17 stdev:17 min_dur:16"
+  },
+  "complexity-emphasis": {
+    "description": "Emphasizes patterns and complexity (actions + stdev)",
+    "weights": {
+      "length": 15,
+      "range": 20,
+      "actions": 25,
+      "avg_dur": 15,
+      "stdev": 15,
+      "min_dur": 10
+    },
+    "use_case": "When complex note patterns are harder than simple ones",
+    "command": "python3 evaluate_difficulty.py --weights length:15 range:20 actions:25 avg_dur:15 stdev:15 min_dur:10"
+  },
+  "usage_notes": {
+    "description": "How to use these presets",
+    "note_1": "Each preset has a 'command' field showing how to use it",
+    "note_2": "All weights must sum to 100 (script validates this)",
+    "note_3": "Run with: python3 evaluate_difficulty.py --weights KEY1:VAL1 KEY2:VAL2 ...",
+    "note_4": "Valid keys: length, range, actions, avg_dur, stdev, min_dur",
+    "note_5": "Preview changes before updating: python3 evaluate_difficulty.py --output changes",
+    "note_6": "Update index after reviewing: python3 evaluate_difficulty.py --update-index"
+  }
+}
