@@ -78,6 +78,9 @@ export default function usePlayer() {
   const transposeSemitonesRef = useRef(0);
   const latencyMsRef = useRef(latencyMs);
   const noteTriggerListenerRef = useRef(null);
+  // Points to the wallTimeToBeat closure set by the running startPlayback so
+  // handleBpmChange can compute the correct beat across tempo sections.
+  const wallTimeToBeatRef = useRef(null);
 
   // External instrument overrides — set from Player.jsx when track 0 is swapped.
   // Used by startPlayback to correctly determine monophonic vs polyphonic behaviour.
@@ -201,6 +204,93 @@ export default function usePlayer() {
     const startBeat = Math.max(0, cursorBeatsRef.current);
     const tracks = Array.isArray(song.tracks) ? song.tracks : [];
 
+    // ── Tempo-change helpers ──────────────────────────────────────────────────
+    // bpms is the array of { beat, bpm } entries from the song JSON.
+    // When absent or single-entry the helpers fall back to the flat-BPM formula.
+    const bpms =
+      Array.isArray(song.bpms) && song.bpms.length > 1 ? song.bpms : null;
+    const baseBpm = bpms?.[0]?.bpm ?? (bpmRef.current || 120);
+
+    // Convert elapsed wall-clock seconds (since the last startBeat anchor) into
+    // the corresponding MIDI beat, honouring each section's scaled BPM.
+    const wallTimeToBeat = (elapsed) => {
+      if (!bpms) {
+        return startBeatRef.current + elapsed * ((bpmRef.current || 120) / 60);
+      }
+      const scale = (bpmRef.current || 120) / baseBpm;
+      let remaining = elapsed;
+      let currentBeat = startBeatRef.current;
+
+      // Find the BPM segment that contains startBeatRef.current
+      let segIdx = 0;
+      for (let i = bpms.length - 1; i >= 0; i--) {
+        if (startBeatRef.current >= bpms[i].beat) {
+          segIdx = i;
+          break;
+        }
+      }
+
+      while (remaining > 1e-9) {
+        const effectiveBpm = bpms[segIdx].bpm * scale;
+        const spb = 60 / effectiveBpm;
+        const nextBeat =
+          segIdx + 1 < bpms.length ? bpms[segIdx + 1].beat : Infinity;
+        const beatsToNext = nextBeat - currentBeat;
+        const secsToNext = beatsToNext * spb;
+
+        if (!isFinite(secsToNext) || remaining <= secsToNext) {
+          currentBeat += remaining / spb;
+          remaining = 0;
+        } else {
+          remaining -= secsToNext;
+          currentBeat = nextBeat;
+          if (segIdx + 1 < bpms.length) {
+            segIdx++;
+          } else {
+            currentBeat += remaining / spb;
+            remaining = 0;
+          }
+        }
+      }
+      return currentBeat;
+    };
+
+    // Convert a range [beatStart, beatEnd) in MIDI beats to wall-clock seconds,
+    // honouring each section's scaled BPM.
+    const beatRangeToSeconds = (beatStart, beatEnd) => {
+      if (!bpms) {
+        return (beatEnd - beatStart) * (60 / (bpmRef.current || 120));
+      }
+      const scale = (bpmRef.current || 120) / baseBpm;
+      let totalSecs = 0;
+      let currentBeat = beatStart;
+
+      let segIdx = 0;
+      for (let i = bpms.length - 1; i >= 0; i--) {
+        if (beatStart >= bpms[i].beat) {
+          segIdx = i;
+          break;
+        }
+      }
+
+      while (currentBeat < beatEnd - 1e-9) {
+        const effectiveBpm = bpms[segIdx].bpm * scale;
+        const spb = 60 / effectiveBpm;
+        const nextBeat =
+          segIdx + 1 < bpms.length ? bpms[segIdx + 1].beat : Infinity;
+        const segEnd = Math.min(nextBeat, beatEnd);
+        totalSecs += (segEnd - currentBeat) * spb;
+        currentBeat = segEnd;
+        if (currentBeat < beatEnd - 1e-9 && segIdx + 1 < bpms.length) {
+          segIdx++;
+        }
+      }
+      return totalSecs;
+    };
+
+    // Expose wallTimeToBeat so handleBpmChange can use it while playing.
+    wallTimeToBeatRef.current = wallTimeToBeat;
+
     const trackDelayMsArray = tracks.map((track) =>
       track.instrument === "piano" ? PIANO_DELAY_MS : 0,
     );
@@ -282,14 +372,9 @@ export default function usePlayer() {
     startBeatRef.current = audioStartBeat;
     setIsPlaying(true);
 
-    const getSecondsPerBeatLocalized = () => 60 / (bpmRef.current || 120);
-
     let frameCount = 0;
     const tick = () => {
-      const secondsPerBeat = getSecondsPerBeatLocalized();
-      const beat =
-        startBeatRef.current +
-        (Tone.now() - startToneTimeRef.current) / secondsPerBeat;
+      const beat = wallTimeToBeat(Tone.now() - startToneTimeRef.current);
       cursorBeatsRef.current = beat;
       // Throttle React state updates to ~30 fps; the PixiJS ticker
       // projects ahead with elapsed-time interpolation so visuals stay smooth.
@@ -327,7 +412,10 @@ export default function usePlayer() {
           state.actions[state.index].time <= beat
         ) {
           const action = state.actions[state.index];
-          const durationSeconds = action.duration * secondsPerBeat;
+          const durationSeconds = beatRangeToSeconds(
+            action.time,
+            action.time + action.duration,
+          );
           const startTime = Tone.now();
 
           if (
@@ -376,7 +464,12 @@ export default function usePlayer() {
           // always restarts at beat 0 while the audio pre-rolls as needed.
           const repeatLatencyBeats =
             latencyMsRef.current < 0
-              ? latencyMsRef.current / 1000 / secondsPerBeat
+              ? latencyMsRef.current /
+                1000 /
+                (60 /
+                  (bpms
+                    ? bpms[0].bpm * ((bpmRef.current || 120) / baseBpm)
+                    : bpmRef.current || 120))
               : 0;
           startBeatRef.current = overshoot + repeatLatencyBeats;
 
@@ -434,12 +527,15 @@ export default function usePlayer() {
 
       if (isPlaying) {
         const now = Tone.now();
-        const secondsPerBeatOld = 60 / bpmRef.current;
-        const beatsSinceLastChange =
-          (now - startToneTimeRef.current) / secondsPerBeatOld;
+        // Use the BPM-section-aware helper if available (song with tempo changes),
+        // otherwise fall back to the simple single-BPM formula.
+        const elapsed = now - startToneTimeRef.current;
+        const currentBeat = wallTimeToBeatRef.current
+          ? wallTimeToBeatRef.current(elapsed)
+          : startBeatRef.current + elapsed / (60 / (bpmRef.current || 120));
 
         // Advance startBeat so perceived beat at `now` stays the same
-        startBeatRef.current = startBeatRef.current + beatsSinceLastChange;
+        startBeatRef.current = currentBeat;
         startToneTimeRef.current = now;
       }
 

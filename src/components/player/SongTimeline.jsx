@@ -13,6 +13,7 @@ const SongTimeline = memo(function SongTimeline({
   durationBeats = 0,
   noteWidth = 70,
   playBarPosition = 0.95,
+  bpms = null,
   onScrubStart,
   onScrub,
   onNoteWidthChange,
@@ -202,6 +203,25 @@ const SongTimeline = memo(function SongTimeline({
       title="Song timeline — drag thumb to scrub · drag edges to zoom"
       onClick={handleTrackClick}
     >
+      {/* ── BPM region backgrounds ─────────────────────────────────────────── */}
+      {bpms &&
+        bpms.length > 1 &&
+        bpms.map((entry, i) => {
+          if (i % 2 !== 1) return null; // only even regions (1-based: 2, 4, …)
+          const startBeat = entry.beat;
+          const endBeat = bpms[i + 1]?.beat ?? dur;
+          if (endBeat <= startBeat) return null;
+          const leftPct = (1 - Math.min(endBeat, dur) / dur) * 100;
+          const widthPct = ((Math.min(endBeat, dur) - startBeat) / dur) * 100;
+          return (
+            <div
+              key={i}
+              className="absolute top-0 bottom-0 bg-note-full/20 pointer-events-none"
+              style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+            />
+          );
+        })}
+
       {/* ── Thumb ──────────────────────────────────────────────────────────── */}
       <div
         className={cn(

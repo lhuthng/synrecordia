@@ -555,6 +555,22 @@ export default function Player() {
 
   const isReady = isVisualReady && isAudioReadyAll;
 
+  // Effective BPM at the current beat position: base BPM × section scale.
+  // When the song has no bpms array (constant tempo) this equals bpm.
+  const effectiveBpm = useMemo(() => {
+    const bpms = song?.bpms;
+    if (!bpms || bpms.length <= 1) return bpm;
+    const baseBpm = bpms[0].bpm;
+    let sectionBpm = baseBpm;
+    for (let i = bpms.length - 1; i >= 0; i--) {
+      if (currentBeat >= bpms[i].beat) {
+        sectionBpm = bpms[i].bpm;
+        break;
+      }
+    }
+    return Math.round(bpm * (sectionBpm / baseBpm));
+  }, [bpm, currentBeat, song?.bpms]);
+
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="w-full text-main space-y-2">
@@ -626,14 +642,21 @@ export default function Player() {
 
       {/* Controls */}
       <div className="w-full flex justify-between gap-2 not-sm:flex-col">
-        <div className="max-w-full sm:max-w-100 grow text-base">
-          {/* BPM */}
-          <div className="mt-2 flex items-center gap-2">
+        <div className="max-w-full sm:max-w-160 grow text-base">
+          {/* BPM / Transpose / Note Width — shared 4-column grid so reset
+              buttons stay vertically aligned even when the BPM row carries
+              an extra readout in the last column.
+              Columns: [label] [slider 1fr] [reset btn] [extra info] */}
+          <div
+            className="mt-2 grid grid-cols-[auto_1fr_auto_0] sm:grid-cols-[auto_1fr_auto_auto] items-center gap-x-2 gap-y-2"
+            style={{ gridTemplateColumns: "auto 1fr auto auto" }}
+          >
+            {/* ── BPM ── */}
             <div className="flex items-center gap-1">
               <label>{t("player.bpm")}:</label>
               <SettingTooltip>{t("player.tips.bpm")}</SettingTooltip>
             </div>
-            <div className="flex-1 ml-4 mr-8">
+            <div className="ml-4 mr-8">
               <DuoSlideBar
                 min={30}
                 max={240}
@@ -660,15 +683,16 @@ export default function Player() {
             >
               {t("player.reset")}
             </DuoButton>
-          </div>
-
-          {/* Transpose */}
-          <div className="mt-2 flex items-center gap-2">
+            <span className="inline-block not-sm:w-0 overflow-hidden text-sm text-sub whitespace-nowrap">
+              {t("player.bpm")}:{" "}
+              <span className="font-mono text-main">{effectiveBpm}</span>
+            </span>
+            {/* ── Transpose ── */}
             <div className="flex items-center gap-1">
               <label>{t("player.transpose")}:</label>
               <SettingTooltip>{t("player.tips.transpose")}</SettingTooltip>
             </div>
-            <div className="flex-1 ml-4 mr-8">
+            <div className="ml-4 mr-8">
               <DuoSlideBar
                 min={-24}
                 max={24}
@@ -701,15 +725,13 @@ export default function Player() {
             >
               {t("player.reset")}
             </DuoButton>
-          </div>
-
-          {/* Note Width */}
-          <div className="mt-2 flex items-center gap-2">
+            <div /> {/* empty 4th cell — keeps reset buttons aligned */}
+            {/* ── Note Width ── */}
             <div className="flex items-center gap-1">
               <label title="note width">{t("player.noteWidthFull")}:</label>
               <SettingTooltip>{t("player.tips.noteWidth")}</SettingTooltip>
             </div>
-            <div className="flex-1 ml-4 mr-8">
+            <div className="ml-4 mr-8">
               <DuoSlideBar
                 min={40}
                 max={400}
@@ -736,6 +758,7 @@ export default function Player() {
             >
               {t("player.reset")}
             </DuoButton>
+            <div /> {/* empty 4th cell — keeps reset buttons aligned */}
           </div>
 
           {/* Advanced settings toggle */}
@@ -1085,6 +1108,7 @@ export default function Player() {
           durationBeats={durationBeats}
           noteWidth={noteWidth}
           playBarPosition={playBarPosition}
+          bpms={song?.bpms}
           onScrubStart={() => {
             if (isWaiting) cancelWait();
             handleScrubStart();

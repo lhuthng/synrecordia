@@ -23,6 +23,51 @@ import { getBeatsPerBar } from "../libs/pixi/fingeringUtils.js";
 import { createVisualizerInstrument } from "../instruments/core/InstrumentRegistry.js";
 
 /**
+ * Convert a MIDI beat position to a visual beat position.
+ * Sections with higher BPM are compressed; lower BPM are stretched.
+ * Falls back to identity when bpms is null/single-entry.
+ */
+function beatToVisualBeat(midiBeat, bpms) {
+  if (!bpms || bpms.length <= 1) return midiBeat;
+  const baseBpm = bpms[0].bpm;
+  let cumVisual = 0;
+  let segStart = 0;
+  for (let i = 0; i < bpms.length; i++) {
+    const scale = baseBpm / bpms[i].bpm;
+    const nextSegStart = i + 1 < bpms.length ? bpms[i + 1].beat : Infinity;
+    if (midiBeat <= nextSegStart || !isFinite(nextSegStart)) {
+      return cumVisual + (midiBeat - segStart) * scale;
+    }
+    cumVisual += (nextSegStart - segStart) * scale;
+    segStart = nextSegStart;
+  }
+  return cumVisual;
+}
+
+/**
+ * Inverse of beatToVisualBeat — converts a visual beat back to a MIDI beat.
+ */
+function _visualBeatToMidiBeat(visualBeat, bpms) {
+  if (!bpms || bpms.length <= 1) return visualBeat;
+  const baseBpm = bpms[0].bpm;
+  let cumVisual = 0;
+  let segStart = 0;
+  for (let i = 0; i < bpms.length; i++) {
+    const scale = baseBpm / bpms[i].bpm;
+    const nextSegStart = i + 1 < bpms.length ? bpms[i + 1].beat : Infinity;
+    const segVisualLen = isFinite(nextSegStart)
+      ? (nextSegStart - segStart) * scale
+      : Infinity;
+    if (visualBeat <= cumVisual + segVisualLen || !isFinite(segVisualLen)) {
+      return segStart + (visualBeat - cumVisual) / scale;
+    }
+    cumVisual += segVisualLen;
+    segStart = nextSegStart;
+  }
+  return segStart;
+}
+
+/**
  * Encapsulates all PixiJS initialisation, the animation ticker, and pointer/wheel
  * interaction logic for the Visualizer component.
  *
@@ -89,7 +134,12 @@ export function usePixiVisualizer({
   const buildPlayBarRef = useRef(null);
   const buildSpritesRef = useRef(null);
   const buildZonesRef = useRef(null);
+  const buildBpmRegionsRef = useRef(null);
   const buildGuidesDebounceRef = useRef(null);
+  // bpmsRef is synced during render so closures inside init always read the
+  // current song's bpms array without a stale-closure problem (init only
+  // re-runs when width/height/timeSignature changes, not on song changes).
+  const bpmsRef = useRef(null);
 
   // ─── Playback / scroll state refs ────────────────────────────────────────────
   // targetBeatRef: the external target the ticker interpolates displayBeatRef toward.
@@ -150,6 +200,8 @@ export function usePixiVisualizer({
     isReady: false,
   });
   const { displaySong, isReady } = songState;
+  // Keep bpmsRef in sync every render (safe ref mutation during render).
+  bpmsRef.current = displaySong?.bpms ?? null;
 
   // ─── Resize observer ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -224,11 +276,17 @@ export function usePixiVisualizer({
   // useEffect, guaranteeing the ref is updated before init() runs.
   useLayoutEffect(() => {
     instrumentRef.current = instrumentMemo.instrument;
-    // Pre-sort events into noteEventsRef so buildSprites can read from it
-    // without relying on a stale closure-captured noteEvents variable.
-    noteEventsRef.current = [...(instrumentMemo.events ?? [])].sort(
+    const sorted = [...(instrumentMemo.events ?? [])].sort(
       (a, b) => a.time - b.time,
     );
+    const bpms = bpmsRef.current;
+    for (const ev of sorted) {
+      const vt = beatToVisualBeat(ev.time, bpms);
+      ev.visualTime = vt;
+      ev.visualDuration =
+        beatToVisualBeat(ev.time + (ev.duration ?? 0), bpms) - vt;
+    }
+    noteEventsRef.current = sorted;
   }, [instrumentMemo]);
 
   // ─── Sync simple props into refs ─────────────────────────────────────────────
@@ -350,7 +408,18 @@ export function usePixiVisualizer({
     durationBeatsRef.current = lastBarBeat;
     buildGuidesRef.current?.();
     buildZonesRef.current?.();
+    buildBpmRegionsRef.current?.();
   }, [durationBeats, effectiveTimeSignature, displaySong?.timeSignatures]);
+
+  // ─── BPM slider changes → rebuild BPM region labels ──────────────────────────
+  useEffect(() => {
+    buildBpmRegionsRef.current?.();
+  }, [bpm]);
+
+  // ─── Song changes → rebuild BPM regions (bpmsRef is already fresh) ───────────
+  useEffect(() => {
+    buildBpmRegionsRef.current?.();
+  }, [displaySong]);
 
   // ─── Note width changes → full scene rebuild + scroll correction ──────────────
   useEffect(() => {
@@ -376,6 +445,7 @@ export function usePixiVisualizer({
       buildGuidesRef.current?.();
     }, 60);
     buildZonesRef.current?.();
+    buildBpmRegionsRef.current?.();
     buildSpritesRef.current?.();
 
     const scrollLayer = scrollLayerRef.current;
@@ -504,7 +574,12 @@ export function usePixiVisualizer({
       zonesLayer.addChild(leftZone);
       zonesLayer.addChild(rightZone);
 
+      // ── BPM region layer (backgrounds + labels per tempo section) ────────────
+      const bpmRegionLayer = new PIXI.Container();
+      bpmRegionLayer.eventMode = "none";
+
       scrollLayer.addChild(zonesLayer);
+      scrollLayer.addChild(bpmRegionLayer);
       scrollLayer.addChild(guideLayer);
       scrollLayer.addChild(notesLayer);
 
@@ -516,6 +591,68 @@ export function usePixiVisualizer({
       // ── Static layer (instrument-specific guide decorations) ─────────────────
       instrumentRef.current?.buildStaticLayer(holesLayer, { width, height });
 
+      // ── Builder: BPM region backgrounds + labels ─────────────────────────────
+      const buildBpmRegions = () => {
+        bpmRegionLayer.removeChildren();
+
+        const pxPerBeat = pixelsPerBeatRef.current || 1;
+        const duration = durationBeatsRef.current ?? Infinity;
+        // Read from ref so this closure is never stale when displaySong changes
+        // without triggering an init re-run (e.g. same time-sig, same dimensions).
+        const bpms = bpmsRef.current;
+
+        if (!bpms || bpms.length <= 1) return;
+
+        const baseBpm = bpms[0].bpm;
+        const sliderBpm = bpmRef.current || 120;
+
+        const styles = getComputedStyle(document.documentElement);
+        const colorStr =
+          styles.getPropertyValue("--color-note-full").trim() || "#060a0c";
+        const colorHex = cssColorToPixiHex(colorStr, 0x060a0c);
+
+        for (let i = 0; i < bpms.length; i++) {
+          const startBeat = bpms[i].beat;
+          const endBeat = i + 1 < bpms.length ? bpms[i + 1].beat : duration;
+
+          if (!isFinite(endBeat) || endBeat <= startBeat) continue;
+
+          const startVisual = beatToVisualBeat(startBeat, bpms);
+          const endVisual = beatToVisualBeat(endBeat, bpms);
+
+          // Even regions (1-based: region 2, 4, …) = 0-based index 1, 3, 5, …
+          if (i % 2 === 1) {
+            const bg = new PIXI.Graphics();
+            bg.rect(
+              -endVisual * pxPerBeat,
+              0,
+              (endVisual - startVisual) * pxPerBeat,
+              height,
+            );
+            bg.fill({ color: colorHex, alpha: 0.1 });
+            bpmRegionLayer.addChild(bg);
+          }
+
+          // Scaled BPM label at the right edge of the region (bottom-right corner)
+          const scaledBpm = Math.round(sliderBpm * (bpms[i].bpm / baseBpm));
+          const bpmLabel = new PIXI.Text({
+            text: String(scaledBpm) + " ",
+            style: {
+              fill: 0xffffff,
+              fontSize: 16,
+              fontFamily: "Iosevka Charon",
+              align: "right",
+            },
+          });
+          bpmLabel.anchor.set(1, 1);
+          bpmLabel.x = -startVisual * pxPerBeat;
+          bpmLabel.y = height - 6;
+          bpmRegionLayer.addChild(bpmLabel);
+        }
+      };
+      buildBpmRegionsRef.current = buildBpmRegions;
+      buildBpmRegions();
+
       // ── Builder: zones ───────────────────────────────────────────────────────
       const buildZones = () => {
         const pxPerBeat = pixelsPerBeatRef.current || 1;
@@ -526,7 +663,7 @@ export function usePixiVisualizer({
         if (duration > 0) {
           leftZone.rect(-BIG, 0, BIG, height);
           leftZone.fill({ color: ZONE_COLOR, alpha: 0.35 });
-          leftZone.x = -duration * pxPerBeat;
+          leftZone.x = -beatToVisualBeat(duration, bpmsRef.current) * pxPerBeat;
 
           rightZone.rect(0, 0, BIG, height);
           rightZone.fill({ color: ZONE_COLOR, alpha: 0.35 });
@@ -593,7 +730,8 @@ export function usePixiVisualizer({
               barLine.moveTo(0, 0);
               barLine.lineTo(0, height);
               barLine.stroke();
-              barLine.x = -barBeat * pxPerBeat;
+              barLine.x =
+                -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeat;
               guideLayer.addChild(barLine);
 
               if (globalBarIndex % labelInterval === 0) {
@@ -608,7 +746,8 @@ export function usePixiVisualizer({
                 });
                 barLabel.anchor.set(1, 0);
                 barLabel.y = 6;
-                barLabel.x = -barBeat * pxPerBeat;
+                barLabel.x =
+                  -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeat;
                 guideLayer.addChild(barLabel);
               }
 
@@ -628,7 +767,8 @@ export function usePixiVisualizer({
                 beatLine.moveTo(0, 0);
                 beatLine.lineTo(0, height);
                 beatLine.stroke();
-                beatLine.x = -beatBeat * pxPerBeat;
+                beatLine.x =
+                  -beatToVisualBeat(beatBeat, bpmsRef.current) * pxPerBeat;
                 guideLayer.addChild(beatLine);
               }
 
@@ -652,7 +792,8 @@ export function usePixiVisualizer({
             barLine.moveTo(0, 0);
             barLine.lineTo(0, height);
             barLine.stroke();
-            barLine.x = -barBeat * pxPerBeatLocal;
+            barLine.x =
+              -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeatLocal;
             guideLayer.addChild(barLine);
 
             if (barIndex % labelInterval === 0) {
@@ -667,7 +808,8 @@ export function usePixiVisualizer({
               });
               barLabel.anchor.set(1, 0);
               barLabel.y = 6;
-              barLabel.x = -barBeat * pxPerBeatLocal;
+              barLabel.x =
+                -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeatLocal;
               guideLayer.addChild(barLabel);
             }
 
@@ -686,7 +828,8 @@ export function usePixiVisualizer({
               beatLine.moveTo(0, 0);
               beatLine.lineTo(0, height);
               beatLine.stroke();
-              beatLine.x = -beatBeat * pxPerBeatLocal;
+              beatLine.x =
+                -beatToVisualBeat(beatBeat, bpmsRef.current) * pxPerBeatLocal;
               guideLayer.addChild(beatLine);
             }
           }
@@ -793,7 +936,7 @@ export function usePixiVisualizer({
         // Do NOT re-sort or overwrite here — the ref is the single source of truth.
         const ppb = pixelsPerBeatRef.current || 1;
         const maxDuration = noteEventsRef.current.reduce(
-          (m, e) => Math.max(m, e.duration ?? 0),
+          (m, e) => Math.max(m, e.visualDuration ?? e.duration ?? 0),
           0,
         );
         maxSpriteWidthRef.current = Math.max(maxDuration * ppb, 6);
@@ -867,7 +1010,8 @@ export function usePixiVisualizer({
         // ── Smooth scroll ──────────────────────────────────────────────────────
         const pxPerBeat = pixelsPerBeatRef.current || 1;
         const bx = barXRef.current || barX;
-        const desiredX = bx + beat * pxPerBeat;
+        const desiredX =
+          bx + beatToVisualBeat(beat, bpmsRef.current) * pxPerBeat;
         const currentX = typeof scrollLayer.x === "number" ? scrollLayer.x : 0;
         const diff = desiredX - currentX;
 
@@ -933,7 +1077,7 @@ export function usePixiVisualizer({
         // the PIXI containers that are currently allocated. Sprites are created as
         // notes enter the buffered viewport and destroyed when they leave.
         //
-        // Derivation (container.x = -sprWidth - time * ppb):
+        // Derivation (container.x = -sprWidth - visualTime * ppb):
         //   screenX = actualScrollX - sprWidth - time * ppb
         //   Right edge visible → time < (actualScrollX + glowPad + BUFFER) / ppb  [timeMaxBuf]
         //   Left  edge visible → time > (actualScrollX - maxW - glowPad - width - BUFFER) / ppb  [timeMinBuf]
@@ -963,7 +1107,8 @@ export function usePixiVisualizer({
             let hi = n;
             while (lo < hi) {
               const mid = (lo + hi) >>> 1;
-              if (events[mid].time < timeMinBuf) lo = mid + 1;
+              if ((events[mid].visualTime ?? events[mid].time) < timeMinBuf)
+                lo = mid + 1;
               else hi = mid;
             }
             const newStart = lo;
@@ -973,7 +1118,8 @@ export function usePixiVisualizer({
             hi = n;
             while (lo < hi) {
               const mid = (lo + hi) >>> 1;
-              if (events[mid].time <= timeMaxBuf) lo = mid + 1;
+              if ((events[mid].visualTime ?? events[mid].time) <= timeMaxBuf)
+                lo = mid + 1;
               else hi = mid;
             }
             const newEnd = lo;
@@ -1122,6 +1268,7 @@ export function usePixiVisualizer({
       buildPlayBarRef.current = null;
       buildSpritesRef.current = null;
       buildZonesRef.current = null;
+      buildBpmRegionsRef.current = null;
       rebuildStaticLayerRef.current = null;
       if (ticker && tick) ticker.remove(tick);
       if (scrollLayerRef.current) scrollLayerRef.current = null;
