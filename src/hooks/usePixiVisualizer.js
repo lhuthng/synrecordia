@@ -1239,9 +1239,13 @@ export function usePixiVisualizer({
         }
 
         // ── Particle lifecycle ─────────────────────────────────────────────────
-        for (let i = particlesRef.current.length - 1; i >= 0; i -= 1) {
-          const p = particlesRef.current[i];
-          const dtSeconds = (tickerArg?.deltaMS ?? 16.67) / 1000;
+        // dtSeconds is the same for every particle this frame — hoist it once.
+        // Forward-iteration with swap-and-pop removes dead particles in O(1)
+        // instead of the O(n) array shift that splice(i,1) caused.
+        const dtSeconds = (tickerArg?.deltaMS ?? 16.67) / 1000;
+        let pIdx = 0;
+        while (pIdx < particlesRef.current.length) {
+          const p = particlesRef.current[pIdx];
           p.age += dtSeconds;
           const t = Math.min(1, p.age / p.lifetime);
           p.spr.tint = lerpColor(p.targetColor, 0xffffff, t);
@@ -1252,7 +1256,14 @@ export function usePixiVisualizer({
           p.spr.y = p.y;
           if (p.age >= p.lifetime) {
             particlePoolRef.current?.release(p.spr);
-            particlesRef.current.splice(i, 1);
+            const last = particlesRef.current.length - 1;
+            if (pIdx !== last) {
+              particlesRef.current[pIdx] = particlesRef.current[last];
+            }
+            particlesRef.current.pop();
+            // Do NOT increment pIdx — the swapped-in element must be checked next.
+          } else {
+            pIdx++;
           }
         }
       };

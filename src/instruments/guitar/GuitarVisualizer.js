@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js";
 import { ColorMatrixFilter } from "pixi.js";
+import { GlowFilter } from "pixi-filters";
 import {
   NOTE_GLOW_PADDING,
   HOLE_PLAY_SCALE,
@@ -37,35 +38,55 @@ const QUANT = 0.125;
 const quantize = (t) => Math.round(t / QUANT) * QUANT;
 
 // ── CSS-variable → PIXI colour helpers ───────────────────────────────────────
-function cssVar(name, fallback) {
-  if (typeof window === "undefined") return fallback;
-  return cssColorToPixiHex(
-    getComputedStyle(document.documentElement).getPropertyValue(name).trim(),
-    fallback,
-  );
+// Reading getComputedStyle on every sprite allocation triggers a forced style
+// recalculation. Cache all values at first call; CSS vars do not change during
+// a session so this is always safe.
+let _cssVarsCache = null;
+
+function getCssVars() {
+  if (_cssVarsCache) return _cssVarsCache;
+  if (typeof window === "undefined") {
+    return (_cssVarsCache = {
+      dark: 0x060a0c,
+      textPrimary: 0xf8fafc,
+      sub: 0xf8fafc,
+      playhead: 0xffffff,
+      noteFull: 0x2dd4bf,
+      noteHalf: 0xa78bfa,
+    });
+  }
+  const s = getComputedStyle(document.documentElement);
+  const r = (name, fb) =>
+    cssColorToPixiHex(s.getPropertyValue(name).trim(), fb);
+  return (_cssVarsCache = {
+    dark: r("--color-dark", 0x060a0c),
+    textPrimary: r("--color-text-primary", 0xf8fafc),
+    sub: r("--color-sub", 0xf8fafc),
+    playhead: r("--color-playhead", 0xffffff),
+    noteFull: r("--color-note-full", 0x2dd4bf),
+    noteHalf: r("--color-note-half", 0xa78bfa),
+  });
 }
 
 function getFretColor(fret) {
-  const full = cssVar("--color-note-full", 0x2dd4bf);
-  const half = cssVar("--color-note-half", 0xa78bfa);
+  const { noteFull, noteHalf } = getCssVars();
   return lerpColor(
-    full,
-    half,
+    noteFull,
+    noteHalf,
     Math.max(0, Math.min(1, (fret ?? 0) / MAX_FRET)),
   );
 }
-
 function getDarkColor() {
-  return cssVar("--color-dark", 0x060a0c);
+  return getCssVars().dark;
 }
 function getTextPrimaryColor() {
-  return cssVar("--color-text-primary", 0xf8fafc);
+  return getCssVars().textPrimary;
 }
 function getSubColor() {
-  return cssVar("--color-sub", 0xf8fafc);
+  return getCssVars().sub;
 }
 function getWhiteColor() {
-  return cssVar("--color-playhead", 0xffffff);
+  return getCssVars().playhead;
 }
 
 // String 1 = thinnest (top of neck diagram), string 6 = thickest (bottom).
@@ -262,12 +283,23 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       bodyGraphics.addChild(fretLabel);
     }
 
-    // ── Brightness filter (non-eco only) ─────────────────────────────────────
+    // ── Brightness filter + single per-note glow (non-eco only) ──────────────
+    // One GlowFilter on the outer graphics container replaces the per-shadow
+    // GlowFilter that used to be allocated inside drawGuitarNote, eliminating
+    // the nested-FBO overhead (child filtered inside an already-filtered parent).
     let brightnessFilter = null;
     let brightnessState = null;
     if (!ecoMode) {
       brightnessFilter = new ColorMatrixFilter();
-      graphics.filters = [brightnessFilter];
+      const noteGlowFilter = new GlowFilter({
+        distance: 10,
+        outerStrength: 1.0,
+        innerStrength: 0.1,
+        color,
+        quality: 0.15,
+        knockout: false,
+      });
+      graphics.filters = [brightnessFilter, noteGlowFilter];
       brightnessState = { current: 1.0, target: 1.0 };
     }
 
@@ -366,7 +398,12 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
     if (sprite.holeSprites?.length) {
       sprite.holeSprites.forEach((hole) => {
         const target = isActive ? HOLE_PLAY_SCALE : 1.0;
-        hole.scale.y += (target - hole.scale.y) * HOLE_SCALE_ALPHA;
+        const diff = target - hole.scale.y;
+        // Skip the lerp once settled — avoids a per-frame multiply on every
+        // on-screen sprite when no scale change is needed.
+        if (Math.abs(diff) > 0.001) {
+          hole.scale.y += diff * HOLE_SCALE_ALPHA;
+        }
       });
     }
 

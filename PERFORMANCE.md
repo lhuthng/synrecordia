@@ -126,3 +126,26 @@ Items are ordered by impact (highest first).
 
 ---
 
+## Batch 6 — GPU Filter Passes & Per-Frame Micro-optimisations
+
+### 🔴 Critical — Per-hole GlowFilter Elimination
+
+- [x] **GlowFilter moved from each hole shadow → one per colour-group per note** (`geometryUtils.js`, `RecorderVisualizer.js`, `GuitarVisualizer.js`) — Each active recorder hole previously allocated a `GlowFilter` on its shadow layer inside `drawFingering`. A typical recorder note has 4–8 active holes, so with 70+ notes in the lazy-allocation buffer a dense song ran **350–560 GlowFilter instances per frame** (each requiring 3 GPU render passes: source render + horizontal blur + vertical blur). The fix removes all per-hole filters from `drawFingering` and `drawGuitarNote`; the shadow layer is now a plain semi-transparent tinted `Graphics` object (alpha 0.55–0.60) that provides visual depth without a filter pass. `drawFingering` now routes holes into two typed sub-containers: `fullGroup` (state `"1"`, full-note colour) and `halfGroup` (state `"h"`, half-note colour), only creating a group when that hole type is actually present. `RecorderVisualizer.createSprite` adds a correctly-coloured `GlowFilter` to each non-null group in non-eco mode, and keeps the `ColorMatrixFilter` (brightness pulse) on the outer `graphics` container so it wraps all holes uniformly. Notes with a single hole type get **1 glow + 1 brightness = 4 passes**; notes with both types get **2 glows + 1 brightness = 7 passes** — both far fewer than the old **12–25 passes per note**. `GuitarVisualizer` follows the same pattern with a single pill group. Result: **3–6× GPU fill-rate reduction** on a typical recorder track while preserving accurate per-colour glows.
+
+### 🟠 High — CSS Variable Reads Cached in GuitarVisualizer
+
+- [x] **Module-level `_cssVarsCache` in `GuitarVisualizer.js`** — `getFretColor`, `getDarkColor`, `getTextPrimaryColor`, `getSubColor`, and `getWhiteColor` each called `getComputedStyle(document.documentElement)` on every invocation. `createSprite` called all five on every note sprite allocation (song start, scrub jumps, lazy-buffer entry). Replaced with a single `getCssVars()` call that reads all six CSS custom properties once and caches the result in a module-level object. CSS variables do not change during a session so the cache is always valid.
+
+### 🟡 Medium — Fingering Colour Cache in RecorderVisualizer
+
+- [x] **Per-instance `_colorCache` in `RecorderVisualizerInstrument`** — `getFingeringColors()` called `getComputedStyle` on every `createSprite` invocation. Cached in an instance field (`_colorCache`) so the style recalculation fires at most once per instrument instance lifetime.
+
+### 🟡 Medium — Scale Animation Early-Exit Guard
+
+- [x] **`Math.abs(diff) > 0.001` guard in `onTickSprite`** (`RecorderVisualizer.js`, `GuitarVisualizer.js`) — The hole/pill scale lerp (`hole.scale.y += diff * HOLE_SCALE_ALPHA`) ran unconditionally every frame for every on-screen sprite, even after the animation had fully settled (inactive note resting at scale 1.0). With 70+ sprites on screen and `HOLE_SCALE_ALPHA = 0.18` settling in ~20 frames, the multiply ran thousands of times per second doing nothing. The guard skips the assignment once `|target − current| < 0.001`, eliminating the per-frame cost for all non-transitioning notes.
+
+### 🟢 Low — Particle Cleanup O(1) via Swap-and-Pop
+
+- [x] **`splice(i, 1)` → swap-and-pop + hoisted `dtSeconds`** (`usePixiVisualizer.js`) — The backward-iteration particle loop called `splice(i, 1)` to remove dead particles, which shifts every subsequent element in the array — O(n) per removal. Replaced with forward iteration: the dead particle's slot is filled with the last array element and `pop()` removes the now-duplicated tail in O(1). `dtSeconds` was also being recomputed inside the loop body on every iteration; it is now derived once before the loop since `tickerArg.deltaMS` is constant for the entire frame.
+
+

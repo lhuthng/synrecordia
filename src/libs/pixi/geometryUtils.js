@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { GlowFilter } from "pixi-filters";
+
 import { NUM_HOLES, FINGERING_GAPS } from "./constants.js";
 
 // ── GraphicsContext caches ────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ export const getHolePositions = (rectHeight) => {
  * @param {{ x: number, y: number }} size - Hole rectangle dimensions.
  * @param {number}         xPadding   - Left padding inside the container.
  * @param {{ [state: string]: number }} colors - Map of state char → 0xRRGGBB colour.
- * @returns {{ width: number, height: number }}
+ * @returns {{ width: number, height: number, fullGroup: PIXI.Container|null, halfGroup: PIXI.Container|null }}
  */
 export const drawFingering = (container, fingering, size, xPadding, colors) => {
   const rectWidth = size.x * 1.2;
@@ -102,6 +102,11 @@ export const drawFingering = (container, fingering, size, xPadding, colors) => {
   const totalHeight = positions[NUM_HOLES - 1] + rectHeight;
 
   container.holeSprites = [];
+
+  // Two sub-containers so each hole-state group can receive its own correctly-
+  // coloured GlowFilter from the caller without affecting the other group.
+  const fullGroup = new PIXI.Container(); // state "1"  — full-hole colour
+  const halfGroup = new PIXI.Container(); // state "h"  — half-hole colour
 
   for (let i = 0; i < NUM_HOLES; i += 1) {
     const y = positions[i];
@@ -123,29 +128,34 @@ export const drawFingering = (container, fingering, size, xPadding, colors) => {
 
     const shadow = new PIXI.Graphics(getShadowContext(w, rectHeight));
     shadow.tint = darkColor;
-    shadow.filters = [
-      new GlowFilter({
-        distance: 8,
-        outerStrength: 1.05,
-        innerStrength: 0.15,
-        color: darkColor,
-        quality: 0.2,
-        knockout: false,
-      }),
-    ];
+    // Per-hole GlowFilter removed — a single GlowFilter is applied to the outer
+    // graphics container by the caller (RecorderVisualizer) instead, cutting
+    // filter passes from N×3 (one per active hole) down to 3 per note sprite.
+    shadow.alpha = 0.6;
 
     holeContainer.addChild(shadow);
     holeContainer.addChild(segment);
 
     holeContainer.scale.y = 1;
 
-    container.addChild(holeContainer);
+    // Route each hole to the matching colour group.
+    const group = state === "h" ? halfGroup : fullGroup;
+    group.addChild(holeContainer);
     container.holeSprites.push(holeContainer);
   }
+
+  // Only attach a group if it has children; return null for absent groups so
+  // the caller can skip creating a GlowFilter for that colour entirely.
+  const hasFullGroup = fullGroup.children.length > 0;
+  const hasHalfGroup = halfGroup.children.length > 0;
+  if (hasFullGroup) container.addChild(fullGroup);
+  if (hasHalfGroup) container.addChild(halfGroup);
 
   return {
     width: rectWidth,
     height: totalHeight,
+    fullGroup: hasFullGroup ? fullGroup : null,
+    halfGroup: hasHalfGroup ? halfGroup : null,
   };
 };
 
@@ -182,16 +192,10 @@ export const drawGuitarNote = (
     getGuitarShadowContext(xPadding, w, noteHeight, shadowOffset),
   );
   shadow.tint = darkColor;
-  shadow.filters = [
-    new GlowFilter({
-      distance: 8,
-      outerStrength: 1.05,
-      innerStrength: 0.15,
-      color: darkColor,
-      quality: 0.2,
-      knockout: false,
-    }),
-  ];
+  // Per-note GlowFilter removed — caller (GuitarVisualizer) adds one GlowFilter
+  // on the outer graphics container, eliminating the nested-FBO overhead that
+  // came from filtering a child while the parent was also filtered.
+  shadow.alpha = 0.55;
 
   const bodyGraphics = new PIXI.Graphics(
     getGuitarBodyContext(xPadding, w, noteHeight),

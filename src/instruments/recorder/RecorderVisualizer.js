@@ -37,6 +37,12 @@ import { BaseVisualizerInstrument } from "../core/BaseVisualizerInstrument.js";
  *   – onTickSprite      : animate hole scale bounce and emit particles
  */
 export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
+  // ── Per-instance color cache ──────────────────────────────────────────────
+  // getFingeringColors() calls getComputedStyle on every invocation. Caching
+  // here avoids one forced style recalculation per sprite allocation. The cache
+  // is invalidated only when the instrument instance is replaced (song change).
+  _colorCache = null;
+
   // ─── computeNoteEvents ─────────────────────────────────────────────────────
 
   computeNoteEvents(track, fingeringSystem, transpose, recorderType = "tenor") {
@@ -97,7 +103,8 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
       ecoMode = false,
     },
   ) {
-    const fingeringColors = getFingeringColors();
+    const fingeringColors =
+      this._colorCache ?? (this._colorCache = getFingeringColors());
     const durationForWidth = Math.max(
       event.visualDuration ?? event.duration ?? 0,
       0,
@@ -130,13 +137,43 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
       });
     }
 
-    // ── Outer container + brightness filter ─────────────────────────────────
+    // ── Outer container + filters ────────────────────────────────────────────
+    // brightnessFilter lives on the outer graphics container so it wraps all
+    // holes uniformly. Per-colour GlowFilters are applied to the two sub-group
+    // containers returned by drawFingering (fullGroup → full-note colour,
+    // halfGroup → half-note colour). Notes with only one hole type get 1 glow
+    // (4 total passes); notes with both types get 2 glows (7 passes) — still
+    // far fewer than the old per-hole approach (12–24 passes per note).
     const container = new PIXI.Container();
     let brightnessFilter = null;
     let brightnessState = null;
     if (!ecoMode) {
       brightnessFilter = new ColorMatrixFilter();
       graphics.filters = [brightnessFilter];
+      if (dims.fullGroup) {
+        dims.fullGroup.filters = [
+          new GlowFilter({
+            distance: 10,
+            outerStrength: 1.2,
+            innerStrength: 0.1,
+            color: fingeringColors["1"] ?? 0x2ecc71,
+            quality: 0.15,
+            knockout: false,
+          }),
+        ];
+      }
+      if (dims.halfGroup) {
+        dims.halfGroup.filters = [
+          new GlowFilter({
+            distance: 10,
+            outerStrength: 1.2,
+            innerStrength: 0.1,
+            color: fingeringColors["h"] ?? 0x3498db,
+            quality: 0.15,
+            knockout: false,
+          }),
+        ];
+      }
       brightnessState = { current: 1.0, target: 1.0 };
     }
 
@@ -231,7 +268,12 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
     if (sprite.holeSprites?.length) {
       sprite.holeSprites.forEach((hole) => {
         const target = isActive ? HOLE_PLAY_SCALE : 1.0;
-        hole.scale.y += (target - hole.scale.y) * HOLE_SCALE_ALPHA;
+        const diff = target - hole.scale.y;
+        // Skip the lerp once the animation has settled to avoid a per-frame
+        // multiply on every on-screen sprite when no scale change is needed.
+        if (Math.abs(diff) > 0.001) {
+          hole.scale.y += diff * HOLE_SCALE_ALPHA;
+        }
       });
     }
 
