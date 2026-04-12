@@ -11,7 +11,7 @@ const DEFAULT_MAPPER_OPTIONS = {
 };
 
 const MAX_DB = 6;
-const DEFAULT_DB = -5;
+const DEFAULT_DB = -4;
 const MIN_DB = -60;
 
 const REVERB_WET = 0.2;

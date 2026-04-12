@@ -456,7 +456,7 @@ def main() -> None:
         f"  Trim silence: {'yes  (threshold ' + str(args.silence_db) + ' dBFS)' if args.trim_silence else 'no'}"
     )
     if args.dry_run:
-        print(f"\n  ⚡  DRY RUN — no files will be written.\n")
+        print("\n  ⚡  DRY RUN — no files will be written.\n")
     print()
 
     if args.dry_run:

@@ -3,7 +3,7 @@ import * as Tone from "tone";
 import HarpsichordComponent from "./HarpsichordComponent.jsx";
 
 const MAX_DB = 6;
-const DEFAULT_DB = -3;
+const DEFAULT_DB = -8;
 const MIN_DB = -60;
 
 const REVERB_WET = 0.05;

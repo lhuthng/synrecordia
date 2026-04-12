@@ -268,8 +268,9 @@ export default function Guitar({
                 <label>{t("guitar.monophonic")}:</label>
                 <SettingTooltip>{t("guitar.tips.monophonic")}</SettingTooltip>
               </div>
-              <div className="min-w-0">
+              <div className="w-fit">
                 <DuoToggleButton
+                  padding="px-2"
                   value={monophonic}
                   onChange={handleMonophonicChanged}
                   onColors={{

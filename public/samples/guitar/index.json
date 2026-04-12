@@ -1,4 +1,4 @@
 {
-  "versions": ["12-string", "nylon"],
-  "default": "12-string"
+  "versions": ["12-string", "nylon", "hawaii", "dark-star-metal"],
+  "default": "hawaii"
 }
