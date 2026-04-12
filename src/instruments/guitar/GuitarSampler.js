@@ -7,6 +7,7 @@ const DEFAULT_MAPPER_OPTIONS = {
   mode: "balanced",
   leftHandWeight: 0.5,
   rightHandWeight: 0.5,
+  monophonic: false,
 };
 
 const MAX_DB = 6;
@@ -69,6 +70,15 @@ export default class GuitarSampler extends PackedSampler {
    */
   setMapperOptions(opts) {
     this._mapperOptions = { ...this._mapperOptions, ...opts };
+  }
+
+  /**
+   * Returns true when the user has enabled monophonic mode via the Guitar panel.
+   * Reads the live value from _mapperOptions so toggling the UI takes effect
+   * on the next startPlayback() call without needing any extra refs.
+   */
+  isMonophonic() {
+    return this._mapperOptions.monophonic === true;
   }
 
   getVolume() {

@@ -282,8 +282,7 @@ const InstrumentManager = memo(function InstrumentManager({
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSamplerChanged = () => {
-    const sampler = packedSamplerRef.current.getSampler();
-    register?.(slot, sampler);
+    register?.(slot, packedSamplerRef.current);
     handleAudioReady?.(true);
     isReadyRef.current = true;
   };
@@ -297,14 +296,15 @@ const InstrumentManager = memo(function InstrumentManager({
     const cleanupCurrentInstance = () => {
       setPresentation(null);
 
+      // packedSamplerRef owns all audio resources; disposing it is sufficient.
+      // registeredSamplerRef now points to the same PackedSampler wrapper, so
+      // we must not dispose it separately to avoid a double-dispose.
       if (registeredSamplerRef.current && typeof deregister === "function") {
         deregister(slot, () => {
           packedSamplerRef.current?.dispose();
-          registeredSamplerRef.current?.dispose();
         });
       } else {
         packedSamplerRef.current?.dispose();
-        registeredSamplerRef.current?.dispose();
       }
 
       packedSamplerRef.current = null;
@@ -329,9 +329,8 @@ const InstrumentManager = memo(function InstrumentManager({
         if (!packedSampler) return;
 
         packedSamplerRef.current = packedSampler;
-        const sampler = packedSampler.getSampler();
-        register?.(slot, sampler);
-        registeredSamplerRef.current = sampler;
+        register?.(slot, packedSampler);
+        registeredSamplerRef.current = packedSampler;
         setPresentation(() => packedSampler.getPresentation());
         setSamplerInstance(packedSampler);
         return;
@@ -374,9 +373,8 @@ const InstrumentManager = memo(function InstrumentManager({
 
         packedSamplerRef.current = packedSampler;
 
-        const sampler = packedSamplerRef.current.getSampler();
-        register?.(slot, sampler);
-        registeredSamplerRef.current = sampler;
+        register?.(slot, packedSampler);
+        registeredSamplerRef.current = packedSampler;
         setPresentation(() => packedSamplerRef.current.getPresentation());
         setSamplerInstance(packedSampler);
       } catch (e) {

@@ -23,6 +23,25 @@ export default class PackedSampler {
     return this.sampler;
   }
 
+  /**
+   * Whether the underlying Tone.js sampler has finished loading all samples.
+   * The player checks `synth.loaded !== false` before scheduling notes.
+   * Delegating here means the player can hold a PackedSampler reference directly
+   * instead of needing the inner Tone object.
+   */
+  get loaded() {
+    return this.sampler?.loaded ?? false;
+  }
+
+  /**
+   * Schedule a note (or chord) to play via the underlying Tone.js sampler.
+   * Delegating here keeps the player fully decoupled from Tone internals and
+   * allows PackedSampler subclasses to intercept scheduling if needed.
+   */
+  triggerAttackRelease(notes, duration, time, velocity) {
+    return this.sampler.triggerAttackRelease(notes, duration, time, velocity);
+  }
+
   getVersion() {
     return this.version;
   }
@@ -47,6 +66,20 @@ export default class PackedSampler {
       .filter((n) => n !== null);
     if (midiNums.length === 0) return null;
     return { min: Math.min(...midiNums), max: Math.max(...midiNums) };
+  }
+
+  /**
+   * Returns true when this instrument is monophonic (one note at a time).
+   *
+   * The player scheduler calls this once per track when startPlayback() fires.
+   * Return true to receive only the highest pitch of any polyphonic chord action;
+   * return false (the default) to receive all pitches as-is.
+   *
+   * Subclasses override this to declare their polyphony contract.
+   * The player never inspects instrument names — it only calls this method.
+   */
+  isMonophonic() {
+    return false;
   }
 
   dispose() {

@@ -47,6 +47,11 @@ export default class BRecorderSampler extends PackedSampler {
     return BRecorderComponent;
   }
 
+  /** Background recorder is always monophonic. */
+  isMonophonic() {
+    return true;
+  }
+
   getVolume() {
     const currentDb = this.volume.volume.value;
     if (currentDb <= MIN_DB) return 0;

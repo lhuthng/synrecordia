@@ -17,7 +17,7 @@ import {
 } from "../../libs/pixi/colorUtils.js";
 import { BaseVisualizerInstrument } from "../core/BaseVisualizerInstrument.js";
 import GuitarMapper from "./mapper/GuitarMapper.js";
-import { transposeNote } from "../../libs/utils.js";
+import { transposeNote, noteNameToMidi } from "../../libs/utils.js";
 import { drawGuitarNote } from "../../libs/pixi/geometryUtils.js";
 
 // ── Guitar-specific layout constants ─────────────────────────────────────────
@@ -101,6 +101,7 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       mode = "balanced",
       leftHandWeight = null,
       rightHandWeight = null,
+      monophonic = false,
     } = instrumentOptions;
 
     // Transpose all note pitches before mapping so GuitarMapper resolves the
@@ -168,6 +169,21 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
           technique: mapped.technique ?? "pick",
         });
       });
+    }
+    // In monophonic mode, keep only the highest-note event per time slot.
+    if (monophonic) {
+      const bestByTime = new Map();
+      for (const evt of events) {
+        const key = evt.time;
+        const prev = bestByTime.get(key);
+        if (
+          !prev ||
+          (noteNameToMidi(evt.note) ?? -1) > (noteNameToMidi(prev.note) ?? -1)
+        ) {
+          bestByTime.set(key, evt);
+        }
+      }
+      return [...bestByTime.values()].sort((a, b) => a.time - b.time);
     }
     return events;
   }

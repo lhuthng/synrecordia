@@ -3,6 +3,7 @@ import Instrument from "../Instrument";
 import { useState, useEffect, useCallback } from "react";
 import DuoSlideBar from "../../components/ui/DuoSlideBar";
 import DuoSelect from "../../components/ui/DuoSelect";
+import DuoToggleButton from "../../components/ui/DuoToggleButton";
 import { useTranslation } from "react-i18next";
 import SettingTooltip from "../../components/ui/SettingTooltip";
 
@@ -40,6 +41,7 @@ export default function Guitar({
   const [rightHandWeight, setRightHandWeight] = useState(
     MAPPER_PRESETS.balanced.rightHandWeight,
   );
+  const [monophonic, setMonophonic] = useState(false);
 
   // Sync component state from the sampler on mount / sampler swap.
   // Also immediately notifies Player of the current mapper options so the
@@ -57,6 +59,7 @@ export default function Guitar({
     setMode(opts.mode);
     setLeftHandWeight(opts.leftHandWeight);
     setRightHandWeight(opts.rightHandWeight);
+    setMonophonic(opts.monophonic ?? false);
     callbacks?.setGuitarOptions?.(opts);
   }, [guitarSampler, callbacks]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -90,6 +93,7 @@ export default function Guitar({
         mode: value,
         leftHandWeight: preset.leftHandWeight,
         rightHandWeight: preset.rightHandWeight,
+        monophonic,
       };
       setMode(value);
       setLeftHandWeight(preset.leftHandWeight);
@@ -97,27 +101,37 @@ export default function Guitar({
       guitarSampler.setMapperOptions(opts);
       callbacks?.setGuitarOptions?.(opts);
     },
-    [guitarSampler, callbacks],
+    [guitarSampler, callbacks, monophonic],
   );
 
   const handleLeftHandWeightChanged = useCallback(
     (value) => {
       setLeftHandWeight(value);
-      const opts = { mode, leftHandWeight: value, rightHandWeight };
+      const opts = { mode, leftHandWeight: value, rightHandWeight, monophonic };
       guitarSampler.setMapperOptions(opts);
       callbacks?.setGuitarOptions?.(opts);
     },
-    [mode, rightHandWeight, guitarSampler, callbacks],
+    [mode, rightHandWeight, monophonic, guitarSampler, callbacks],
   );
 
   const handleRightHandWeightChanged = useCallback(
     (value) => {
       setRightHandWeight(value);
-      const opts = { mode, leftHandWeight, rightHandWeight: value };
+      const opts = { mode, leftHandWeight, rightHandWeight: value, monophonic };
       guitarSampler.setMapperOptions(opts);
       callbacks?.setGuitarOptions?.(opts);
     },
-    [mode, leftHandWeight, guitarSampler, callbacks],
+    [mode, leftHandWeight, monophonic, guitarSampler, callbacks],
+  );
+
+  const handleMonophonicChanged = useCallback(
+    (value) => {
+      setMonophonic(value);
+      const opts = { mode, leftHandWeight, rightHandWeight, monophonic: value };
+      guitarSampler.setMapperOptions(opts);
+      callbacks?.setGuitarOptions?.(opts);
+    },
+    [mode, leftHandWeight, rightHandWeight, guitarSampler, callbacks],
   );
 
   const modeOptions = [
@@ -244,6 +258,37 @@ export default function Guitar({
                   }}
                   barColor="bg-note-full"
                 />
+              </div>
+
+              {/* ── Monophonic mode ──────────────────────────────────────── */}
+              <div className="col-span-2 border-t border-white/10 my-1" />
+
+              {/* Monophonic */}
+              <div className="flex items-center gap-1 whitespace-nowrap">
+                <label>{t("guitar.monophonic")}:</label>
+                <SettingTooltip>{t("guitar.tips.monophonic")}</SettingTooltip>
+              </div>
+              <div className="min-w-0">
+                <DuoToggleButton
+                  value={monophonic}
+                  onChange={handleMonophonicChanged}
+                  onColors={{
+                    background: "bg-note-full",
+                    shadowBackground: "bg-note-full-dark",
+                    border: "border-note-full-dark",
+                    text: "text-dark",
+                  }}
+                  offColors={{
+                    background: "bg-note-half",
+                    shadowBackground: "bg-note-half-dark",
+                    border: "border-note-half-dark",
+                    text: "text-main",
+                  }}
+                >
+                  {monophonic
+                    ? t("guitar.monophonicOn")
+                    : t("guitar.monophonicOff")}
+                </DuoToggleButton>
               </div>
             </div>
           </div>,

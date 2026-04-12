@@ -49,6 +49,11 @@ export default class RecorderSampler extends PackedSampler {
     return RecorderComponent;
   }
 
+  /** Recorder is always monophonic — it can only produce one note at a time. */
+  isMonophonic() {
+    return true;
+  }
+
   getVolume() {
     const currentDb = this.volume.volume.value;
     if (currentDb <= MIN_DB) return 0;

@@ -249,6 +249,9 @@
     "mapperMode": "Mode",
     "leftHandPriority": "Left Hand Priority",
     "rightHandPriority": "Right Hand Priority",
+    "monophonic": "Monophonic",
+    "monophonicOn": "On",
+    "monophonicOff": "Off",
     "modes": {
       "balanced": "Balanced",
       "comfort": "Comfort",
@@ -259,7 +262,8 @@
       "variant": "Switches between different guitar sample sets.",
       "mapperMode": "Sets the fret-mapping strategy. Balanced targets natural positions, Comfort minimises hand stretching, Sustain favours open strings and legato runs.",
       "leftHandPriority": "How much weight the mapper gives to left-hand (fretting) comfort when choosing fret positions.",
-      "rightHandPriority": "How much weight the mapper gives to right-hand (picking) consistency when choosing fret positions."
+      "rightHandPriority": "How much weight the mapper gives to right-hand (picking) consistency when choosing fret positions.",
+      "monophonic": "When enabled, only the highest note of each chord is played and rendered — identical to recorder behaviour."
     }
   },
   "bguitar": {

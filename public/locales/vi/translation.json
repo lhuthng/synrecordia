@@ -249,6 +249,9 @@
     "mapperMode": "Chế độ",
     "leftHandPriority": "Ưu tiên tay trái",
     "rightHandPriority": "Ưu tiên tay phải",
+    "monophonic": "Đơn âm",
+    "monophonicOn": "Bật",
+    "monophonicOff": "Tắt",
     "modes": {
       "balanced": "Cân bằng",
       "comfort": "Thoải mái",
@@ -259,7 +262,8 @@
       "variant": "Chuyển đổi giữa các bộ mẫu guitar khác nhau.",
       "mapperMode": "Chọn chiến lược xếp phím. Cân bằng chọn vị trí tự nhiên, Thoải mái giảm căng tay, Vang ưu tiên dây buông và legato.",
       "leftHandPriority": "Mức độ ưu tiên của bộ lập bản đồ cho sự thoải mái của tay trái (bấm phím) khi chọn vị trí.",
-      "rightHandPriority": "Mức độ ưu tiên của bộ lập bản đồ cho sự đồng đều của tay phải (gảy) khi chọn vị trí."
+      "rightHandPriority": "Mức độ ưu tiên của bộ lập bản đồ cho sự đồng đều của tay phải (gảy) khi chọn vị trí.",
+      "monophonic": "Khi bật, chỉ nốt cao nhất của mỗi hợp âm được phát và hiển thị — giống hành vi của sáo recorder."
     }
   },
   "bguitar": {

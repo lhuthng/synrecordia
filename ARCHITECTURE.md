@@ -486,6 +486,42 @@ Background variants are **not visualizable**. They are audio-only instruments
 that live on Track 1+ where no PIXI canvas is shown. Do not export `Visualizer`
 from their `index.js` and do not add them to `VISUALIZABLE_INSTRUMENTS`.
 
+### Polyphony contract
+
+By default every instrument is **polyphonic**: `PackedSampler.isMonophonic()`
+returns `false`, so chord actions pass all pitches to `triggerAttackRelease`
+unchanged.
+
+Override `isMonophonic()` in a sampler class to change this behaviour:
+
+| Scenario | What to do |
+|---|---|
+| Always monophonic (e.g. flute, recorder) | Return `true` unconditionally |
+| User-togglable (e.g. guitar) | Store a flag in `_mapperOptions` and return it |
+| Default polyphonic | Do nothing — `PackedSampler` base already returns `false` |
+
+```js
+// 1. Always monophonic — override in the sampler class
+class RecorderSampler extends PackedSampler {
+  isMonophonic() { return true; }
+}
+
+// 2. User-togglable — flag stored in _mapperOptions
+class GuitarSampler extends PackedSampler {
+  isMonophonic() { return this._mapperOptions.monophonic === true; }
+}
+
+// 3. Always polyphonic — no override needed (PackedSampler default)
+class PianoSampler extends PackedSampler {
+  // isMonophonic() inherited → returns false
+}
+```
+
+`usePlayer.startPlayback` calls `synth.isMonophonic()` **once per track** when
+building pre-computed track states at play-start. If `true`, only the highest
+pitch of any polyphonic chord action is forwarded to `triggerAttackRelease`.
+`Player.jsx` is never consulted and never needs updating when polyphony changes.
+
 ---
 
 ## 9. Key design rules
@@ -532,3 +568,13 @@ subclasses and `usePixiVisualizer`. They live in `libs/pixi/`, not in
 `Player`, `CompactPlayer`, `SongTimeline`, and `InstrumentManager` all belong
 in `components/player/`. They are tightly coupled to each other and to
 `usePlayer` / `usePlayMode` hooks, but are separate from the visualizer.
+
+### Instruments declare their own polyphony
+`usePlayer` never checks `track.instrument` or `effectiveInstrument` to decide
+whether to collapse chords. The sampler's `isMonophonic()` method is the **sole
+authority**:
+
+- Adding a new monophonic instrument requires only overriding `isMonophonic()`
+  in its sampler class — no changes to `usePlayer`, `Player.jsx`, or any registry.
+- This keeps the player completely instrument-agnostic and prevents an
+  ever-growing list of name-based special cases inside the scheduler.

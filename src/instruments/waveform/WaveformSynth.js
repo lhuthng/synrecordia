@@ -42,6 +42,22 @@ export default class WaveformSynth {
     return this.synth;
   }
 
+  /**
+   * PolySynth is always ready — there are no samples to load.
+   * The player checks `synth.loaded !== false` before scheduling notes.
+   */
+  get loaded() {
+    return true;
+  }
+
+  /**
+   * Schedule a note (or chord) via the underlying PolySynth.
+   * Mirrors the PackedSampler facade so the player can hold either type uniformly.
+   */
+  triggerAttackRelease(notes, duration, time, velocity) {
+    return this.synth.triggerAttackRelease(notes, duration, time, velocity);
+  }
+
   getVersion() {
     return this.version;
   }

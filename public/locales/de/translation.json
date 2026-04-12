@@ -251,11 +251,15 @@
       "variant": "Wechselt zwischen verschiedenen Gitarrensamplesätzen.",
       "mapperMode": "Legt die Strategie für die Bund-Zuordnung fest. Ausgewogen zielt auf natürliche Positionen, Komfort minimiert Handstreckungen, Ausdauer bevorzugt leere Saiten und Legato-Läufe.",
       "leftHandPriority": "Gewichtung der linken Hand (Greifen) bei der Positionswahl.",
-      "rightHandPriority": "Gewichtung der rechten Hand (Anschlag) bei der Positionswahl."
+      "rightHandPriority": "Gewichtung der rechten Hand (Anschlag) bei der Positionswahl.",
+      "monophonic": "Wenn aktiviert, wird nur die höchste Note jedes Akkords abgespielt und angezeigt – identisch zum Blockflötenverhalten."
     },
     "mapperMode": "Modus",
     "leftHandPriority": "Linke-Hand-Priorität",
     "rightHandPriority": "Rechte-Hand-Priorität",
+    "monophonic": "Monophon",
+    "monophonicOn": "An",
+    "monophonicOff": "Aus",
     "modes": {
       "balanced": "Ausgewogen",
       "comfort": "Komfort",

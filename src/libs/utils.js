@@ -85,3 +85,20 @@ export function computeNoteRangeFromActions(actions) {
   }
   return min === Infinity ? null : { min, max };
 }
+
+/**
+ * Returns the note with the highest MIDI value from an array of note names.
+ * If a single note name string is passed, it is returned as-is.
+ * Returns undefined if the input is empty or falsy.
+ */
+export function getHighestNote(notes) {
+  if (Array.isArray(notes)) {
+    if (notes.length === 0) return undefined;
+    return notes.reduce((best, current) => {
+      return (noteNameToMidi(current) ?? -1) > (noteNameToMidi(best) ?? -1)
+        ? current
+        : best;
+    }, notes[0]);
+  }
+  return notes;
+}

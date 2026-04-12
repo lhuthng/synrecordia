@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 import { PIANO_DELAY_MS, FADE_MS } from "../libs/pixi/constants.js";
-import { transposeNotes } from "../libs/utils.js";
+import { transposeNotes, getHighestNote } from "../libs/utils.js";
 
 /* Utility: compute end beat for a song */
 const computeSongEndBeat = (songData) => {
@@ -83,7 +83,7 @@ export default function usePlayer() {
   const wallTimeToBeatRef = useRef(null);
 
   // External instrument overrides — set from Player.jsx when track 0 is swapped.
-  // Used by startPlayback to correctly determine monophonic vs polyphonic behaviour.
+  // Used to feed the correct instrument name to the visualizer (computeNoteEvents).
   const instrumentOverridesRef = useRef({});
 
   // Keep bpmRef up-to-date for the running tick
@@ -311,16 +311,12 @@ export default function usePlayer() {
           time: (action.time ?? 0) + delayBeats,
           duration: action.duration ?? 0,
           notes: (() => {
-            // Monophonic instruments (recorder family) take a single pitch.
-            // Every other instrument (guitar, piano, …) plays all pitches.
-            const effectiveInstrument =
-              instrumentOverridesRef.current[index] ?? track.instrument;
-            const isMonophonic =
-              effectiveInstrument === "recorder" ||
-              effectiveInstrument === "brecorder";
-            if (isMonophonic) {
+            // Defer polyphony decision entirely to the sampler.
+            // Each instrument class declares its own contract via isMonophonic().
+            // The player never inspects instrument names here.
+            if (synth?.isMonophonic?.()) {
               return Array.isArray(action.pitches)
-                ? action.pitches[0]
+                ? getHighestNote(action.pitches)
                 : (action.pitch ?? action.pitches);
             }
             return Array.isArray(action.pitches)
