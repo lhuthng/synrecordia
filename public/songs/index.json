@@ -13,7 +13,7 @@
     "composer": "Jay Ungar",
     "bpm": 100,
     "file": "ashokan-farewell.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "baby-shark",
@@ -35,7 +35,7 @@
     "title": "Departure! - HxH Opening",
     "bpm": 160,
     "file": "departure.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "erika",
@@ -59,7 +59,7 @@
     "composer": "Pedro Silva",
     "bpm": 145,
     "file": "final-duet.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "fuer-elise",
@@ -74,14 +74,14 @@
     "title": "Giorno's Theme",
     "bpm": 135,
     "file": "giorno-s-theme.json",
-    "difficulty": "hard"
+    "difficulty": "medium"
   },
   {
     "id": "greensleeves",
     "title": "Greensleeves",
     "bpm": 120,
     "file": "greensleeves.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "happy-birthday-to-you",
@@ -127,7 +127,7 @@
     "composer": "J.S. Bach",
     "bpm": 126,
     "file": "minuet-in-g.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "my-time",
@@ -159,7 +159,7 @@
     "composer": "Toby Fox",
     "bpm": 120,
     "file": "once-upon-a-time.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   },
   {
     "id": "recorder-sonata-in-f-major",
@@ -252,6 +252,6 @@
     "composer": "PYKAMIA",
     "bpm": 120,
     "file": "yuna.json",
-    "difficulty": "medium"
+    "difficulty": "easy"
   }
 ]

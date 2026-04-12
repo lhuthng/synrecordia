@@ -80,19 +80,19 @@ All weights must sum to 100. Format: `key:value` pairs separated by spaces.
 ```bash
 # Emphasize speed (fastest songs are hardest)
 python3 scripts/evaluate_difficulty.py \
-  --weights length:15 range:15 actions:15 avg_dur:35 stdev:15 min_dur:5
+  --weights length:15 range:15 actions:15 avg_duration:35 stdev:15 min_duration:5
 
 # Emphasize range (widest ranges are hardest)
 python3 scripts/evaluate_difficulty.py \
-  --weights length:20 range:40 actions:15 avg_dur:15 stdev:5 min_dur:5
+  --weights length:20 range:40 actions:15 avg_duration:15 stdev:5 min_duration:5
 
 # Emphasize endurance (long songs are hardest)
 python3 scripts/evaluate_difficulty.py \
-  --weights length:40 range:15 actions:30 avg_dur:10 stdev:3 min_dur:2
+  --weights length:40 range:15 actions:30 avg_duration:10 stdev:3 min_duration:2
 
 # Technical focus (speed + range + complexity)
 python3 scripts/evaluate_difficulty.py \
-  --weights length:10 range:30 actions:10 avg_dur:25 stdev:20 min_dur:5
+  --weights length:10 range:30 actions:10 avg_duration:25 stdev:20 min_duration:5
 ```
 
 ### Specific Songs
@@ -115,7 +115,7 @@ python3 scripts/evaluate_difficulty.py --update-index
 
 # Use custom weights and update
 python3 scripts/evaluate_difficulty.py \
-  --weights length:30 range:25 actions:20 avg_dur:15 stdev:5 min_dur:5 \
+  --weights length:30 range:25 actions:20 avg_duration:15 stdev:5 min_duration:5 \
   --update-index
 
 # Preview changes before updating
@@ -250,19 +250,19 @@ See `weights-examples.json` for ready-to-use weight configurations:
 
 ```bash
 # Speed-focused (fast songs are much harder)
---weights length:15 range:15 actions:15 avg_dur:35 stdev:15 min_dur:5
+--weights length:15 range:15 actions:15 avg_duration:35 stdev:15 min_duration:5
 
 # Range-focused (wide ranges are much harder)
---weights length:20 range:40 actions:15 avg_dur:15 stdev:5 min_dur:5
+--weights length:20 range:40 actions:15 avg_duration:15 stdev:5 min_duration:5
 
 # Endurance-focused (long songs are much harder)
---weights length:40 range:15 actions:30 avg_dur:10 stdev:3 min_dur:2
+--weights length:40 range:15 actions:30 avg_duration:10 stdev:3 min_duration:2
 
 # Technical-focused (speed + range + complexity)
---weights length:10 range:30 actions:10 avg_dur:25 stdev:20 min_dur:5
+--weights length:10 range:30 actions:10 avg_duration:25 stdev:20 min_duration:5
 
 # Beginner-friendly (only length and range matter)
---weights length:30 range:40 actions:10 avg_dur:10 stdev:5 min_dur:5
+--weights length:30 range:40 actions:10 avg_duration:10 stdev:5 min_duration:5
 ```
 
 ## Tips & Best Practices
@@ -300,7 +300,7 @@ To focus almost entirely on one metric:
 
 ```bash
 # Almost all weight on speed
---weights length:5 range:5 actions:5 avg_dur:70 stdev:10 min_dur:5
+--weights length:5 range:5 actions:5 avg_duration:70 stdev:10 min_duration:5
 ```
 
 ### Comparison
@@ -313,7 +313,7 @@ python3 scripts/evaluate_difficulty.py --output json > default.json
 
 # Save speed-focused approach
 python3 scripts/evaluate_difficulty.py \
-  --weights length:15 range:15 actions:15 avg_dur:35 stdev:15 min_dur:5 \
+  --weights length:15 range:15 actions:15 avg_duration:35 stdev:15 min_duration:5 \
   --output json > speed-focused.json
 
 # Compare the two (use jq or similar)
@@ -329,11 +329,11 @@ Ensure your weights add up to exactly 100:
 ```bash
 # ✓ Correct: 30 + 30 + 20 + 10 + 5 + 5 = 100
 python3 scripts/evaluate_difficulty.py \
-  --weights length:30 range:30 actions:20 avg_dur:10 stdev:5 min_dur:5
+  --weights length:30 range:30 actions:20 avg_duration:10 stdev:5 min_duration:5
 
 # ✗ Wrong: 30 + 30 + 20 + 10 + 5 + 4 = 99
 python3 scripts/evaluate_difficulty.py \
-  --weights length:30 range:30 actions:20 avg_dur:10 stdev:5 min_dur:4
+  --weights length:30 range:30 actions:20 avg_duration:10 stdev:5 min_duration:4
 ```
 
 ### "No songs found to analyze"
@@ -379,9 +379,9 @@ Evaluate with multiple weight configurations:
 
 ```bash
 for weights in \
-  "length:30 range:25 actions:20 avg_dur:15 stdev:5 min_dur:5" \
-  "length:25 range:30 actions:20 avg_dur:15 stdev:5 min_dur:5" \
-  "length:25 range:25 actions:20 avg_dur:20 stdev:5 min_dur:5"
+  "length:30 range:25 actions:20 avg_duration:15 stdev:5 min_duration:5" \
+  "length:25 range:30 actions:20 avg_duration:15 stdev:5 min_duration:5" \
+  "length:25 range:25 actions:20 avg_duration:20 stdev:5 min_duration:5"
 do
   echo "Testing weights: $weights"
   python3 scripts/evaluate_difficulty.py \
