@@ -14,8 +14,9 @@ is moving toward.
 4. [Current structure (as-is)](#4-current-structure-as-is)
 5. [Target structure (to-be)](#5-target-structure-to-be)
 6. [Migration map — file by file](#6-migration-map--file-by-file)
-7. [Adding a new instrument](#7-adding-a-new-instrument)
-8. [Key design rules](#8-key-design-rules)
+7. [Song JSON schema](#7-song-json-schema)
+8. [Adding a new instrument](#8-adding-a-new-instrument)
+9. [Key design rules](#9-key-design-rules)
 
 ---
 
@@ -223,7 +224,6 @@ src/
 │   │       ├── theory.js
 │   │       └── tunings.js
 │   │
-│   ├── guitar-bg/                       ← ✅ VISUALIZABLE · BACKGROUND
 │   ├── guitar-bg/                       ← ❌ NOT VISUALIZABLE · BACKGROUND
 │   │   ├── index.js                     ← { Sampler, Component }  ← no Visualizer export
 │   │   ├── BGuitarSampler.js            ← extends GuitarSampler; mapper runs w/ balanced defaults
@@ -333,7 +333,87 @@ src/
 
 ---
 
-## 7. Adding a new instrument
+## 7. Song JSON schema
+
+Every song is a single `.json` file served from `public/songs/`. The Player
+loads it on demand; the Visualizer and audio engine consume it directly.
+
+### Top-level fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique slug — matches the filename stem |
+| `title` | `string` | Display title |
+| `composer` | `string?` | Optional composer credit |
+| `bpm` | `number` | Base BPM — what the UI slider controls |
+| `bpms` | `BpmEntry[]?` | Tempo-change map (absent = constant tempo) |
+| `timeSignature` | `string?` | Single time signature e.g. `"4/4"` (overridden by `timeSignatures`) |
+| `timeSignatures` | `TsEntry[]?` | Per-segment time signatures for meter-change songs |
+| `tracks` | `Track[]` | One entry per instrument track; `tracks[0]` is the visualized track |
+
+### `bpms` array
+
+```json
+"bpms": [
+  { "beat": 0,   "bpm": 180 },
+  { "beat": 432, "bpm": 240 },
+  { "beat": 564, "bpm": 180 },
+  { "beat": 684, "bpm": 130 }
+]
+```
+
+Each entry records the BPM that takes effect at a given **MIDI beat** (quarter
+notes since the start). `bpms[0].beat` must be `0` and its `bpm` must equal the
+top-level `bpm`. The array is optional; when absent or single-entry, playback and
+the visualizer both treat the song as having constant tempo.
+
+The `convert-midi.mjs` script writes this array automatically when the source
+MIDI file contains `0x51` tempo meta-events.
+
+### `timeSignatures` array
+
+```json
+"timeSignatures": [
+  { "timeSignature": "3/4", "length": 48 },
+  { "timeSignature": "4/4", "length": 200 }
+]
+```
+
+`length` is the number of beats that this time signature spans. The visualizer
+uses these to space bar lines correctly. Absent → falls back to `timeSignature`
+or `"4/4"`.
+
+### Track object
+
+```json
+{
+  "instrument": "recorder",
+  "hint": "alto",
+  "noteRange": { "min": 60, "max": 84 },
+  "actions": [ … ]
+}
+```
+
+`hint` is an optional string; if it matches a recorder type (`soprano`, `alto`,
+`tenor`, `bass`), the player auto-selects that type when the song loads and shows
+a toast notification.
+
+### Action object
+
+```json
+{ "type": "note", "time": 12.0, "duration": 0.5, "pitch": "A4", "velocity": 80 }
+// or polyphonic:
+{ "type": "note", "time": 12.0, "duration": 0.5, "pitches": ["E3","G3","B3"], "velocity": 70 }
+```
+
+`time` and `duration` are in **raw MIDI beats** (ticks ÷ PPQ). The player
+converts them to wall-clock seconds at playback time using the `bpms` array.
+The visualizer converts them to **visual beats** (see `VISUALIZER.md`) for
+pixel-accurate placement.
+
+---
+
+## 8. Adding a new instrument
 
 ### Step A — Create the instrument folder
 
@@ -408,7 +488,7 @@ from their `index.js` and do not add them to `VISUALIZABLE_INSTRUMENTS`.
 
 ---
 
-## 8. Key design rules
+## 9. Key design rules
 
 ### Instruments are self-contained
 No instrument folder may import from another instrument folder. The one

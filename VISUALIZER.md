@@ -76,36 +76,39 @@ Songs can contain mid-song tempo changes stored in the `bpms` array of the song 
 }
 ```
 
-`bpm` (the top-level field) is the **base BPM** — the value the UI slider controls. Each entry in `bpms` records the absolute BPM at a given MIDI beat. The **scale factor** for a section is its BPM divided by `bpms[0].bpm`:
+`bpm` (the top-level field) is the **base BPM** — the value the UI slider controls. Each entry in `bpms` records the absolute BPM at a given MIDI beat.
 
-    scale = bpms[i].bpm / bpms[0].bpm    // e.g. 144 / 120 = 1.2
-
-A scale > 1 means the music plays faster than the base tempo. Visually, notes in that section should be **compressed** — fewer pixels per MIDI beat — so the playhead passes through them at the same scroll speed as the rest of the song.
+The **visual scale** for a section is `baseBpm / sectionBpm`. A faster section
+(higher BPM) produces a scale < 1, compressing it to fewer visual pixels per
+MIDI beat. A slower section (lower BPM) produces a scale > 1, stretching it.
 
 ### `beatToVisualBeat` and `visualBeatToMidiBeat`
 
-Two pure helper functions defined at the top of `usePixiVisualizer.js` implement the coordinate conversion:
+Two pure helper functions defined at the top of `usePixiVisualizer.js` implement
+the coordinate conversion:
 
-```synrecordia/src/hooks/usePixiVisualizer.js#L35-49
-function beatToVisualBeat(midibeat, bpms) {
-  if (!bpms || bpms.length <= 1) return midibeat;
+```synrecordia/src/hooks/usePixiVisualizer.js#L30-45
+function beatToVisualBeat(midiBeat, bpms) {
+  if (!bpms || bpms.length <= 1) return midiBeat;
   const baseBpm = bpms[0].bpm;
-  let visual = 0;
+  let cumVisual = 0;
+  let segStart = 0;
   for (let i = 0; i < bpms.length; i++) {
-    const segStart = bpms[i].beat;
-    const segBpm   = bpms[i].bpm;
-    const segEnd   = i + 1 < bpms.length ? bpms[i + 1].beat : Infinity;
-    const scale    = segBpm / baseBpm; // > 1 → faster → compressed visual space
-    if (midibeat <= segStart) break;
-    const beatInSeg = Math.min(midibeat, segEnd) - segStart;
-    visual += beatInSeg / scale;
-    if (midibeat <= segEnd) break;
+    const scale = baseBpm / bpms[i].bpm; // e.g. 180/240 = 0.75 → compressed
+    const nextSegStart = i + 1 < bpms.length ? bpms[i + 1].beat : Infinity;
+    if (midiBeat <= nextSegStart || !isFinite(nextSegStart)) {
+      return cumVisual + (midiBeat - segStart) * scale;
+    }
+    cumVisual += (nextSegStart - segStart) * scale;
+    segStart = nextSegStart;
   }
-  return visual;
+  return cumVisual;
 }
 ```
 
-`visualBeatToMidiBeat` is the inverse — used when a pixel-space drag delta must be converted back to a MIDI beat for scrubbing.
+`_visualBeatToMidiBeat` is the inverse — defined at module level and available
+for use, but not yet wired up to scrub handlers (which currently operate with a
+close-enough pixel-to-MIDI-beat approximation).
 
 ### What uses visual beats
 
@@ -113,10 +116,10 @@ function beatToVisualBeat(midibeat, bpms) {
 |---|---|
 | `buildGuides` | Bar and beat line `.x` positions use `beatToVisualBeat(barBeat)` |
 | `buildZones` | Song-end zone boundary uses `beatToVisualBeat(duration)` |
+| `buildBpmRegions` | BPM region backgrounds and labels use `beatToVisualBeat(startBeat/endBeat)` |
 | Ticker scroll | `scrollLayer.x` is set from `beatToVisualBeat(displayBeat)` |
 | Sprite placement | `container.x` uses `event.visualTime` (pre-computed, see below) |
 | Sprite culling | Binary search bounds `timeMaxBuf`/`timeMinBuf` compare against `event.visualTime` |
-| Drag / wheel scrub | Delta pixels → visual beat delta → `visualBeatToMidiBeat` → MIDI beat |
 
 When `bpms` is absent or has a single entry, every conversion is an identity (`visualBeat === midibeat`) and behaviour is identical to the pre-BPM-scaling code.
 
@@ -135,6 +138,65 @@ The `isActive` check in the ticker (`beat >= sprite.time && beat < sprite.time +
 ### Slider and proportional scaling
 
 The UI BPM slider changes `song.bpm` (the base BPM). Scale factors are derived at render time as `bpms[i].bpm / bpms[0].bpm`, so they are invariant with respect to slider changes. If the base BPM moves from 120 to 100, a section previously at 1.2× still plays at 1.2× of the new base (120 BPM effective). The visual compression ratio for each section is equally unaffected — only the overall scroll speed changes.
+
+### BPM region visualization
+
+When a song has more than one BPM entry, the visualizer draws a thin visual
+indicator inside the scrolling canvas so the player can see where tempo changes
+occur:
+
+- **Even-indexed regions** (1-based: region 2, 4, …) receive a `bg-white/5`
+  background rectangle spanning the full canvas height and the region's visual-beat
+  width. Odd regions have no background — a song with only one BPM entry shows
+  nothing extra.
+- **Every region** gets a right-anchored label at the bottom-right corner showing
+  the **scaled BPM** (`sliderBpm × sectionBpm / baseBpm`), so if you drag the
+  BPM slider to half speed, all labels halve too.
+- The same even/odd bands are drawn in the `SongTimeline` minimap as CSS
+  `bg-white/5` absolute-positioned divs.
+
+These objects live in a dedicated `bpmRegionLayer` container inserted into
+`scrollLayer` between the zone-end overlays and the guide lines, so they render
+under bar lines and note sprites. The layer is rebuilt whenever the song, the
+BPM slider, the note width, or the duration changes.
+
+#### Stale-closure safety
+
+`buildBpmRegions` is a closure defined inside the async `init()` function. `init()`
+only re-runs when canvas dimensions or the time signature change — not on every
+song load. To ensure the closure always sees the current song's `bpms`, a
+`bpmsRef` is written during React render (safe ref mutation, always fresh before
+effects fire), and a dedicated `useEffect([displaySong])` calls
+`buildBpmRegionsRef.current?.()` whenever the song changes.
+
+---
+
+### Multi-BPM playback (`usePlayer.js`)
+
+The visualizer's coordinate system handles the *visual* side of tempo changes.
+The *audio* side is handled in `usePlayer.js` with two helpers defined inside
+`startPlayback`:
+
+**`wallTimeToBeat(elapsed)`** — converts elapsed wall-clock seconds into the
+current MIDI beat position by walking the `bpms` array piecewise. Each section
+uses `effectiveBpm = section.bpm × (sliderBpm / baseBpm)`, so user slider
+adjustments scale every section proportionally:
+
+    segment 0: beats 0–432  at 180 BPM (base) → advance 3 beats/sec at slider=180
+    segment 1: beats 432–564 at 240 BPM       → advance 4 beats/sec at slider=180
+    segment 2: beats 564–684 at 180 BPM       → advance 3 beats/sec
+    segment 3: beats 684+    at 130 BPM       → advance ≈2.17 beats/sec
+
+**`beatRangeToSeconds(start, end)`** — converts a MIDI-beat duration to wall-clock
+seconds. Used for `triggerAttackRelease` note duration so sampled notes in faster
+sections are shorter and notes in slower sections are longer.
+
+`wallTimeToBeatRef` stores the current closure so `handleBpmChange` can compute
+the correct beat when the slider is dragged mid-playback, preventing a perceived
+beat jump.
+
+Both helpers fall back to the simple constant-BPM formula when `bpms` is absent
+or has only one entry.
 
 ---
 
