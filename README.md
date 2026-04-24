@@ -1,6 +1,5 @@
 # SynRecordia
-
-[![Progress](https://img.shields.io/badge/Progress-65%25-yellow?style=flat-square)](#)
+[![Progress](https://img.shields.io/badge/Progress-80%25-yellow?style=flat-square)](#)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-huuthang.le-orange?logo=buy-me-a-coffee)](https://buymeacoffee.com/huuthang.le)
 
 <p align="center">
