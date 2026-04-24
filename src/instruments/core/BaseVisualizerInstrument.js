@@ -98,6 +98,7 @@ export class BaseVisualizerInstrument {
    *   ppb:              number,
    *   height:           number,
    *   notesLayer:       import('pixi.js').Container,
+  *   scrollDirection:  "ltr" | "rtl",
    *   isPlayingRef:     React.MutableRefObject<boolean>,
    *   hasDraggedRef:    React.MutableRefObject<boolean>,
    *   onNoteClickRef:   React.MutableRefObject<Function|null>,

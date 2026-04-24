@@ -96,6 +96,7 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
       ppb,
       height,
       notesLayer,
+      scrollDirection,
       isPlayingRef,
       hasDraggedRef,
       onNoteClickRef,
@@ -227,7 +228,10 @@ export class RecorderVisualizerInstrument extends BaseVisualizerInstrument {
     });
 
     // ── Position + alpha (fade-in handled by hook each frame) ────────────────
-    container.x = -scaledGraphicsWidth - (event.visualTime ?? event.time) * ppb;
+    container.x =
+      scrollDirection === "rtl"
+        ? (event.visualTime ?? event.time) * ppb
+        : -scaledGraphicsWidth - (event.visualTime ?? event.time) * ppb;
     container.y = containerY;
     container.alpha = 0;
     container.visible = true;

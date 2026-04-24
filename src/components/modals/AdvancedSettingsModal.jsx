@@ -12,6 +12,8 @@ export default function AdvancedSettingsModal({
   onClose,
   latencyMs,
   onLatencyChange,
+  scrollDirection = "ltr",
+  onScrollDirectionChange,
   particlesEnabled,
   onParticlesToggle,
   pulseEnabled,
@@ -190,6 +192,37 @@ export default function AdvancedSettingsModal({
 
             {/* Divider */}
             <div className="border-t border-note-half-dark/50" />
+
+            {/* Visual scroll direction toggle */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 shrink-0 min-w-28">
+                <label className="text-sm">{t("player.scrollDirection")}:</label>
+                <SettingTooltip>
+                  {t("player.tips.scrollDirection")}
+                </SettingTooltip>
+              </div>
+              <DuoToggleButton
+                value={scrollDirection === "rtl"}
+                onToggle={() => onScrollDirectionChange?.("rtl")}
+                offToggle={() => onScrollDirectionChange?.("ltr")}
+                onColors={{
+                  background: "bg-note-full",
+                  shadowBackground: "bg-note-full-dark",
+                  border: "border-note-full-dark",
+                  text: "text-dark",
+                }}
+                offColors={{
+                  background: "bg-note-half",
+                  shadowBackground: "bg-note-half-dark",
+                  border: "border-note-half-dark",
+                  text: "text-main",
+                }}
+              >
+                {scrollDirection === "rtl"
+                  ? t("player.scrollDirectionRtl")
+                  : t("player.scrollDirectionLtr")}
+              </DuoToggleButton>
+            </div>
 
             {/* Latency Calibration */}
             <div className="flex items-center gap-2">

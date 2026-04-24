@@ -8,11 +8,27 @@ function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
+function beatToTimelineFrac(beat, duration, scrollDirection) {
+  return scrollDirection === "rtl" ? beat / duration : 1 - beat / duration;
+}
+
+function resolveCurrentBeatFromWindow(
+  earliestBeat,
+  windowBeats,
+  playBarPosition,
+  scrollDirection,
+) {
+  return scrollDirection === "rtl"
+    ? earliestBeat + playBarPosition * windowBeats
+    : earliestBeat + (1 - playBarPosition) * windowBeats;
+}
+
 const SongTimeline = memo(function SongTimeline({
   currentBeat = 0,
   durationBeats = 0,
   noteWidth = 70,
   playBarPosition = 0.95,
+  scrollDirection = "ltr",
   bpms = null,
   onScrubStart,
   onScrub,
@@ -49,13 +65,38 @@ const SongTimeline = memo(function SongTimeline({
   // ── Visible window on the canvas ──────────────────────────────────────────
   const dur = Math.max(1, durationBeats);
   const barXPx = playBarPosition * trackWidth;
-  const latestBeat = currentBeat + barXPx / noteWidth; // LEFT  edge of canvas
-  const earliestBeat = currentBeat - (trackWidth - barXPx) / noteWidth; // RIGHT edge of canvas
+  const leftEdgeBeat =
+    scrollDirection === "rtl"
+      ? currentBeat - barXPx / noteWidth
+      : currentBeat + barXPx / noteWidth;
+  const rightEdgeBeat =
+    scrollDirection === "rtl"
+      ? currentBeat + (trackWidth - barXPx) / noteWidth
+      : currentBeat - (trackWidth - barXPx) / noteWidth;
+  const earliestBeat = Math.min(leftEdgeBeat, rightEdgeBeat);
+  const latestBeat = Math.max(leftEdgeBeat, rightEdgeBeat);
 
-  // Right-to-left: visual left = high beats (future), visual right = low beats (past)
-  const thumbL = clamp(1 - latestBeat / dur, 0, 1);
-  const thumbR = clamp(1 - earliestBeat / dur, 0, 1);
-  const playheadFrac = clamp(1 - currentBeat / dur, 0, 1);
+  const thumbL = clamp(
+    Math.min(
+      beatToTimelineFrac(leftEdgeBeat, dur, scrollDirection),
+      beatToTimelineFrac(rightEdgeBeat, dur, scrollDirection),
+    ),
+    0,
+    1,
+  );
+  const thumbR = clamp(
+    Math.max(
+      beatToTimelineFrac(leftEdgeBeat, dur, scrollDirection),
+      beatToTimelineFrac(rightEdgeBeat, dur, scrollDirection),
+    ),
+    0,
+    1,
+  );
+  const playheadFrac = clamp(
+    beatToTimelineFrac(currentBeat, dur, scrollDirection),
+    0,
+    1,
+  );
 
   // ── Global drag listeners ─────────────────────────────────────────────────
   useEffect(() => {
@@ -67,7 +108,8 @@ const SongTimeline = memo(function SongTimeline({
         drag;
       const deltaX = e.clientX - startX;
 
-      const deltaBeat = -(deltaX / tw) * d;
+      const deltaBeat =
+        (deltaX / tw) * d * (scrollDirection === "rtl" ? 1 : -1);
 
       const { onScrub: scrub, onNoteWidthChange: setNW } = cbRef.current;
 
@@ -75,9 +117,10 @@ const SongTimeline = memo(function SongTimeline({
         // ── Scrub: move the whole view, zoom unchanged ──────────────────────
         scrub?.(clamp(startBeat + deltaBeat, 0, d));
       } else if (drag.type === "left") {
-        // Left handle: adjust future (latest) boundary, keep earliest fixed
-        const newLatest = startLatest + deltaBeat;
-        const rawWindow = newLatest - startEarliest;
+        const updatesEarliest = scrollDirection === "rtl";
+        const rawWindow = updatesEarliest
+          ? startLatest - (startEarliest + deltaBeat)
+          : startLatest + deltaBeat - startEarliest;
         const rawNw = tw / Math.max(rawWindow, 1e-4);
         const nw = clamp(rawNw, NOTE_WIDTH_MIN, NOTE_WIDTH_MAX);
         const actualWindow = tw / nw;
@@ -87,13 +130,26 @@ const SongTimeline = memo(function SongTimeline({
           atLimitRef.current = hitLimit;
           setAtLimit(hitLimit);
         }
-        const newCurrentBeat = startEarliest + (1 - pbPos) * actualWindow;
+        const newCurrentBeat = updatesEarliest
+          ? resolveCurrentBeatFromWindow(
+              startLatest - actualWindow,
+              actualWindow,
+              pbPos,
+              scrollDirection,
+            )
+          : resolveCurrentBeatFromWindow(
+              startEarliest,
+              actualWindow,
+              pbPos,
+              scrollDirection,
+            );
         setNW?.(nw);
         scrub?.(clamp(newCurrentBeat, 0, d));
       } else {
-        // Right handle: adjust past (earliest) boundary, keep latest fixed
-        const newEarliest = startEarliest + deltaBeat;
-        const rawWindow = startLatest - newEarliest;
+        const updatesLatest = scrollDirection === "rtl";
+        const rawWindow = updatesLatest
+          ? startLatest + deltaBeat - startEarliest
+          : startLatest - (startEarliest + deltaBeat);
         const rawNw = tw / Math.max(rawWindow, 1e-4);
         const nw = clamp(rawNw, NOTE_WIDTH_MIN, NOTE_WIDTH_MAX);
         const actualWindow = tw / nw;
@@ -103,7 +159,19 @@ const SongTimeline = memo(function SongTimeline({
           atLimitRef.current = hitLimit;
           setAtLimit(hitLimit);
         }
-        const newCurrentBeat = startLatest - pbPos * actualWindow;
+        const newCurrentBeat = updatesLatest
+          ? resolveCurrentBeatFromWindow(
+              startEarliest,
+              actualWindow,
+              pbPos,
+              scrollDirection,
+            )
+          : resolveCurrentBeatFromWindow(
+              startLatest - actualWindow,
+              actualWindow,
+              pbPos,
+              scrollDirection,
+            );
         setNW?.(nw);
         scrub?.(clamp(newCurrentBeat, 0, d));
       }
@@ -129,7 +197,7 @@ const SongTimeline = memo(function SongTimeline({
       window.removeEventListener("pointerup", onUp);
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, []);
+  }, [scrollDirection]);
 
   // ── Start a drag ──────────────────────────────────────────────────────────
   const startDrag = (type, e) => {
@@ -164,7 +232,11 @@ const SongTimeline = memo(function SongTimeline({
     const rect = trackRef.current.getBoundingClientRect();
     const clickFrac = (e.clientX - rect.left) / rect.width;
     const d = Math.max(1, durationBeats);
-    const targetBeat = clamp((1 - clickFrac) * d, 0, d);
+    const targetBeat = clamp(
+      (scrollDirection === "rtl" ? clickFrac : 1 - clickFrac) * d,
+      0,
+      d,
+    );
 
     if (animRef.current) {
       cancelAnimationFrame(animRef.current);
@@ -211,8 +283,14 @@ const SongTimeline = memo(function SongTimeline({
           const startBeat = entry.beat;
           const endBeat = bpms[i + 1]?.beat ?? dur;
           if (endBeat <= startBeat) return null;
-          const leftPct = (1 - Math.min(endBeat, dur) / dur) * 100;
-          const widthPct = ((Math.min(endBeat, dur) - startBeat) / dur) * 100;
+          const startFrac = beatToTimelineFrac(startBeat, dur, scrollDirection);
+          const endFrac = beatToTimelineFrac(
+            Math.min(endBeat, dur),
+            dur,
+            scrollDirection,
+          );
+          const leftPct = Math.min(startFrac, endFrac) * 100;
+          const widthPct = Math.abs(endFrac - startFrac) * 100;
           return (
             <div
               key={i}

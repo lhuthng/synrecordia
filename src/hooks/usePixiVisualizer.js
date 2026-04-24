@@ -67,6 +67,14 @@ function _visualBeatToMidiBeat(visualBeat, bpms) {
   return segStart;
 }
 
+function getBeatPixelX(visualBeat, pixelsPerBeat, scrollDirection) {
+  return (scrollDirection === "rtl" ? 1 : -1) * visualBeat * pixelsPerBeat;
+}
+
+function getPlayBarBounds(scrollDirection) {
+  return scrollDirection === "rtl" ? [0.05, 0.5] : [0.5, 0.95];
+}
+
 /**
  * Encapsulates all PixiJS initialisation, the animation ticker, and pointer/wheel
  * interaction logic for the Visualizer component.
@@ -87,6 +95,7 @@ export function usePixiVisualizer({
   noteWidth = 70,
   height,
   playBarPosition = 0.95,
+  scrollDirection = "ltr",
   transpose = 0,
   onReady,
   onScrubStart,
@@ -154,6 +163,7 @@ export function usePixiVisualizer({
   const pixelsPerBeatRef = useRef(noteWidth);
   const barXRef = useRef(0);
   const playBarPositionRef = useRef(playBarPosition);
+  const scrollDirectionRef = useRef(scrollDirection);
 
   // ─── Interaction refs ─────────────────────────────────────────────────────────
   const onNoteClickRef = useRef(onNoteClick);
@@ -339,6 +349,10 @@ export function usePixiVisualizer({
   useEffect(() => {
     heightRef.current = height;
   }, [height]);
+
+  useEffect(() => {
+    scrollDirectionRef.current = scrollDirection;
+  }, [scrollDirection]);
 
   // ─── Song fade / transition ───────────────────────────────────────────────────
   useEffect(() => {
@@ -622,13 +636,18 @@ export function usePixiVisualizer({
 
           // Even regions (1-based: region 2, 4, …) = 0-based index 1, 3, 5, …
           if (i % 2 === 1) {
-            const bg = new PIXI.Graphics();
-            bg.rect(
-              -endVisual * pxPerBeat,
-              0,
-              (endVisual - startVisual) * pxPerBeat,
-              height,
+            const startX = getBeatPixelX(
+              startVisual,
+              pxPerBeat,
+              scrollDirectionRef.current,
             );
+            const endX = getBeatPixelX(
+              endVisual,
+              pxPerBeat,
+              scrollDirectionRef.current,
+            );
+            const bg = new PIXI.Graphics();
+            bg.rect(Math.min(startX, endX), 0, Math.abs(endX - startX), height);
             bg.fill({ color: colorHex, alpha: 0.1 });
             bpmRegionLayer.addChild(bg);
           }
@@ -645,7 +664,10 @@ export function usePixiVisualizer({
             },
           });
           bpmLabel.anchor.set(1, 1);
-          bpmLabel.x = -startVisual * pxPerBeat;
+          bpmLabel.x = Math.max(
+            getBeatPixelX(startVisual, pxPerBeat, scrollDirectionRef.current),
+            getBeatPixelX(endVisual, pxPerBeat, scrollDirectionRef.current),
+          );
           bpmLabel.y = height - 6;
           bpmRegionLayer.addChild(bpmLabel);
         }
@@ -661,13 +683,17 @@ export function usePixiVisualizer({
         leftZone.clear();
         rightZone.clear();
         if (duration > 0) {
+          const endX = getBeatPixelX(duration, pxPerBeat, scrollDirectionRef.current);
+          const leftBoundary = Math.min(0, endX);
+          const rightBoundary = Math.max(0, endX);
+
           leftZone.rect(-BIG, 0, BIG, height);
           leftZone.fill({ color: ZONE_COLOR, alpha: 0.35 });
-          leftZone.x = -beatToVisualBeat(duration, bpmsRef.current) * pxPerBeat;
+          leftZone.x = leftBoundary;
 
           rightZone.rect(0, 0, BIG, height);
           rightZone.fill({ color: ZONE_COLOR, alpha: 0.35 });
-          rightZone.x = 0;
+          rightZone.x = rightBoundary;
         }
       };
 
@@ -676,6 +702,7 @@ export function usePixiVisualizer({
         guideLayer.removeChildren();
 
         const pxPerBeat = pixelsPerBeatRef.current || 1;
+        const guideChildren = [];
 
         // Compute how many bars to skip between visible labels.
         // When bars are narrow, labels would overlap; skip every N bars.
@@ -730,9 +757,12 @@ export function usePixiVisualizer({
               barLine.moveTo(0, 0);
               barLine.lineTo(0, height);
               barLine.stroke();
-              barLine.x =
-                -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeat;
-              guideLayer.addChild(barLine);
+              barLine.x = getBeatPixelX(
+                beatToVisualBeat(barBeat, bpmsRef.current),
+                pxPerBeat,
+                scrollDirectionRef.current,
+              );
+              guideChildren.push(barLine);
 
               if (globalBarIndex % labelInterval === 0) {
                 const barLabel = new PIXI.Text({
@@ -746,9 +776,12 @@ export function usePixiVisualizer({
                 });
                 barLabel.anchor.set(1, 0);
                 barLabel.y = 6;
-                barLabel.x =
-                  -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeat;
-                guideLayer.addChild(barLabel);
+                barLabel.x = getBeatPixelX(
+                  beatToVisualBeat(barBeat, bpmsRef.current),
+                  pxPerBeat,
+                  scrollDirectionRef.current,
+                );
+                guideChildren.push(barLabel);
               }
 
               for (
@@ -767,9 +800,12 @@ export function usePixiVisualizer({
                 beatLine.moveTo(0, 0);
                 beatLine.lineTo(0, height);
                 beatLine.stroke();
-                beatLine.x =
-                  -beatToVisualBeat(beatBeat, bpmsRef.current) * pxPerBeat;
-                guideLayer.addChild(beatLine);
+                beatLine.x = getBeatPixelX(
+                  beatToVisualBeat(beatBeat, bpmsRef.current),
+                  pxPerBeat,
+                  scrollDirectionRef.current,
+                );
+                guideChildren.push(beatLine);
               }
 
               globalBarIndex += 1;
@@ -792,9 +828,12 @@ export function usePixiVisualizer({
             barLine.moveTo(0, 0);
             barLine.lineTo(0, height);
             barLine.stroke();
-            barLine.x =
-              -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeatLocal;
-            guideLayer.addChild(barLine);
+            barLine.x = getBeatPixelX(
+              beatToVisualBeat(barBeat, bpmsRef.current),
+              pxPerBeatLocal,
+              scrollDirectionRef.current,
+            );
+            guideChildren.push(barLine);
 
             if (barIndex % labelInterval === 0) {
               const barLabel = new PIXI.Text({
@@ -808,9 +847,12 @@ export function usePixiVisualizer({
               });
               barLabel.anchor.set(1, 0);
               barLabel.y = 6;
-              barLabel.x =
-                -beatToVisualBeat(barBeat, bpmsRef.current) * pxPerBeatLocal;
-              guideLayer.addChild(barLabel);
+              barLabel.x = getBeatPixelX(
+                beatToVisualBeat(barBeat, bpmsRef.current),
+                pxPerBeatLocal,
+                scrollDirectionRef.current,
+              );
+              guideChildren.push(barLabel);
             }
 
             for (
@@ -828,12 +870,18 @@ export function usePixiVisualizer({
               beatLine.moveTo(0, 0);
               beatLine.lineTo(0, height);
               beatLine.stroke();
-              beatLine.x =
-                -beatToVisualBeat(beatBeat, bpmsRef.current) * pxPerBeatLocal;
-              guideLayer.addChild(beatLine);
+              beatLine.x = getBeatPixelX(
+                beatToVisualBeat(beatBeat, bpmsRef.current),
+                pxPerBeatLocal,
+                scrollDirectionRef.current,
+              );
+              guideChildren.push(beatLine);
             }
           }
         }
+
+        guideChildren.sort((a, b) => b.x - a.x);
+        guideLayer.addChild(...guideChildren);
 
         // Reset the visibility window and hide every child so the ticker
         // reveals only the on-screen slice on the very next frame.
@@ -857,19 +905,28 @@ export function usePixiVisualizer({
         const g = (darkHex >> 8) & 0xff;
         const b = darkHex & 0xff;
 
-        const gradWidth = Math.max(1, width - barXRef.current);
+        const isRightToLeft = scrollDirectionRef.current === "rtl";
+        const gradWidth = Math.max(
+          1,
+          isRightToLeft ? barXRef.current : width - barXRef.current,
+        );
         const gradCanvas = document.createElement("canvas");
         gradCanvas.width = gradWidth;
         gradCanvas.height = 1;
         const ctx = gradCanvas.getContext("2d");
         const grad = ctx.createLinearGradient(0, 0, gradWidth, 0);
-        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
-        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 1)`);
+        if (isRightToLeft) {
+          grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
+          grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+        } else {
+          grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
+          grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 1)`);
+        }
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, gradWidth, 1);
         const gradTexture = PIXI.Texture.from(gradCanvas);
         const gradSprite = new PIXI.Sprite(gradTexture);
-        gradSprite.x = barXRef.current;
+        gradSprite.x = isRightToLeft ? 0 : barXRef.current;
         gradSprite.y = 0;
         gradSprite.width = gradWidth;
         gradSprite.height = height;
@@ -914,6 +971,7 @@ export function usePixiVisualizer({
           ppb: pixelsPerBeatRef.current || 1,
           height,
           notesLayer,
+          scrollDirection: scrollDirectionRef.current,
           isPlayingRef,
           hasDraggedRef,
           onNoteClickRef,
@@ -1011,7 +1069,12 @@ export function usePixiVisualizer({
         const pxPerBeat = pixelsPerBeatRef.current || 1;
         const bx = barXRef.current || barX;
         const desiredX =
-          bx + beatToVisualBeat(beat, bpmsRef.current) * pxPerBeat;
+          bx -
+          getBeatPixelX(
+            beatToVisualBeat(beat, bpmsRef.current),
+            pxPerBeat,
+            scrollDirectionRef.current,
+          );
         const currentX = typeof scrollLayer.x === "number" ? scrollLayer.x : 0;
         const diff = desiredX - currentX;
 
@@ -1077,12 +1140,9 @@ export function usePixiVisualizer({
         // the PIXI containers that are currently allocated. Sprites are created as
         // notes enter the buffered viewport and destroyed when they leave.
         //
-        // Derivation (container.x = -sprWidth - visualTime * ppb):
-        //   screenX = actualScrollX - sprWidth - time * ppb
-        //   Right edge visible → time < (actualScrollX + glowPad + BUFFER) / ppb  [timeMaxBuf]
-        //   Left  edge visible → time > (actualScrollX - maxW - glowPad - width - BUFFER) / ppb  [timeMinBuf]
-        //
-        // Higher time values = notes further ahead = LEFT side of the screen.
+        // `scrollDirection=ltr` uses x = -width - time*ppb.
+        // `scrollDirection=rtl` uses x = time*ppb.
+        // maxW keeps the buffered lower bound conservative in either mode.
         // As the song plays forward, newStart and newEnd both increase:
         //   newStart increases → old past-notes are destroyed (right buffer expired).
         //   newEnd   increases → new future-notes are allocated (left buffer entered).
@@ -1098,9 +1158,14 @@ export function usePixiVisualizer({
 
             // Allocation bounds – extend the visible area by BUFFER_PX on each side
             // so fade-in completes before notes reach the viewport edge.
-            const timeMaxBuf = (actualScrollX + glowPad + BUFFER_PX) / ppb;
+            const timeMaxBuf =
+              scrollDirectionRef.current === "rtl"
+                ? (width + glowPad + BUFFER_PX - actualScrollX) / ppb
+                : (actualScrollX + glowPad + BUFFER_PX) / ppb;
             const timeMinBuf =
-              (actualScrollX - maxW - glowPad - width - BUFFER_PX) / ppb;
+              scrollDirectionRef.current === "rtl"
+                ? (-actualScrollX - maxW - glowPad - BUFFER_PX) / ppb
+                : (actualScrollX - maxW - glowPad - width - BUFFER_PX) / ppb;
 
             // Binary search: first index where time >= timeMinBuf
             let lo = 0;
@@ -1292,7 +1357,7 @@ export function usePixiVisualizer({
       particleTextureRef.current = null;
       particlePoolRef.current = null;
     };
-  }, [width, height, effectiveTimeSignature]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [width, height, effectiveTimeSignature, scrollDirection]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Lightweight sprite rebuild on note-events / instrument change ────────────
   // Replaces what used to be a full PIXI teardown (init rerun) with an in-place
@@ -1323,7 +1388,9 @@ export function usePixiVisualizer({
       e.preventDefault();
       onScrubStart?.();
       const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
-      const deltaBeat = delta / (pixelsPerBeatRef.current || 1);
+      const deltaBeat =
+        (delta / (pixelsPerBeatRef.current || 1)) *
+        (scrollDirectionRef.current === "rtl" ? -1 : 1);
       const newBeat = Math.max(
         0,
         Math.min(
@@ -1407,13 +1474,16 @@ export function usePixiVisualizer({
           activeTouchPointersRef.current.size === 1
         ) {
           const deltaX = e.clientX - dragStartXRef.current;
+          const [minPosition, maxPosition] = getPlayBarBounds(
+            scrollDirectionRef.current,
+          );
           const newPosition = Math.max(
-            0.5,
+            minPosition,
             Math.min(
-              0.99,
+              maxPosition,
               dragStartPlayBarPositionRef.current +
                 deltaX / (canvasWidthRef.current || 1),
-            ),
+            ),  
           );
           onPlayBarPositionChange?.(newPosition);
           return;
@@ -1422,7 +1492,9 @@ export function usePixiVisualizer({
         // Single-finger scrub
         if (isDraggingRef.current) {
           const deltaX = e.clientX - dragStartXRef.current;
-          const deltaBeat = deltaX / (pixelsPerBeatRef.current || 1);
+          const deltaBeat =
+            (deltaX / (pixelsPerBeatRef.current || 1)) *
+            (scrollDirectionRef.current === "rtl" ? -1 : 1);
           const newBeat = Math.max(
             0,
             Math.min(
@@ -1440,10 +1512,13 @@ export function usePixiVisualizer({
       const deltaX = e.clientX - dragStartXRef.current;
 
       if (isPlayBarDraggingRef.current) {
+        const [minPosition, maxPosition] = getPlayBarBounds(
+          scrollDirectionRef.current,
+        );
         const newPosition = Math.max(
-          0.5,
+          minPosition,
           Math.min(
-            0.99,
+            maxPosition,
             dragStartPlayBarPositionRef.current +
               deltaX / (canvasWidthRef.current || 1),
           ),
@@ -1461,7 +1536,9 @@ export function usePixiVisualizer({
         onScrubStart?.();
       }
 
-      const deltaBeat = deltaX / (pixelsPerBeatRef.current || 1);
+      const deltaBeat =
+        (deltaX / (pixelsPerBeatRef.current || 1)) *
+        (scrollDirectionRef.current === "rtl" ? -1 : 1);
       const newBeat = Math.max(
         0,
         Math.min(

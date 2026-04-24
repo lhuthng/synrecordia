@@ -201,6 +201,7 @@ export default function Player() {
   }, [song, instrumentOverrides]);
 
   // Visual-effect preferences
+  const [scrollDirection, setScrollDirection] = useState("ltr");
   const [particlesEnabled, setParticlesEnabled] = useState(true);
   const [pulseEnabled, setPulseEnabled] = useState(true);
   const [ambientEnabled, setAmbientEnabled] = useState(true);
@@ -552,6 +553,13 @@ export default function Player() {
 
   // play bar position is a UI concern kept locally
   const [playBarPosition, setPlayBarPosition] = useState(0.95);
+  const prevScrollDirectionRef = useRef(scrollDirection);
+
+  useEffect(() => {
+    if (prevScrollDirectionRef.current === scrollDirection) return;
+    prevScrollDirectionRef.current = scrollDirection;
+    setPlayBarPosition((prev) => 1 - prev);
+  }, [scrollDirection]);
 
   const isReady = isVisualReady && isAudioReadyAll;
 
@@ -958,6 +966,8 @@ export default function Player() {
         onClose={() => setShowAdvancedSettings(false)}
         latencyMs={latencyMs}
         onLatencyChange={setLatencyMs}
+        scrollDirection={scrollDirection}
+        onScrollDirectionChange={setScrollDirection}
         particlesEnabled={particlesEnabled}
         onParticlesToggle={setParticlesEnabled}
         pulseEnabled={pulseEnabled}
@@ -1027,6 +1037,7 @@ export default function Player() {
           isPlaying={isPlaying}
           bpm={bpm}
           noteWidth={noteWidth}
+          scrollDirection={scrollDirection}
           particlesEnabled={particlesEnabled}
           ecoMode={ecoMode}
           playBarPosition={playBarPosition}
@@ -1108,6 +1119,7 @@ export default function Player() {
           durationBeats={durationBeats}
           noteWidth={noteWidth}
           playBarPosition={playBarPosition}
+          scrollDirection={scrollDirection}
           bpms={song?.bpms}
           onScrubStart={() => {
             if (isWaiting) cancelWait();

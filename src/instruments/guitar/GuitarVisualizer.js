@@ -233,6 +233,7 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
       ppb,
       height,
       notesLayer,
+      scrollDirection,
       isPlayingRef,
       hasDraggedRef,
       onNoteClickRef,
@@ -313,7 +314,10 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
         fontFamily: "Iosevka Charon",
       },
     });
-    noteLabel.x = Math.max((noteWidth - noteLabel.width) / 2, 0);
+    noteLabel.x =
+      scrollDirection === "ltr"
+        ? 0
+        : Math.max((noteWidth - noteLabel.width) / 2, 0);
     noteLabel.y = -(noteLabelFontSize + 5);
     noteLabel.alpha = 0;
 
@@ -358,7 +362,10 @@ export class GuitarVisualizerInstrument extends BaseVisualizerInstrument {
     });
 
     // ── Position + alpha (fade-in handled by hook each frame) ────────────────
-    container.x = -noteWidth - (event.visualTime ?? event.time) * ppb;
+    container.x =
+      scrollDirection === "rtl"
+        ? (event.visualTime ?? event.time) * ppb
+        : -noteWidth - (event.visualTime ?? event.time) * ppb;
     container.y = containerY;
     container.alpha = 0;
     notesLayer.addChild(container);
