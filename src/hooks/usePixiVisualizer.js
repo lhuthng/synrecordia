@@ -513,6 +513,11 @@ export function usePixiVisualizer({
       // WebGL alpha channel composites against whatever DOM layer sits behind
       // it (the AmbientLight glow) rather than defaulting to an opaque black.
       canvasEl.style.background = "transparent";
+      // Explicitly set CSS dimensions so the canvas always fills its container
+      // at the correct logical size regardless of PIXI's autoDensity behaviour
+      // with resolution=1 (eco mode) on high-DPR devices.
+      canvasEl.style.width = width + "px";
+      canvasEl.style.height = height + "px";
 
       appRef.current = app;
       if (containerRef.current) {
@@ -1357,7 +1362,7 @@ export function usePixiVisualizer({
       particleTextureRef.current = null;
       particlePoolRef.current = null;
     };
-  }, [width, height, effectiveTimeSignature, scrollDirection]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [width, height, effectiveTimeSignature, scrollDirection, ecoMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Lightweight sprite rebuild on note-events / instrument change ────────────
   // Replaces what used to be a full PIXI teardown (init rerun) with an in-place
@@ -1373,6 +1378,11 @@ export function usePixiVisualizer({
   useEffect(() => {
     if (!appRef.current) return;
     appRef.current.renderer.resize(width, height);
+    const canvasEl = appRef.current.canvas;
+    if (canvasEl) {
+      canvasEl.style.width = width + "px";
+      canvasEl.style.height = height + "px";
+    }
   }, [width, height]);
 
   // ─── Wheel scrub ─────────────────────────────────────────────────────────────

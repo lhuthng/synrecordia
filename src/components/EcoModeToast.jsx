@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 const ECO_TOAST_KEY = "synrecordia:ecoToastShown";
 
 export default function EcoModeToast() {
-  const { autoDetected } = useEcoMode();
+  const { autoDetected, setManualEcoMode } = useEcoMode();
   const { t } = useTranslation();
 
   const [visible, setVisible] = useState(() => {
@@ -27,6 +27,11 @@ export default function EcoModeToast() {
       // ignore storage errors
     }
   }, []);
+
+  const turnOff = useCallback(() => {
+    setManualEcoMode(false);
+    dismiss();
+  }, [setManualEcoMode, dismiss]);
 
   // Auto-dismiss after 7 seconds
   useEffect(() => {
@@ -52,13 +57,19 @@ export default function EcoModeToast() {
             <span className="text-lg leading-none mt-0.5" aria-hidden="true">
               🌿
             </span>
-            <div className="flex-1 text-note-half-dark">
+            <div className="flex-1">
               <p className="font-bold text-lg">
                 {t("player.ecoMode")} {t("player.ecoModeAuto")}
               </p>
               <p className="opacity-75 mt-0.5 font-semibold text-base leading-relaxed">
                 {t("ecoToast.message")}
               </p>
+              <button
+                className="mt-2 text-sm font-semibold underline underline-offset-2 opacity-75 hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={turnOff}
+              >
+                {t("ecoToast.turnOff")}
+              </button>
             </div>
             <button
               className="text-main/40 hover:text-main transition-colors cursor-pointer leading-none mt-0.5 shrink-0"

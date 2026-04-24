@@ -189,7 +189,8 @@
     "changeLanguage": "Đổi ngôn ngữ"
   },
   "ecoToast": {
-    "message": "Hiệu ứng hình ảnh và âm thanh đã được giảm để thiết bị hoạt động tốt hơn."
+    "message": "Hiệu ứng hình ảnh và âm thanh đã được giảm để thiết bị hoạt động tốt hơn.",
+    "turnOff": "Thôi, tắt đi"
   },
   "visualizer": {
     "pickSong": "Chọn bài hát để bắt đầu",

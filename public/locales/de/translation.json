@@ -189,7 +189,8 @@
 		"changeLanguage": "Sprache ändern"
 	},
 	"ecoToast": {
-		"message": "Visuelle und Audio-Effekte sind für bessere Leistung auf diesem Gerät reduziert."
+		"message": "Visuelle und Audio-Effekte sind für bessere Leistung auf diesem Gerät reduziert.",
+		"turnOff": "Nein, ausschalten"
 	},
 	"visualizer": {
 		"pickSong": "Song auswählen und loslegen",

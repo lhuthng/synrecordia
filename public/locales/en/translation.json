@@ -189,7 +189,8 @@
     "changeLanguage": "Change language"
   },
   "ecoToast": {
-    "message": "Reduced visual and audio effects are active for better performance on this device."
+    "message": "Reduced visual and audio effects are active for better performance on this device.",
+    "turnOff": "Nah, turn it off"
   },
   "visualizer": {
     "pickSong": "Pick a song to get started",
