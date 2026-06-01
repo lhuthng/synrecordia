@@ -1320,7 +1320,7 @@ export function usePixiVisualizer({
           const t = Math.min(1, p.age / p.lifetime);
           p.spr.tint = lerpColor(p.targetColor, 0xffffff, t);
           p.spr.alpha = 1 - t;
-          p.x += p.vx * dtSeconds * 60;
+          p.x += p.vx * dtSeconds * 60 * (scrollDirection === "ltr" ? 1 : -1);
           p.y += p.vy * dtSeconds * 60;
           p.spr.x = p.x;
           p.spr.y = p.y;

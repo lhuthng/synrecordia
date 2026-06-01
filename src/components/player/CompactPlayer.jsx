@@ -286,6 +286,7 @@ export default function CompactPlayer() {
         isPlaying={isPlaying}
         bpm={bpm}
         noteWidth={noteWidth}
+        scrollDirection={"ltr"}
         particlesEnabled={true}
         ecoMode={ecoMode}
         playBarPosition={playBarPosition}
