@@ -1,0 +1,118 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "apps/relay/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-west-1
+  ENVIRONMENT: livestage
+  ECR_WEB: ${{ vars.ECR_REPOSITORY_WEB }}
+  ECR_RELAY: ${{ vars.ECR_REPOSITORY_RELAY }}
+  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+  ECS_WEB_SERVICE: ${{ vars.ECS_WEB_SERVICE }}
+  ECS_RELAY_SERVICE: ${{ vars.ECS_RELAY_SERVICE }}
+
+jobs:
+  web:
+    name: Build & deploy web
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('apps/web/**') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect web changes
+        id: changed
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            web: 'apps/web/**'
+
+      - name: Configure AWS (OIDC)
+        if: steps.changed.outputs.web == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GITHUB_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: steps.changed.outputs.web == 'true'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push web image
+        if: steps.changed.outputs.web == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/web
+          push: true
+          tags: |
+            ${{ env.ECR_WEB }}:${{ github.sha }}
+            ${{ env.ECR_WEB }}:latest
+
+      - name: Deploy web service
+        if: steps.changed.outputs.web == 'true'
+        run: |
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_WEB_SERVICE }} \
+            --force-new-deployment \
+            --query "service.{desired:desiredCount,running:runningCount}" \
+            --output table
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_WEB_SERVICE }}
+
+  relay:
+    name: Build & deploy relay
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('apps/relay/**') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect relay changes
+        id: changed
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            relay: 'apps/relay/**'
+
+      - name: Configure AWS (OIDC)
+        if: steps.changed.outputs.relay == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GITHUB_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        if: steps.changed.outputs.relay == 'true'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push relay image
+        if: steps.changed.outputs.relay == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/relay
+          push: true
+          tags: |
+            ${{ env.ECR_RELAY }}:${{ github.sha }}
+            ${{ env.ECR_RELAY }}:latest
+
+      - name: Deploy relay service
+        if: steps.changed.outputs.relay == 'true'
+        run: |
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_RELAY_SERVICE }} \
+            --force-new-deployment \
+            --query "service.{desired:desiredCount,running:runningCount}" \
+            --output table
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_RELAY_SERVICE }}

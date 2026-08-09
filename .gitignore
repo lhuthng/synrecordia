@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+!.env.localstack
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -24,9 +30,22 @@ dist-ssr
 *.sw?
 
 # Assets for prerendering
-src/assets/midis/
-src/assets/samples/
-public/samples/recorder/philharmonia-flute/*.mp3
-public/samples/recorder/*.zip
+apps/web/src/assets/midis/
+apps/web/src/assets/samples/
+apps/web/public/samples/recorder/philharmonia-flute/*.mp3
+apps/web/public/samples/recorder/*.zip
 
 tmp/*
+
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+!terraform.localstack.tfvars
+
+# Go
+apps/relay/relay
+apps/relay/bin/

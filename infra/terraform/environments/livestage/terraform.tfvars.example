@@ -1,0 +1,16 @@
+# Copy to terraform.tfvars and fill in real values (NEVER commit terraform.tfvars).
+region              = "eu-central-1"
+environment         = "livestage"
+domain_name         = "synrecordia.site"
+
+# GitHub OIDC deploy role scope.
+github_repo         = "your-org/synrecordia"
+
+# Cloudflare DNS provider.
+cloudflare_zone_id  = "REPLACE_WITH_CLOUDFLARE_ZONE_ID"
+
+# Secrets (SecureString in SSM). The redis URL endpoint is created by Redis and
+# must be seeded after the first apply (see docs/cloud.md bootstrap notes).
+redis_url           = "REPLACE_AFTER_FIRST_APPLY"
+redis_auth          = "REPLACE_WITH_REDIS_AUTH_TOKEN"
+relay_token         = "REPLACE_WITH_LONG_RANDOM_RELAY_TOKEN"
