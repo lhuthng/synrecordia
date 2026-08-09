@@ -27,7 +27,10 @@ func setup(t *testing.T) (*Store, *Hub, context.Context) {
 }
 
 func newClient(roomID string) *Client {
-	return &Client{ID: NewID(), RoomID: roomID, Send: make(chan []byte, 64)}
+	// Each socket gets a fresh ID; give it a fresh MemberID too, matching the
+	// real client behaviour. Tests that simulate a reconnect reuse the same
+	// MemberID across two sockets to prove upsert.
+	return &Client{ID: NewID(), MemberID: NewID(), RoomID: roomID, Send: make(chan []byte, 64)}
 }
 
 func TestHostAuthorityAndConfig(t *testing.T) {
@@ -99,6 +102,66 @@ func TestRejoinResync(t *testing.T) {
 	}
 	if len(st.Members) != 2 {
 		t.Fatalf("expected 2 members, got %d", len(st.Members))
+	}
+}
+
+func TestReconnectUpsertNoDuplicate(t *testing.T) {
+	_, hub, ctx := setup(t)
+
+	// Host joins on socket #1.
+	host1 := newClient("room-reconnect")
+	if err := hub.HandleMessage(ctx, host1, &types.Message{Type: "join", Data: map[string]interface{}{"name": "alice"}}); err != nil {
+		t.Fatal(err)
+	}
+	if host1.role != "host" {
+		t.Fatalf("first joiner should be host, got %q", host1.role)
+	}
+
+	st, _ := hub.store.GetState(ctx, "room-reconnect")
+	if len(st.Members) != 1 {
+		t.Fatalf("expected 1 member after host join, got %d", len(st.Members))
+	}
+	if st.Members[host1.MemberID] == nil {
+		t.Fatal("host member should be keyed by MemberID")
+	}
+
+	// Same person reconnects on a NEW socket with the SAME MemberID.
+	host2 := newClient("room-reconnect")
+	host2.MemberID = host1.MemberID // stable identity reused across reconnect
+	if err := hub.HandleMessage(ctx, host2, &types.Message{Type: "join", Data: map[string]interface{}{"name": "alice"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	st2, _ := hub.store.GetState(ctx, "room-reconnect")
+	if len(st2.Members) != 1 {
+		t.Fatalf("reconnect must NOT duplicate the member, got %d members", len(st2.Members))
+	}
+	if host2.role != "host" {
+		t.Fatalf("host role should be preserved on reconnect, got %q", host2.role)
+	}
+	if st2.Members[host2.MemberID] == nil || st2.Members[host2.MemberID].Role != "host" {
+		t.Fatalf("reconnected host should still be host: %+v", st2.Members)
+	}
+}
+
+func TestMemberLeaveOnlyRemovesItself(t *testing.T) {
+	_, hub, ctx := setup(t)
+
+	host := newClient("room-leave")
+	_ = hub.HandleMessage(ctx, host, &types.Message{Type: "join", Data: map[string]interface{}{"name": "alice"}})
+	member := newClient("room-leave")
+	_ = hub.HandleMessage(ctx, member, &types.Message{Type: "join", Data: map[string]interface{}{"name": "bob"}})
+
+	// Member leaves; host must remain and stay host.
+	if err := hub.HandleMessage(ctx, member, &types.Message{Type: "leave"}); err != nil {
+		t.Fatal(err)
+	}
+	st, _ := hub.store.GetState(ctx, "room-leave")
+	if len(st.Members) != 1 {
+		t.Fatalf("expected 1 member after member leave, got %d", len(st.Members))
+	}
+	if st.Members[host.MemberID] == nil {
+		t.Fatal("host should still be present after member leaves")
 	}
 }
 

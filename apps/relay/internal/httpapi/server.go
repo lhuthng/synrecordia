@@ -4,31 +4,46 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/synrecordia/synrecordia/apps/relay/internal/config"
 	"github.com/synrecordia/synrecordia/apps/relay/internal/room"
+	"github.com/synrecordia/synrecordia/apps/relay/internal/songs"
 	"github.com/synrecordia/synrecordia/apps/relay/internal/types"
 )
 
+// songPage is the paginated/filtered envelope returned by /api/songs.
+type songPage struct {
+	Items      []songs.Song `json:"items"`
+	Total      int          `json:"total"`
+	Page       int          `json:"page"`
+	Limit      int          `json:"limit"`
+	TotalPages int          `json:"totalPages"`
+}
+
 // Server wires HTTP/WS routes to the room Hub and Redis Store.
 type Server struct {
-	cfg    config.Config
-	hub    *room.Hub
-	store  *room.Store
-	up     websocket.Upgrader
-	songDB []byte // bundled /api catalog (JSON), read once
+	cfg   config.Config
+	hub   *room.Hub
+	store *room.Store
+	up    websocket.Upgrader
+	songs []songs.Song // parsed catalog, read once
 }
 
 // NewServer builds the Server.
-func NewServer(cfg config.Config, hub *room.Hub, store *room.Store, songDB []byte) *Server {
+func NewServer(cfg config.Config, hub *room.Hub, store *room.Store) *Server {
+	catalog, _ := songs.Parse()
+	if catalog == nil {
+		catalog = []songs.Song{}
+	}
 	return &Server{
 		cfg:    cfg,
 		hub:    hub,
 		store:  store,
-		songDB: songDB,
+		songs:  catalog,
 		up: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -109,13 +124,84 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleSongs serves the song catalog with optional filtering and pagination:
+//
+//	?search=<text>      case-insensitive substring match on title or composer
+//	?difficulty=<level> exact match on difficulty (beginner|easy|medium|hard|expert)
+//	?page=<n>           1-based page index (default 1)
+//	?limit=<n>          page size (default: all items)
+//
+// Response is a paginated envelope { items, total, page, limit, totalPages }.
 func (s *Server) handleSongs(w http.ResponseWriter, r *http.Request) {
 	if !s.authorized(r) {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(s.songDB)
+
+	q := r.URL.Query()
+	search := strings.ToLower(strings.TrimSpace(q.Get("search")))
+	difficulty := strings.ToLower(strings.TrimSpace(q.Get("difficulty")))
+
+	// ── Filter ────────────────────────────────────────────────────────────────
+	filtered := s.songs
+	if search != "" {
+		out := make([]songs.Song, 0, len(s.songs))
+		for _, so := range s.songs {
+			if strings.Contains(strings.ToLower(so.Title), search) ||
+				strings.Contains(strings.ToLower(so.Composer), search) {
+				out = append(out, so)
+			}
+		}
+		filtered = out
+	}
+	if difficulty != "" {
+		out := make([]songs.Song, 0, len(filtered))
+		for _, so := range filtered {
+			if strings.EqualFold(so.Difficulty, difficulty) {
+				out = append(out, so)
+			}
+		}
+		filtered = out
+	}
+
+	total := len(filtered)
+
+	// ── Paginate ──────────────────────────────────────────────────────────────
+	page := 1
+	limit := total // default: return everything (back-compat with old behaviour)
+	if v, err := strconv.Atoi(q.Get("limit")); err == nil && v > 0 {
+		limit = v
+	}
+	if v, err := strconv.Atoi(q.Get("page")); err == nil && v > 0 {
+		page = v
+	}
+
+	start := (page - 1) * limit
+	if start > total {
+		start = total
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+
+	items := filtered[start:end]
+	if items == nil {
+		items = []songs.Song{}
+	}
+
+	totalPages := 0
+	if limit > 0 {
+		totalPages = (total + limit - 1) / limit
+	}
+
+	writeJSON(w, http.StatusOK, songPage{
+		Items:      items,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	})
 }
 
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {

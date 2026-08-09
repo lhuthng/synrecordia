@@ -15,12 +15,13 @@ import (
 
 // Client is one active WebSocket connection.
 type Client struct {
-	ID     string
-	RoomID string
-	name   string
-	role   string
-	Conn   *websocket.Conn
-	Send   chan []byte
+	ID       string // unique socket id (one per connection)
+	MemberID string // stable per-browser identity (same across reconnects)
+	RoomID   string
+	name     string
+	role     string
+	Conn     *websocket.Conn
+	Send     chan []byte
 }
 
 // Hub owns the in-process connection set and coordinates with the Redis Store.
@@ -77,7 +78,13 @@ func (h *Hub) HandleMessage(ctx context.Context, c *Client, msg *types.Message) 
 				if r, ok := d["role"].(string); ok {
 					c.role = r
 				}
+				if id, ok := d["memberId"].(string); ok && id != "" {
+					c.MemberID = id
+				}
 			}
+		}
+		if c.MemberID == "" {
+			c.MemberID = c.ID // legacy clients without a stable id
 		}
 		return h.handleJoin(ctx, c)
 	case "config":
@@ -113,16 +120,38 @@ func (h *Hub) handleJoin(ctx context.Context, c *Client) error {
 		if len(h.rooms) >= h.cfg.MaxRooms {
 			return c.write(types.Message{Type: "error", RoomID: c.RoomID, Data: "server at room capacity"})
 		}
-		st = types.NewRoom(c.RoomID, c.ID, c.name)
+		st = types.NewRoom(c.RoomID, c.MemberID, c.name)
 		c.role = "host"
 	} else {
-		if len(st.Members) >= h.cfg.MaxPerRoom {
+		// Upsert by the stable memberId — a reconnect replaces the existing
+		// entry instead of appending a duplicate (fixes "I see myself twice").
+		existing := st.Members[c.MemberID]
+		if existing == nil && len(st.Members) >= h.cfg.MaxPerRoom {
 			return c.write(types.Message{Type: "error", RoomID: c.RoomID, Data: "room full"})
 		}
+		role := c.role
 		if c.role == "host" {
-			c.role = "member" // only existing host can be host
+			// Only the current host (or a hostless room) may hold host role.
+			if st.HostID == "" || st.HostID == c.MemberID {
+				role = "host"
+			} else {
+				role = "member"
+			}
 		}
-		st.Members[c.ID] = &types.Member{ID: c.ID, Name: c.name, Role: c.role}
+		// Preserve host role across reconnect for the current host.
+		if existing != nil && existing.Role == "host" {
+			role = "host"
+		}
+		c.role = role
+		st.Members[c.MemberID] = &types.Member{
+			ID:       c.MemberID,
+			MemberID: c.MemberID,
+			Name:     c.name,
+			Role:     role,
+		}
+		if role == "host" {
+			st.HostID = c.MemberID
+		}
 	}
 	if err := h.store.SaveState(ctx, st); err != nil {
 		return err
@@ -139,7 +168,7 @@ func (h *Hub) handleLeave(ctx context.Context, c *Client) error {
 	if err != nil || st == nil {
 		return err
 	}
-	delete(st.Members, c.ID)
+	delete(st.Members, c.MemberID)
 	if c.role == "host" { // host left: close the room
 		_ = h.store.DeleteState(ctx, c.RoomID)
 		raw, _ := json.Marshal(types.Message{Type: "leave", RoomID: c.RoomID, Data: "host left; room closed"})

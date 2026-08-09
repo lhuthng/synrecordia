@@ -5,6 +5,7 @@ import i18next from "i18next";
 import DuoSelect from "../ui/DuoSelect";
 import DuoButton from "../ui/DuoButton";
 import { useMobileMenu } from "../../context/useMobileMenu";
+import RealtimePanel from "../realtime/RealtimePanel";
 
 const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
@@ -43,7 +44,7 @@ export default function Header() {
       {/* ── Main row ───────────────────────────────────────────────────────── */}
       <div className="py-3 flex items-center justify-between">
         {/* Left spacer to keep logo visually centred */}
-        <div className="w-24" />
+        <div className="flex-1" />
 
         {/* ── Logo ─────────────────────────────────────────────────────────── */}
         <Link
@@ -71,7 +72,10 @@ export default function Header() {
         </Link>
 
         {/* ── Language controls ─────────────────────────────────────────────── */}
-        <div className="w-24 flex justify-end items-center">
+        <div className="flex-1 flex justify-end items-center gap-2">
+          {/* Rooms popover */}
+          <RealtimePanel />
+
           {/* Desktop: show DuoSelect directly */}
           <div className="hidden sm:block">
             <DuoSelect

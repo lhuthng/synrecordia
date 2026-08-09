@@ -183,9 +183,28 @@ need real credentials; skip them when testing the rest against LocalStack.
 ## Local development
 
 ```sh
-# Web
-cd apps/web && npm i && npm run dev
+# 1) Backend: Redis + relay in one command (Docker)
+docker compose up -d --build
 
-# Relay (needs a Redis at localhost:6379)
+# 2) Web (Vite proxies /ws and /api to the relay on :8080)
+cd apps/web && npm i && npm run dev
+```
+
+`GET /api/songs` supports the same search/filter the Directory UI uses:
+`?search=<text>` (title/composer substring, case-insensitive),
+`?difficulty=<level>`, and pagination via `?page=<n>&limit=<n>`. It returns
+`{ "items": [...], "total", "page", "limit", "totalPages" }`. With no params it
+returns every song (limit defaults to total). The client's `fetchSongIndex()`
+accepts those params and falls back to the static index when the relay is down.
+
+To exercise the realtime room client, copy `apps/web/.env.example` to
+`apps/web/.env` (sets `VITE_ENABLE_REALTIME=true`) and open
+`http://localhost:5173/rooms`. Create a room in one tab, join it from another —
+the relay's host authority and Redis-backed room state work identically to
+production.
+
+Optional: run the relay without Docker (needs a Redis at localhost:6379):
+
+```sh
 cd apps/relay && REDIS_URL=localhost:6379 go run .
 ```

@@ -14,6 +14,9 @@ import InstrumentManager from "./InstrumentManager";
 import SettingTooltip from "../ui/SettingTooltip";
 import usePlayer from "../../hooks/usePlayer.js";
 import usePlayMode from "../../hooks/usePlayMode.js";
+import useRealtimeSync from "../../hooks/useRealtimeSync.js";
+import { useRoom } from "../../context/RoomSyncContext";
+import { fetchSongIndex } from "../../libs/songs.js";
 import { useTranslation } from "react-i18next";
 import {
   computeNoteRangeFromActions,
@@ -37,6 +40,7 @@ export default function Player() {
   const { ecoMode, autoDetected: autoEcoMode, setManualEcoMode } = useEcoMode();
 
   // player hook encapsulates audio/playback logic
+  const player = usePlayer();
   const {
     song,
     selectSong,
@@ -82,7 +86,12 @@ export default function Player() {
     setPauseGate,
     pendingHint,
     clearPendingHint,
-  } = usePlayer();
+  } = player;
+
+  // Realtime room sync + read-only "following host" gating.
+  const room = useRoom();
+  const { isFollowing } = room;
+  useRealtimeSync(player, room);
 
   useEffect(() => {
     if (!pendingHint) return;
@@ -336,6 +345,24 @@ export default function Player() {
     else handlePlay();
   }, [countdown, isPlaying, cancelCountdown, pausePlayback, handlePlay]);
 
+  // When following the host, shared playback controls become read-only.
+  // Instrument/volume settings stay editable (they're per-member/local).
+  const gatedRestart = useCallback(() => {
+    if (!isFollowing) handleRestart();
+  }, [isFollowing, handleRestart]);
+  const gatedScrubStart = useCallback(() => {
+    if (!isFollowing) handleScrubStart();
+  }, [isFollowing, handleScrubStart]);
+  const gatedScrub = useCallback(
+    (beat) => {
+      if (!isFollowing) handleScrub(beat);
+    },
+    [isFollowing, handleScrub],
+  );
+  const gatedTogglePlayback = useCallback(() => {
+    if (!isFollowing) handleTogglePlayback();
+  }, [isFollowing, handleTogglePlayback]);
+
   const handleRangeStatus = useCallback(
     ({ outOfRange, alternatives, slot }) => {
       rangeStatusRef.current[slot] = { outOfRange, alternatives };
@@ -504,9 +531,7 @@ export default function Player() {
         }
 
         // Fetch the song index to resolve the file name
-        const indexRes = await fetch("/songs/index.json");
-        if (!indexRes.ok) throw new Error("Failed to load song index.");
-        const index = await indexRes.json();
+        const index = await fetchSongIndex();
 
         const meta = Array.isArray(index)
           ? index.find((s) => s.id === urlSongId)
@@ -582,6 +607,15 @@ export default function Player() {
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="w-full text-main space-y-2">
+      {isFollowing && (
+        <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-note-full-dark bg-note-full/15 px-3 py-1.5 text-sm text-note-full">
+          <span aria-hidden>♪</span>
+          <span className="font-bold uppercase tracking-wide">
+            Following host — playback controls are locked
+          </span>
+        </div>
+      )}
+
       {/* Ambient glow — portalled to document.body so it lives in the root
           stacking context at z-[1], above the SynthwaveBackground (z-0) and
           below the page content (z-10). This lets the glow bleed through the
@@ -596,7 +630,7 @@ export default function Player() {
         )}
       {/* Song selector row */}
       <div className="flex items-center gap-2">
-        <Directory />
+        <Directory disabled={isFollowing} />
 
         {urlLoading ? (
           <span className="opacity-60 italic">{t("player.loadingSong")}</span>
@@ -670,6 +704,7 @@ export default function Player() {
                 max={240}
                 step={1}
                 value={bpm}
+                disabled={!isReady || isFollowing}
                 onChange={(v) => handleBpmChange(v)}
                 thumbColors={{
                   background: "bg-note-half",
@@ -687,7 +722,7 @@ export default function Player() {
               shadowBackground="bg-note-half-dark"
               border="border-note-half-dark"
               onClick={() => song && handleBpmChange(song.bpm)}
-              disabled={!isReady}
+              disabled={!isReady || isFollowing}
             >
               {t("player.reset")}
             </DuoButton>
@@ -899,7 +934,7 @@ export default function Player() {
                 border: "border-note-half-dark",
                 text: "text-main",
               }}
-              disabled={!isReady}
+              disabled={!isReady || isFollowing}
             >
               {countdown !== null
                 ? countdown
@@ -916,9 +951,9 @@ export default function Player() {
               onClick={() => {
                 cancelCountdown();
                 if (isWaiting) cancelWait();
-                handleRestart();
+                gatedRestart();
               }}
-              disabled={!isReady}
+              disabled={!isReady || isFollowing}
             >
               {t("player.restart")}
             </DuoButton>
@@ -1051,11 +1086,11 @@ export default function Player() {
           }}
           onScrubStart={() => {
             if (isWaiting) cancelWait();
-            handleScrubStart();
+            gatedScrubStart();
           }}
-          onScrub={handleScrub}
+          onScrub={gatedScrub}
           onNoteClick={handleNoteClick}
-          onPlayPause={handleTogglePlayback}
+          onPlayPause={gatedTogglePlayback}
           onPlayBarPositionChange={setPlayBarPosition}
           fingeringSystem={fingeringSystem}
           recorderType={recorderType}
@@ -1123,9 +1158,9 @@ export default function Player() {
           bpms={song?.bpms}
           onScrubStart={() => {
             if (isWaiting) cancelWait();
-            handleScrubStart();
+            gatedScrubStart();
           }}
-          onScrub={handleScrub}
+          onScrub={gatedScrub}
           onNoteWidthChange={handleNoteWidthChange}
         />
       )}

@@ -1,15 +1,257 @@
-{
-  "version": "1",
-  "songs": [
-    "abendlied",
-    "ashokan-farewell",
-    "baby-shark",
-    "blue",
-    "departure",
-    "erika",
-    "fallen-down-reprise",
-    "final-duet",
-    "fuer-elise",
-    "giorno-s-theme"
-  ]
-}
+[
+  {
+    "id": "abendlied",
+    "title": "Abendlied",
+    "composer": "Seifert",
+    "bpm": 1200,
+    "file": "abendlied.json",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "ashokan-farewell",
+    "title": "Ashokan Farewell",
+    "composer": "Jay Ungar",
+    "bpm": 100,
+    "file": "ashokan-farewell.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "baby-shark",
+    "title": "Baby Shark",
+    "bpm": 116,
+    "file": "baby-shark.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "blue",
+    "title": "Blue",
+    "composer": "Yung Kai",
+    "bpm": 95,
+    "file": "blue.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "departure",
+    "title": "Departure! - HxH Opening",
+    "bpm": 160,
+    "file": "departure.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "erika",
+    "title": "Erika",
+    "composer": "Heinz Schnaufer",
+    "bpm": 120,
+    "file": "erika.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "fallen-down-reprise",
+    "title": "Fallen Down (Reprise)",
+    "composer": "Toby Fox",
+    "bpm": 110,
+    "file": "fallen-down-reprise.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "final-duet",
+    "title": "Final Duet",
+    "composer": "Pedro Silva",
+    "bpm": 145,
+    "file": "final-duet.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "fuer-elise",
+    "title": "F\u00fcr Elise",
+    "composer": "Ludwig van Beethoven",
+    "bpm": 100,
+    "file": "fuer-elise.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "giorno-s-theme",
+    "title": "Giorno's Theme",
+    "bpm": 135,
+    "file": "giorno-s-theme.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "greensleeves",
+    "title": "Greensleeves",
+    "bpm": 120,
+    "file": "greensleeves.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "happy-birthday-to-you",
+    "title": "Happy Birthday To You",
+    "bpm": 120,
+    "file": "happy-birthday-to-you.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "kein-schoener-land",
+    "title": "Kein\u00f6ner Land",
+    "composer": "Zuccalmaglio",
+    "bpm": 80,
+    "file": "kein-schoener-land.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "krusty-krab-theme",
+    "title": "Krusty Krab Theme",
+    "bpm": 180,
+    "file": "krusty-krab-theme.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "marry-had-a-little-lamb",
+    "title": "Marry had a Little Lamb",
+    "composer": "Lowell Mason",
+    "bpm": 120,
+    "file": "marry-had-a-little-lamb.json",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "megalovania",
+    "title": "Megalovania",
+    "composer": "Toby Fox",
+    "bpm": 120,
+    "file": "megalovania.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "minuet-in-g",
+    "title": "Minuet in G",
+    "composer": "J.S. Bach",
+    "bpm": 126,
+    "file": "minuet-in-g.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "my-time",
+    "title": "My Time",
+    "composer": "Bo En",
+    "bpm": 180,
+    "file": "my-time.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "never-give-you-up",
+    "title": "Never give you up",
+    "composer": "Rick Astley",
+    "bpm": 150,
+    "file": "never-give-you-up.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "ode-to-joy",
+    "title": "Ode To Joy",
+    "composer": "Ludwig van Beethoven",
+    "bpm": 140,
+    "file": "ode-to-joy.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "once-upon-a-time",
+    "title": "Once upon a time",
+    "composer": "Toby Fox",
+    "bpm": 120,
+    "file": "once-upon-a-time.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "recorder-sonata-in-f-major",
+    "title": "Recorder Sonata in F Major",
+    "composer": "Handel",
+    "bpm": 80,
+    "file": "recorder-sonata-in-f-major.json",
+    "difficulty": "hard"
+  },
+  {
+    "id": "river-flows-in-you",
+    "title": "River flows in you",
+    "composer": "Yiruma",
+    "bpm": 70,
+    "file": "river-flows-in-you.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "rondo-from-abdelazer",
+    "title": "Rondo from Abdelazer",
+    "composer": "Purcell",
+    "bpm": 92,
+    "file": "rondo-from-abdelazer.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "sonata-in-c-rv-53",
+    "title": "Sonata in C (RV 53)",
+    "composer": "Vivaldi",
+    "bpm": 60,
+    "file": "sonata-in-c-rv-53.json",
+    "difficulty": "expert"
+  },
+  {
+    "id": "song-of-storm",
+    "title": "Song Of Storm",
+    "composer": "Koji Kondo",
+    "bpm": 180,
+    "file": "song-of-storm.json",
+    "difficulty": "easy"
+  },
+  {
+    "id": "super-mario-main-theme",
+    "title": "Super Mario Main Theme",
+    "composer": "Koji Kondo",
+    "bpm": 180,
+    "file": "super-mario-main-theme.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "the-stranger-thing-theme",
+    "title": "The Stranger Thing theme",
+    "bpm": 80,
+    "file": "the-stranger-thing-theme.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "twinkle-twinkle-little-star",
+    "title": "Twinkle Twkinle Little Star",
+    "bpm": 72,
+    "file": "twinkle-twinkle-little-star.json",
+    "difficulty": "beginner"
+  },
+  {
+    "id": "twinkle-twinkle-little-star-variant",
+    "title": "Twinkle, Twinkle, Littler Star (Variant)",
+    "bpm": 90,
+    "file": "twinkle-twinkle-little-star-variant.json",
+    "difficulty": "expert"
+  },
+  {
+    "id": "von-elise",
+    "title": "Von Elise",
+    "composer": "Maty\u00e1\u0161 Male\u010dek",
+    "bpm": 120,
+    "file": "von-elise.json",
+    "difficulty": "medium"
+  },
+  {
+    "id": "world-s-end-valentine",
+    "title": "World's End Valentine",
+    "composer": "Pedro Silva",
+    "bpm": 152,
+    "file": "world-s-end-valentine.json",
+    "difficulty": "hard"
+  },
+  {
+    "id": "yuna",
+    "title": "Yuna",
+    "composer": "PYKAMIA",
+    "bpm": 120,
+    "file": "yuna.json",
+    "difficulty": "easy"
+  }
+]

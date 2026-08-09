@@ -1,0 +1,36 @@
+# Local dev backend: Redis + the Go relay.
+#
+#   docker compose up -d --build
+#
+# Then run the web dev server (`npm run dev`) — Vite proxies /ws and /api to
+# the relay on localhost:8080. Copy apps/web/.env.example to apps/web/.env and
+# set VITE_ENABLE_REALTIME=true to exercise the realtime room client.
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  relay:
+    build: ./apps/relay
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # Inside the compose network the relay reaches Redis by service name.
+      REDIS_URL: redis:6379
+      ADDR: ":8080"
+      # Leave unset for local dev so /api* needs no token (RelayToken empty).
+      # RELAY_TOKEN: ""
+    ports:
+      - "8080:8080"
+    # No healthcheck here: the distroless runtime image has no shell/wget. In
+    # production the ALB target group hits /readyz. Locally, redis's healthcheck
+    # gates the relay startup.

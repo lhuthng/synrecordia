@@ -13,7 +13,6 @@ import (
 	"github.com/synrecordia/synrecordia/apps/relay/internal/config"
 	"github.com/synrecordia/synrecordia/apps/relay/internal/httpapi"
 	"github.com/synrecordia/synrecordia/apps/relay/internal/room"
-	"github.com/synrecordia/synrecordia/apps/relay/internal/songs"
 )
 
 func main() {
@@ -28,14 +27,10 @@ func main() {
 	}
 	defer closeStore()
 
-	// For MVP the /api/songs catalog is bundled. A future phase can source it
-	// from S3/Redis. Embedding keeps the container self-contained.
-	songDB := songs.Load()
-
 	hub := room.NewHub(cfg, store)
 	srv := &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           httpapi.NewServer(cfg, hub, store, songDB).Routes(),
+		Handler:           httpapi.NewServer(cfg, hub, store).Routes(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

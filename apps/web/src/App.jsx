@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { MobileMenuProvider } from "./context/MobileMenuContext";
 import { EcoModeProvider } from "./context/EcoModeContext";
+import { RoomSyncProvider } from "./context/RoomSyncContext";
 import Player from "./components/player/Player";
 import CompactPlayer from "./components/player/CompactPlayer";
 import Header from "./components/layout/Header";
@@ -24,15 +25,17 @@ function MainLayout() {
 function App() {
   return (
     <EcoModeProvider>
-      <div className="w-full min-h-screen bg-dark font-iosevka">
-        <SynthwaveBackground />
-        <div className="relative z-10">
-          <Routes>
-            <Route path="/compact/*" element={<CompactPlayer />} />
-            <Route path="/*" element={<MainLayout />} />
-          </Routes>
+      <RoomSyncProvider>
+        <div className="w-full min-h-screen bg-dark font-iosevka">
+          <SynthwaveBackground />
+          <div className="relative z-10">
+            <Routes>
+              <Route path="/compact/*" element={<CompactPlayer />} />
+              <Route path="/*" element={<MainLayout />} />
+            </Routes>
+          </div>
         </div>
-      </div>
+      </RoomSyncProvider>
     </EcoModeProvider>
   );
 }

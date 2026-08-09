@@ -10,6 +10,7 @@ import SongTimeline from "./SongTimeline";
 import InstrumentManager from "./InstrumentManager";
 import usePlayer from "../../hooks/usePlayer.js";
 import { computeNoteRangeFromActions } from "../../libs/utils.js";
+import { fetchSongIndex } from "../../libs/songs.js";
 import { useEcoMode } from "../../context/EcoModeContext";
 
 export default function CompactPlayer() {
@@ -125,9 +126,7 @@ export default function CompactPlayer() {
           return;
         }
 
-        const indexRes = await fetch("/songs/index.json");
-        if (!indexRes.ok) throw new Error("Failed to load song index.");
-        const index = await indexRes.json();
+        const index = await fetchSongIndex();
 
         const meta = Array.isArray(index)
           ? index.find((s) => s.id === urlSongId)

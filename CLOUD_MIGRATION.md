@@ -87,7 +87,17 @@ Cloudflare (DNS/edge TLS) ──▶ ACM/ALB (443)
 
 ### Phase 6 — Client (minimal)
 - [x] `useRealtimeRoom` stub hook (feature-flagged) + reconnect/backoff
-- [ ] Minimal host config surface (deferred — plumbing proven by hook)
+- [x] Vite dev proxy for `/ws` + `/api` → relay (`apps/web/vite.config.js`,
+      `VITE_RELAY_PROXY_TARGET`, default `http://localhost:8080`)
+- [x] `apps/web/.env.example` with `VITE_ENABLE_REALTIME=true`
+- [x] Root `docker-compose.yml` (Redis + relay) for local backend
+- [x] `/api/songs` now serves the full catalog (mirrors
+      `apps/web/public/songs/index.json`); client prefers it and falls back to static
+- [x] `/api/songs` pagination + filtering: `?search=&difficulty=&page=&limit=`
+      (default returns everything; client normalises `{items,total,page,...}`)
+- [x] Minimal room UI at `/rooms` (`components/realtime/RealtimeRoom.jsx`):
+      create/join, member list, host config push, broadcast; `useRealtimeRoom`
+      surfaces `broadcast` messages
 
 ## Notes / blockers
 - **Redis URL seed order**: `redis_url` SSM param must be set to the ElastiCache
@@ -112,6 +122,9 @@ Cloudflare (DNS/edge TLS) ──▶ ACM/ALB (443)
 - ✅ Migrated to per-environment dirs: `environments/dev` (local backend + LocalStack
   endpoints) plans/validates cleanly; `environments/livestage` (S3 backend) `validate`s
   cleanly (needs the bootstrap bucket to exist before `init` in real AWS).
+- ✅ Re-verified in the per-env layout: applied `module.vpc`, `module.sg`, `module.ssm`,
+  `module.cloudwatch` (38 resources) + `module.alb.aws_acm_certificate.main` (cert
+  `PENDING_VALIDATION`) against LocalStack via `environments/dev`.
 
 ## Cutover sequence
 1. Terraform bootstrap state bucket → apply VPC/ECR/Redis/ECS/ALB/ACM/SSM/CW

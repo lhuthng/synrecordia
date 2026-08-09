@@ -5,6 +5,7 @@ import DuoToggleButton from "./ui/DuoToggleButton";
 import DuoButton from "./ui/DuoButton";
 import { motion as Motion, AnimatePresence } from "motion/react";
 import { cn } from "../libs/utils";
+import { fetchSongIndex } from "../libs/songs";
 
 // ── Difficulty config ─────────────────────────────────────────────────────────
 
@@ -223,6 +224,7 @@ export default function Directory({
   position = "left-0",
   basePath = "/songs",
   onSelected,
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
   const [songs, setSongs] = useState(null);
@@ -261,9 +263,7 @@ export default function Directory({
     async function fetchIndex() {
       setStatus("loading");
       try {
-        const res = await fetch("/songs/index.json");
-        if (!res.ok) throw new Error("Failed to load song index");
-        const data = await res.json();
+        const data = await fetchSongIndex();
         if (!mounted) return;
         setSongs(Array.isArray(data) ? data : []);
         setStatus("ready");
@@ -331,6 +331,7 @@ export default function Directory({
       {/* ── Trigger button ── */}
       <DuoToggleButton
         className="w-10"
+        disabled={disabled}
         onColors={{
           background: "bg-note-full",
           shadowBackground: "bg-note-full-dark",

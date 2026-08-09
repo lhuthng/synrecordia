@@ -21,10 +21,17 @@ type RoomState struct {
 }
 
 // Member describes one connected participant.
+//
+// MemberID is the stable per-browser identity supplied by the client on join
+// (see handleJoin in the hub). It is the key of RoomState.Members, so a client
+// that reconnects upserts (replaces) its entry instead of creating a duplicate.
+// ID is kept equal to MemberID for backward compatibility with older clients
+// that read Member.ID.
 type Member struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Role string `json:"role"` // host | member
+	ID       string `json:"id"`
+	MemberID string `json:"memberId,omitempty"`
+	Name     string `json:"name"`
+	Role     string `json:"role"` // host | member
 }
 
 // NewRoom returns an initial empty room state.

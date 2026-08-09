@@ -8,23 +8,29 @@ import (
 //go:embed catalog.json
 var catalogJSON []byte
 
-// Load returns the bundled song/sample catalog as raw JSON. For MVP this is a
-// small static manifest; a future phase can merge in Redis/S3-backed data.
+// Song is one entry of the song catalog served by /api/songs. The shape
+// mirrors the web app's static public/songs/index.json so the client can use
+// the API and static index interchangeably.
+//
+// NOTE: this file is a copy of apps/web/public/songs/index.json. Keep them in
+// sync (or generate this from that file in CI) when adding/removing songs.
+type Song struct {
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	Composer   string `json:"composer,omitempty"`
+	BPM        int    `json:"bpm"`
+	File       string `json:"file"`
+	Difficulty string `json:"difficulty,omitempty"`
+}
+
+// Load returns the bundled song catalog as raw JSON.
 func Load() []byte {
 	return catalogJSON
 }
 
-// Catalog is a typed view of the manifest (used for future filtering).
-type Catalog struct {
-	Version string   `json:"version"`
-	Songs   []string `json:"songs"`
-}
-
-// Parse decodes the manifest for programmatic use.
-func Parse() (*Catalog, error) {
-	var c Catalog
-	if err := json.Unmarshal(catalogJSON, &c); err != nil {
-		return nil, err
-	}
-	return &c, nil
+// Parse decodes the catalog for programmatic use.
+func Parse() ([]Song, error) {
+	var songs []Song
+	err := json.Unmarshal(catalogJSON, &songs)
+	return songs, err
 }
