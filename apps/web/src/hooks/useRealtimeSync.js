@@ -106,6 +106,14 @@ export default function useRealtimeSync(player, room) {
     if (cfg.songId && cfg.songId !== p.song?.id) {
       loadSongById(cfg.songId).catch(() => {});
     }
+
+    // Don't push playback commands until the member actually has the song loaded
+    // AND its transport-ready. Otherwise startPlayback() no-ops on a null song
+    // (usePlayer.js) and handleScrub clamps cfg.beat to durationBeats=0, leaving
+    // a follower who joined mid-playback stuck paused while the host plays on.
+    // Re-running on songId/isReady re-applies the config once the load finishes.
+    if (!p.song || !p.isReady) return;
+
     if (cfg.bpm && cfg.bpm !== p.bpm) {
       p.handleBpmChange(cfg.bpm);
     }
@@ -119,7 +127,13 @@ export default function useRealtimeSync(player, room) {
     } else if (typeof cfg.beat === "number") {
       p.handleScrub(cfg.beat);
     }
-  }, [isFollowing, latestConfig, loadSongById]);
+  }, [
+    isFollowing,
+    latestConfig,
+    loadSongById,
+    player.song?.id,
+    player.isReady,
+  ]);
 
   return { loadSongById };
 }

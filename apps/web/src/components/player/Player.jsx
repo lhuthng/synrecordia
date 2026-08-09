@@ -588,6 +588,15 @@ export default function Player() {
 
   const isReady = isVisualReady && isAudioReadyAll;
 
+  // Human-readable reason playback is blocked (null ⇒ ready to play).
+  const readinessNote = useMemo(() => {
+    if (isFollowing) return null; // covered by the follower banner
+    if (!song) return t("player.ready.waitingSong");
+    if (!isAudioReadyAll) return t("player.ready.loadingAudio");
+    if (!isVisualReady) return t("player.ready.prepareVisual");
+    return null;
+  }, [song, isAudioReadyAll, isVisualReady, isFollowing, t]);
+
   // Effective BPM at the current beat position: base BPM × section scale.
   // When the song has no bpms array (constant tempo) this equals bpm.
   const effectiveBpm = useMemo(() => {
@@ -742,6 +751,7 @@ export default function Player() {
                 step={1}
                 value={transposeSemitones}
                 onChange={(v) => setTransposeSemitones(v)}
+                disabled={isFollowing}
                 thumbColors={{
                   background:
                     transposeSemitones !== 0 ? "bg-amber-400" : "bg-note-half",
@@ -764,7 +774,7 @@ export default function Player() {
               shadowBackground="bg-note-half-dark"
               border="border-note-half-dark"
               onClick={() => setTransposeSemitones(0)}
-              disabled={transposeSemitones === 0}
+              disabled={transposeSemitones === 0 || isFollowing}
             >
               {t("player.reset")}
             </DuoButton>
@@ -910,6 +920,15 @@ export default function Player() {
                 ? selectedMidiInput.name
                 : t("playMode.deviceStatus.none")}
             </span>
+          </div>
+
+          {/* Playback readiness status */}
+          <div className="flex justify-end items-center text-xs font-bold uppercase tracking-wide">
+            {readinessNote ? (
+              <span className="text-amber-400">… {readinessNote}</span>
+            ) : (
+              <span className="text-note-full">{t("player.ready.ready")}</span>
+            )}
           </div>
 
           {/* Playback buttons */}

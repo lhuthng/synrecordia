@@ -45,6 +45,12 @@
     },
     "hint": {
       "recorderType": "Đã chuyển sang recorder {{type}} - theo gợi ý của bài nhạc"
+    },
+    "ready": {
+      "ready": "Ready to play",
+      "waitingSong": "Waiting for a song...",
+      "loadingAudio": "Loading audio...",
+      "prepareVisual": "Preparing visualizer..."
     }
   },
   "directory": {

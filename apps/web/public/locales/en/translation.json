@@ -45,6 +45,12 @@
     },
     "hint": {
       "recorderType": "Switched to {{type}} recorder - suggested by this song"
+    },
+    "ready": {
+      "ready": "Ready to play",
+      "waitingSong": "Waiting for a song...",
+      "loadingAudio": "Loading audio...",
+      "prepareVisual": "Preparing visualizer..."
     }
   },
   "directory": {

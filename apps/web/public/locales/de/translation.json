@@ -45,6 +45,12 @@
 		},
 		"hint": {
 			"recorderType": "Zu {{type}}-Blockflöte gewechselt - vom Stück vorgeschlagen"
+		},
+		"ready": {
+			"ready": "Ready to play",
+			"waitingSong": "Waiting for a song...",
+			"loadingAudio": "Loading audio...",
+			"prepareVisual": "Preparing visualizer..."
 		}
 	},
 	"directory": {

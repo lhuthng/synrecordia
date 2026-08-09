@@ -29,12 +29,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Assets for prerendering
-apps/web/src/assets/midis/
-apps/web/src/assets/samples/
-apps/web/public/samples/recorder/philharmonia-flute/*.mp3
-apps/web/public/samples/recorder/*.zip
-
 tmp/*
 
 # Terraform
@@ -49,3 +43,6 @@ infra/terraform/**/.terraform/
 # Go
 apps/relay/relay
 apps/relay/bin/
+
+public/samples
+src/assets

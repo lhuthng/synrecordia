@@ -105,13 +105,13 @@ function InRoomView({ onClose }) {
         {room.log.length === 0 ? (
           <p className="text-sm text-main/40">No activity yet.</p>
         ) : (
-          <ul className="space-y-1.5 max-h-44 overflow-y-auto custom-scrollbar pr-0.5">
+          <ul className="space-y-1.5 max-h-44 overflow-y-auto custom-scrollbar pr-0.5 w-full max-w-[14rem]">
             {room.log.map((entry) => (
               <li key={entry.id} className="text-sm text-main/75 flex gap-2">
                 <span className="text-main/40 shrink-0 font-mono">
                   {new Date(entry.at).toLocaleTimeString()}
                 </span>
-                <span className="truncate">{entry.text}</span>
+                <span className="break-words min-w-0">{entry.text}</span>
               </li>
             ))}
           </ul>
